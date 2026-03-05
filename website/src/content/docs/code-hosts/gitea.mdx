@@ -1,0 +1,179 @@
+---
+title: Gitea
+description: Connect Code Search to Gitea
+---
+
+import { Aside, Steps } from "@astrojs/starlight/components";
+
+Connect Code Search to your Gitea instance.
+
+## Prerequisites
+
+- Gitea 1.17 or later
+- A user account with access to repositories
+- An access token
+
+## Creating an Access Token
+
+<Steps>
+
+1. Go to your Gitea instance
+
+2. Navigate to **Settings → Applications → Manage Access Tokens**
+
+3. Create a new token:
+   - **Name**: `Code Search`
+   - **Scopes**: Select `read:repository` and `read:organization`
+
+4. Click **Generate Token**
+
+5. Copy the token immediately
+
+</Steps>
+
+## Adding the Connection
+
+### Via Web UI
+
+1. Go to **Connections** → **Add Connection**
+2. Fill in:
+   - **Name**: `Gitea`
+   - **Type**: `Gitea`
+   - **URL**: `https://gitea.yourcompany.com`
+   - **Token**: Your access token
+3. Click **Test Connection**
+4. Click **Create**
+
+### Via API
+
+```bash
+curl -X POST "http://localhost:8080/api/v1/connections" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Gitea",
+    "type": "gitea",
+    "url": "https://gitea.yourcompany.com",
+    "token": "xxxxxxxxxx"
+  }'
+```
+
+### Via Configuration File
+
+Add code hosts to your `config.yaml`:
+
+```yaml
+codehosts:
+  # The key is the connection name
+  gitea:
+    type: gitea
+    url: "https://gitea.yourcompany.com"
+    token: "$CS_GITEA_TOKEN"  # Environment variable reference
+    exclude_archived: true    # Skip archived repos during sync
+```
+
+With environment variable:
+
+```bash
+export CS_GITEA_TOKEN="your-access-token"
+```
+
+## Token Scopes
+
+| Scope               | Purpose                          |
+| ------------------- | -------------------------------- |
+| `read:repository`   | Access to repositories           |
+| `read:organization` | Access organization repositories |
+| `write:repository`  | Create pull requests (for replace) |
+
+<Aside type="note">
+  For Gitea versions before 1.17, you may need to use `repo` scope instead.
+</Aside>
+
+## Hosted Gitea Services
+
+### Codeberg
+
+[Codeberg](https://codeberg.org) is a public Gitea instance:
+
+```yaml
+codehosts:
+  codeberg:
+    type: gitea
+    url: "https://codeberg.org"
+    token: "$CS_CODEBERG_TOKEN"
+    exclude_archived: true
+```
+
+### Gitea Cloud (Gitea.com)
+
+For Gitea's hosted service:
+
+```yaml
+codehosts:
+  gitea-cloud:
+    type: gitea
+    url: "https://gitea.com"
+    token: "$CS_GITEA_CLOUD_TOKEN"
+    exclude_archived: true
+```
+
+## Repository Discovery
+
+Code Search discovers:
+
+- Repositories you own
+- Repositories you're a collaborator on
+- Organization repositories you have access to
+
+## Syncing Repositories
+
+After adding the connection:
+
+1. Click **Sync** on the connection card
+2. Code Search discovers your repositories
+3. Repositories are queued for indexing
+
+### Filtering Repositories
+
+You can exclude archived repositories:
+
+```yaml
+codehosts:
+  gitea:
+    type: gitea
+    url: "https://gitea.yourcompany.com"
+    token: "$CS_GITEA_TOKEN"
+    exclude_archived: true  # Skip archived repos during sync
+```
+
+## Troubleshooting
+
+### Token not accepted
+
+```
+401 Unauthorized
+```
+
+- Verify the token is correct
+- Check token hasn't expired
+- Ensure required scopes are selected
+
+### Organization repos not found
+
+- Add `read:organization` scope to the token
+- Verify organization membership
+
+### Connection timeout
+
+```
+connection timeout
+```
+
+- Verify the URL is correct
+- Check network connectivity
+- Ensure Gitea is running
+
+## Next Steps
+
+- [Bitbucket](/code-hosts/bitbucket/) - Connect to Bitbucket
+- [Configuration](/configuration/overview/) - Connection settings

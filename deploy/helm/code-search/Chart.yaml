@@ -1,0 +1,17 @@
+apiVersion: v2
+name: code-search
+description: A Helm chart for Code Search - fast code search across repositories
+type: application
+version: "0.1.0"
+appVersion: "latest"
+keywords:
+  - code-search
+  - zoekt
+  - search
+  - developer-tools
+maintainers:
+  - name: André Nogueira
+    url: https://github.com/aanogueira
+sources:
+  - https://github.com/aanogueira/code-search
+icon: https://raw.githubusercontent.com/aanogueira/code-search/refs/heads/main/deploy/helm/code-search/icon.svg

@@ -1,0 +1,571 @@
+---
+title: SCIP API
+description: Precise code intelligence with SCIP (Source Code Intelligence Protocol)
+---
+
+import { Tabs, TabItem, Aside, Card, CardGrid } from "@astrojs/starlight/components";
+
+The SCIP API provides precise code intelligence features like go-to-definition and find-references, powered by language-specific indexers.
+
+<Aside type="note">
+SCIP indexes can be built automatically by the indexer worker (see [Automatic Indexing](/configuration/indexer/#scip-auto-indexing)) or on-demand via the API endpoints below. For automatic indexing, use the SCIP-enabled indexer image with `CS_SCIP_ENABLED=true`.
+</Aside>
+
+## Overview
+
+SCIP (Source Code Intelligence Protocol) enables precise code navigation by building a semantic index of your code. Unlike text-based search, SCIP understands the structure of your code and can:
+
+- Navigate to the exact definition of a symbol
+- Find all references to a function, class, or variable
+- Provide accurate results even for symbols with common names
+
+<CardGrid>
+  <Card title="Go to Definition" icon="right-arrow">
+    Jump to where a symbol is defined
+  </Card>
+  <Card title="Find References" icon="magnifier">
+    Find all usages of a symbol
+  </Card>
+  <Card title="Multi-language" icon="document">
+    Supports Go, TypeScript, Java, Rust, Python, PHP
+  </Card>
+  <Card title="Upload Indexes" icon="up-caret">
+    Build indexes in CI and upload them
+  </Card>
+</CardGrid>
+
+## Installing SCIP Indexers
+
+SCIP indexers must be installed on the machine running the indexer worker (for automatic indexing) or the API server (for on-demand indexing via the API). For Docker deployments, use `indexer-scip.Dockerfile` which includes Go, TypeScript, and Python indexers pre-installed.
+
+### Go
+
+```bash
+go install github.com/sourcegraph/scip-go@latest
+```
+
+Make sure `$(go env GOPATH)/bin` is in your `PATH`.
+
+### TypeScript / JavaScript
+
+```bash
+npm install -g @sourcegraph/scip-typescript
+```
+
+Or use `npx` (the indexer will use this automatically):
+
+```bash
+npx -y @sourcegraph/scip-typescript index
+```
+
+### Java
+
+```bash
+# Using Coursier
+cs install scip-java
+```
+
+### Rust
+
+Uses `rust-analyzer`. Install via your package manager or:
+
+```bash
+rustup component add rust-analyzer
+```
+
+### Python
+
+```bash
+pip install scip-python
+```
+
+### PHP
+
+PHP uses per-project installation via Composer:
+
+```bash
+composer require --dev davidrjenni/scip-php
+```
+
+## Check Available Indexers
+
+```http
+GET /api/v1/scip/indexers
+```
+
+Returns which indexers are available on the system.
+
+### Request
+
+```bash
+curl "http://localhost:8080/api/v1/scip/indexers"
+```
+
+### Response
+
+```json
+{
+  "available": {
+    "go": true,
+    "typescript": true,
+    "javascript": true,
+    "java": false,
+    "rust": false,
+    "python": false,
+    "php": false
+  },
+  "supported": ["go", "typescript", "javascript", "java", "rust", "python", "php"],
+  "instructions": {
+    "go": "go install github.com/sourcegraph/scip-go@latest",
+    "typescript": "npm install -g @sourcegraph/scip-typescript",
+    "java": "cs install scip-java",
+    "rust": "rustup component add rust-analyzer",
+    "python": "pip install scip-python",
+    "php": "composer require --dev davidrjenni/scip-php"
+  }
+}
+```
+
+## Get Index Status
+
+Check if a repository has a SCIP index.
+
+```http
+GET /api/v1/scip/repos/{id}/status
+```
+
+### Request
+
+```bash
+curl "http://localhost:8080/api/v1/scip/repos/1/status"
+```
+
+### Response
+
+```json
+{
+  "has_index": true,
+  "available_indexers": {
+    "go": true,
+    "typescript": true
+  },
+  "stats": {
+    "total_files": 156,
+    "total_symbols": 2340,
+    "total_occurrences": 15678,
+    "indexed_at": "2024-01-15T10:30:00Z"
+  }
+}
+```
+
+## Index Repository
+
+Run SCIP indexing on a repository.
+
+```http
+POST /api/v1/scip/repos/{id}/index
+```
+
+<Aside type="caution">
+This requires the appropriate SCIP indexer to be installed on the server. For Docker deployments, consider using the [Upload Index](#upload-index) endpoint instead.
+</Aside>
+
+### Request Body
+
+| Parameter  | Type   | Required | Description                              |
+| ---------- | ------ | -------- | ---------------------------------------- |
+| `language` | string | No       | Language to index (auto-detected if not specified) |
+
+### Request
+
+```bash
+curl -X POST "http://localhost:8080/api/v1/scip/repos/1/index" \
+  -H "Content-Type: application/json" \
+  -d '{"language": "go"}'
+```
+
+### Response
+
+```json
+{
+  "success": true,
+  "language": "go",
+  "duration": "2.5s",
+  "files": 156,
+  "symbols": 2340,
+  "occurrences": 15678,
+  "output": "Indexing completed successfully"
+}
+```
+
+### Error Response
+
+```json
+{
+  "success": false,
+  "language": "go",
+  "error": "scip-go not found in PATH. Install with: go install github.com/sourcegraph/scip-go@latest",
+  "output": ""
+}
+```
+
+## Upload Index
+
+Upload a pre-built SCIP index file. This is useful for:
+
+- Docker deployments where indexers aren't installed
+- Building indexes in CI pipelines
+- Large repositories where indexing takes too long
+
+```http
+POST /api/v1/scip/repos/{id}/upload
+Content-Type: application/octet-stream
+```
+
+### Build and Upload Workflow
+
+<Tabs>
+  <TabItem label="Go">
+```bash
+# Clone the repository
+git clone https://github.com/myorg/myrepo
+cd myrepo
+
+# Build the SCIP index
+scip-go --output index.scip
+
+# Upload to Code Search (replace {id} with your repo ID)
+curl -X POST "http://localhost:8080/api/v1/scip/repos/{id}/upload" \
+  --data-binary @index.scip
+```
+  </TabItem>
+  <TabItem label="TypeScript">
+```bash
+# Clone the repository
+git clone https://github.com/myorg/myrepo
+cd myrepo
+
+# Install dependencies
+npm install
+
+# Build the SCIP index
+npx @sourcegraph/scip-typescript index --output index.scip
+
+# Upload to Code Search
+curl -X POST "http://localhost:8080/api/v1/scip/repos/{id}/upload" \
+  --data-binary @index.scip
+```
+  </TabItem>
+  <TabItem label="CI Pipeline">
+```yaml
+# .gitlab-ci.yml example
+scip-index:
+  stage: index
+  image: golang:1.21
+  script:
+    - go install github.com/sourcegraph/scip-go@latest
+    - scip-go --output index.scip
+    - |
+      REPO_ID=$(curl -s "$CODE_SEARCH_URL/api/v1/repos/lookup?name=$CI_PROJECT_PATH" | jq -r '.id')
+      curl -X POST "$CODE_SEARCH_URL/api/v1/scip/repos/$REPO_ID/upload" \
+        --data-binary @index.scip
+  only:
+    - main
+```
+  </TabItem>
+</Tabs>
+
+### Response
+
+```json
+{
+  "success": true,
+  "message": "SCIP index uploaded successfully",
+  "stats": {
+    "total_files": 156,
+    "total_symbols": 2340,
+    "total_occurrences": 15678
+  }
+}
+```
+
+## Go to Definition
+
+Find the definition of a symbol at a given position.
+
+```http
+POST /api/v1/scip/repos/{id}/definition
+```
+
+### Request Body
+
+| Parameter  | Type    | Required | Description                        |
+| ---------- | ------- | -------- | ---------------------------------- |
+| `filePath` | string  | Yes      | Path to the file in the repository |
+| `line`     | integer | Yes      | Line number (1-indexed)            |
+| `column`   | integer | Yes      | Column number (0-indexed)          |
+
+### Request
+
+```bash
+curl -X POST "http://localhost:8080/api/v1/scip/repos/1/definition" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filePath": "internal/search/search.go",
+    "line": 42,
+    "column": 15
+  }'
+```
+
+### Response
+
+```json
+{
+  "found": true,
+  "symbol": "scip-go gomod github.com/myorg/api v1.0.0 internal/search/Search#Query().",
+  "definition": {
+    "symbol": "scip-go gomod github.com/myorg/api v1.0.0 internal/search/Search#Query().",
+    "filePath": "internal/search/search.go",
+    "startLine": 15,
+    "startCol": 0,
+    "endLine": 15,
+    "endCol": 5,
+    "role": 1,
+    "context": "func (s *Search) Query(ctx context.Context, q string) ([]Result, error) {"
+  },
+  "info": {
+    "symbol": "scip-go gomod github.com/myorg/api v1.0.0 internal/search/Search#Query().",
+    "documentation": "Query executes a search query and returns results.",
+    "kind": 6,
+    "displayName": "Query"
+  },
+  "external": false
+}
+```
+
+### Response Fields
+
+| Field        | Type    | Description                                    |
+| ------------ | ------- | ---------------------------------------------- |
+| `found`      | boolean | Whether a definition was found                 |
+| `symbol`     | string  | The SCIP symbol identifier                     |
+| `definition` | object  | Location of the definition                     |
+| `info`       | object  | Symbol metadata (documentation, kind, etc.)    |
+| `external`   | boolean | True if definition is in an external package   |
+
+## Find References
+
+Find all references to a symbol at a given position.
+
+```http
+POST /api/v1/scip/repos/{id}/references
+```
+
+### Request Body
+
+| Parameter  | Type    | Required | Description                        |
+| ---------- | ------- | -------- | ---------------------------------- |
+| `filePath` | string  | Yes      | Path to the file in the repository |
+| `line`     | integer | Yes      | Line number (1-indexed)            |
+| `column`   | integer | Yes      | Column number (0-indexed)          |
+| `limit`    | integer | No       | Maximum references to return (default: 100) |
+
+### Request
+
+```bash
+curl -X POST "http://localhost:8080/api/v1/scip/repos/1/references" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filePath": "internal/search/search.go",
+    "line": 15,
+    "column": 10,
+    "limit": 50
+  }'
+```
+
+### Response
+
+```json
+{
+  "found": true,
+  "symbol": "scip-go gomod github.com/myorg/api v1.0.0 internal/search/Search#Query().",
+  "definition": {
+    "filePath": "internal/search/search.go",
+    "startLine": 15,
+    "startCol": 0,
+    "endLine": 15,
+    "endCol": 5,
+    "role": 1,
+    "context": "func (s *Search) Query(ctx context.Context, q string) ([]Result, error) {"
+  },
+  "references": [
+    {
+      "filePath": "cmd/api/handlers/search.go",
+      "startLine": 42,
+      "startCol": 15,
+      "endLine": 42,
+      "endCol": 20,
+      "role": 8,
+      "context": "    results, err := s.search.Query(ctx, req.Query)"
+    },
+    {
+      "filePath": "internal/search/search_test.go",
+      "startLine": 28,
+      "startCol": 18,
+      "endLine": 28,
+      "endCol": 23,
+      "role": 8,
+      "context": "    results, err := search.Query(ctx, \"test\")"
+    }
+  ],
+  "totalCount": 2
+}
+```
+
+## Search Symbols
+
+Search for symbols by name in a repository's SCIP index.
+
+```http
+POST /api/v1/scip/repos/{id}/symbols/search
+```
+
+### Request Body
+
+| Parameter | Type    | Required | Description                    |
+| --------- | ------- | -------- | ------------------------------ |
+| `query`   | string  | Yes      | Symbol name pattern to search  |
+| `limit`   | integer | No       | Maximum results (default: 100) |
+
+### Request
+
+```bash
+curl -X POST "http://localhost:8080/api/v1/scip/repos/1/symbols/search" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "Query", "limit": 10}'
+```
+
+### Response
+
+```json
+{
+  "results": [
+    {
+      "symbol": "scip-go gomod github.com/myorg/api v1.0.0 internal/search/Search#Query().",
+      "name": "Query",
+      "kind": "function",
+      "filePath": "internal/search/search.go",
+      "line": 15
+    }
+  ],
+  "count": 1
+}
+```
+
+## List Indexed Files
+
+List all files in a repository's SCIP index.
+
+```http
+GET /api/v1/scip/repos/{id}/files
+```
+
+### Query Parameters
+
+| Parameter | Type    | Required | Description                    |
+| --------- | ------- | -------- | ------------------------------ |
+| `limit`   | integer | No       | Maximum files (default: 100)   |
+
+### Request
+
+```bash
+curl "http://localhost:8080/api/v1/scip/repos/1/files?limit=10"
+```
+
+### Response
+
+```json
+{
+  "files": [
+    "cmd/api/main.go",
+    "internal/search/search.go",
+    "internal/search/search_test.go"
+  ],
+  "count": 3
+}
+```
+
+## Clear Index
+
+Remove the SCIP index for a repository.
+
+```http
+DELETE /api/v1/scip/repos/{id}/index
+```
+
+### Request
+
+```bash
+curl -X DELETE "http://localhost:8080/api/v1/scip/repos/1/index"
+```
+
+### Response
+
+```json
+{
+  "success": true,
+  "message": "SCIP index cleared"
+}
+```
+
+## Docker Deployment
+
+The default Docker images don't include SCIP indexers. You have three options:
+
+### Option 1: Automatic Indexing (Recommended)
+
+Use the SCIP-enabled indexer image for automatic indexing after Zoekt search indexing:
+
+```yaml
+# docker-compose.yml
+indexer:
+  build:
+    dockerfile: docker/indexer-scip.Dockerfile
+  environment:
+    CS_SCIP_ENABLED: "true"
+```
+
+The `indexer-scip.Dockerfile` includes indexers for Go, TypeScript/JavaScript, and Python. Repos are automatically indexed after Zoekt indexing completes — no manual API calls needed.
+
+See [Indexer Configuration](/configuration/indexer/#scip-auto-indexing) for all SCIP configuration options.
+
+### Option 2: Build Indexes Externally
+
+Build SCIP indexes in your CI pipeline or locally, then upload them:
+
+```bash
+# Build locally
+scip-go --output index.scip
+
+# Upload to the server
+curl -X POST "http://code-search:8080/api/v1/scip/repos/{id}/upload" \
+  --data-binary @index.scip
+```
+
+### Option 3: Extend the Docker Image
+
+Create a custom Dockerfile that includes additional indexers:
+
+```dockerfile
+FROM code-search-indexer:latest
+
+# Example: add scip-java
+USER root
+RUN apk add --no-cache openjdk17
+COPY --from=scip-java-builder /bin/scip-java /app/scip-java
+USER 1000:1000
+```
+
+<Aside type="tip">
+For most deployments, Option 1 (automatic indexing) is recommended. It requires the SCIP-enabled indexer image but provides fully hands-off code intelligence. Option 2 (external indexing) is useful for build-dependent languages like Java or Rust that need project-specific build toolchains.
+</Aside>

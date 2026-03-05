@@ -1,0 +1,166 @@
+version: "2"
+
+run:
+  issues-exit-code: 1
+  tests: true
+  timeout: 5m
+  modules-download-mode: readonly # Add: faster CI
+
+output:
+  formats:
+    text:
+      path: stdout
+      colors: true
+
+linters:
+  default: all
+  disable:
+    # Deprecated
+    - wsl
+
+    # Too noisy / impractical
+    - exhaustruct
+    - varnamelen
+    - funlen
+    - testpackage
+    - gochecknoglobals
+    - err113
+    - paralleltest # Too noisy for existing tests
+    - nestif # Nested if complexity - address gradually
+    - mnd # Magic number detector - too noisy
+    - lll # Line length - too strict
+    - goconst # Repeated strings - too noisy
+    - funcorder # Function order - style preference
+    - godoclint # Doc comments - address gradually
+    - nonamedreturns # Named returns are fine
+    - rowserrcheck # False positive on wrapped rows
+    - spancheck # False positive on span helper functions
+    - dupl # Duplicate code detection - too aggressive
+    - usetesting # t.Setenv instead of os.Setenv - low priority
+    - prealloc # Slice preallocation - micro-optimization
+    - maintidx # Maintainability index - address gradually
+    - forbidigo # Forbid patterns - needs config
+    - gosmopolitan # Internationalization - not needed
+    - inamedparam # Interface param names - style preference
+    - recvcheck # Receiver name check - style preference
+    - noinlineerr # Inline errors - style preference
+    - exhaustive # Exhaustive switches - too noisy
+    - nilnil # nil,nil returns - sometimes valid
+    - nilerr # nil error returns - sometimes valid
+    - errchkjson # JSON error checks - too noisy
+    - contextcheck # Context propagation - too strict
+
+    # Style preferences
+    - nlreturn
+    - wrapcheck
+    - ireturn
+    - depguard
+    - tagliatelle
+    - godox # Consider: allows TODO/FIXME
+
+  settings:
+    cyclop:
+      max-complexity: 30 # Default is 10, raised to reduce noise
+
+    gocognit:
+      min-complexity: 80 # Default is 30, raised to only catch worst offenders
+
+    errcheck:
+      check-blank: false
+      check-type-assertions: false
+      exclude-functions:
+        # Common Close operations
+        - (io.Closer).Close
+        - (*os.File).Close
+        - (*database/sql.DB).Close
+        - (*database/sql.Rows).Close
+        - (*database/sql.Tx).Rollback
+        - (*database/sql.Stmt).Close
+        # Print functions
+        - (net/http.ResponseWriter).Write
+        - fmt.Fprintf
+        - fmt.Printf
+        - fmt.Println
+        - (*text/tabwriter.Writer).Flush
+        # JSON encode/decode
+        - (*encoding/json.Encoder).Encode
+        - (*encoding/json.Decoder).Decode
+        # File operations
+        - os.RemoveAll
+        - os.Remove
+        - filepath.WalkDir
+
+    gocritic:
+      disabled-checks:
+        - unlambda
+        - ifElseChain # Style preference
+        - assignOp # Style preference
+        - exitAfterDefer # False positive in main functions
+        - deprecatedComment # Style preference
+
+    misspell:
+      locale: US
+      ignore-rules:
+        - noteable
+
+    revive:
+      rules:
+        - name: exported
+          disabled: true
+        - name: unexported-return
+          disabled: true
+
+    gosec:
+      excludes:
+        - G304 # File path provided as taint input
+        - G204 # Subprocess launched with variable
+        - G602 # Slice bounds - too many false positives
+        - G109 # Int overflow in atoi - rarely an issue
+        - G115 # Int overflow conversion - rarely an issue for these sizes
+        - G104 # Unhandled errors - already covered by errcheck
+        - G301 # Dir perms 0755 is fine for data dirs
+        - G306 # File perms 0644 is fine for config
+        - G202 # SQL concatenation - these are safe table names
+
+    govet:
+      enable-all: true
+      disable:
+        - fieldalignment
+        - shadow # Too many false positives
+        - unusedwrite # Too noisy in tests
+
+    lll:
+      line-length: 80
+
+  exclusions:
+    generated: lax
+    rules:
+      - path: _test\.go
+        linters:
+          - goconst
+          - mnd
+          - dupl
+          - errcheck
+          - gosec
+          - forcetypeassert
+          - gocritic
+          - unparam
+
+      - path: main\.go|cmd/
+        linters:
+          - gochecknoinits
+          - errcheck
+
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - localmodule # Add: groups your module's imports
+  exclusions:
+    generated: lax

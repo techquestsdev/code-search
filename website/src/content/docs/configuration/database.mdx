@@ -1,0 +1,360 @@
+---
+title: Database Configuration
+description: Configure PostgreSQL or MySQL database connection
+---
+
+import { Tabs, TabItem, Aside } from "@astrojs/starlight/components";
+
+The `database` section configures the database connection. Code Search supports both PostgreSQL and MySQL.
+
+## Configuration
+
+<Tabs>
+  <TabItem label="PostgreSQL">
+    ```yaml
+    database:
+      driver: "postgres"  # Optional - auto-detected from URL
+      url: "postgres://user:password@localhost:5432/codesearch?sslmode=disable"
+      max_open_conns: 25
+      max_idle_conns: 5
+      conn_max_lifetime: "5m"
+    ```
+  </TabItem>
+  <TabItem label="MySQL">
+    ```yaml
+    database:
+      driver: "mysql"  # Optional - auto-detected from URL
+      url: "mysql://user:password@localhost:3306/codesearch"
+      max_open_conns: 25
+      max_idle_conns: 5
+      conn_max_lifetime: "5m"
+    ```
+  </TabItem>
+</Tabs>
+
+## Options
+
+### `driver`
+
+Database driver type. If not specified, it's auto-detected from the URL.
+
+| Property    | Value                |
+| ----------- | -------------------- |
+| Type        | `string`             |
+| Required    | No (auto-detected)   |
+| Values      | `postgres`, `mysql`  |
+| Environment | `CS_DATABASE_DRIVER` |
+
+### `url`
+
+Database connection string.
+
+| Property    | Value             |
+| ----------- | ----------------- |
+| Type        | `string`          |
+| Required    | **Yes**           |
+| Environment | `CS_DATABASE_URL` |
+
+<Tabs>
+  <TabItem label="PostgreSQL">
+    **Format:**
+    ```
+    postgres://[user[:password]@]host[:port]/database[?param=value]
+    ```
+
+    **Examples:**
+    ```yaml
+    # Local development
+    url: "postgres://codesearch:secret@localhost:5432/codesearch?sslmode=disable"
+
+    # Docker Compose
+    url: "postgres://codesearch:secret@postgres:5432/codesearch?sslmode=disable"
+
+    # Cloud (with SSL)
+    url: "postgres://user:pass@db.example.com:5432/codesearch?sslmode=require"
+
+    # With connection options
+    url: "postgres://user:pass@host:5432/db?sslmode=verify-full&sslrootcert=/path/to/ca.pem"
+    ```
+  </TabItem>
+  <TabItem label="MySQL">
+    **URL Format:**
+    ```
+    mysql://[user[:password]@]host[:port]/database[?param=value]
+    ```
+
+    **DSN Format (also supported):**
+    ```
+    user:password@tcp(host:port)/database?parseTime=true
+    ```
+
+    **Examples:**
+    ```yaml
+    # URL format (recommended)
+    url: "mysql://codesearch:secret@localhost:3306/codesearch"
+
+    # With options
+    url: "mysql://codesearch:secret@localhost:3306/codesearch?charset=utf8mb4&parseTime=true"
+
+    # DSN format
+    url: "codesearch:secret@tcp(localhost:3306)/codesearch?parseTime=true"
+
+    # Docker Compose
+    url: "mysql://codesearch:secret@mysql:3306/codesearch"
+
+    # Cloud (AWS RDS, etc.)
+    url: "mysql://user:pass@mydb.123456789.us-east-1.rds.amazonaws.com:3306/codesearch?tls=true"
+    ```
+
+    <Aside type="tip">
+      Always include `parseTime=true` for proper timestamp handling in MySQL.
+    </Aside>
+  </TabItem>
+</Tabs>
+
+<Aside type="tip">
+  Always use environment variables for the database URL in production to avoid
+  exposing credentials in configuration files.
+</Aside>
+
+### `max_open_conns`
+
+Maximum number of open connections to the database.
+
+| Property    | Value                        |
+| ----------- | ---------------------------- |
+| Type        | `integer`                    |
+| Default     | `25`                         |
+| Environment | `CS_DATABASE_MAX_OPEN_CONNS` |
+
+Set this based on your PostgreSQL `max_connections` setting and number of Code Search instances.
+
+### `max_idle_conns`
+
+Maximum number of idle connections to keep in the pool.
+
+| Property    | Value                        |
+| ----------- | ---------------------------- |
+| Type        | `integer`                    |
+| Default     | `5`                          |
+| Environment | `CS_DATABASE_MAX_IDLE_CONNS` |
+
+### `conn_max_lifetime`
+
+Maximum lifetime of a connection before it's closed and recreated.
+
+| Property    | Value                           |
+| ----------- | ------------------------------- |
+| Type        | `duration`                      |
+| Default     | `"5m"`                          |
+| Environment | `CS_DATABASE_CONN_MAX_LIFETIME` |
+
+## SSL/TLS Configuration
+
+<Tabs>
+  <TabItem label="PostgreSQL">
+    PostgreSQL supports several SSL modes:
+
+    | Mode          | Description                                    |
+    | ------------- | ---------------------------------------------- |
+    | `disable`     | No SSL                                         |
+    | `allow`       | Use SSL if available                           |
+    | `prefer`      | Prefer SSL, but connect without if unavailable |
+    | `require`     | Require SSL connection                         |
+    | `verify-ca`   | Require SSL and verify server certificate      |
+    | `verify-full` | Require SSL, verify certificate and hostname   |
+
+    **Production recommendation:** Use `require` or `verify-full`.
+  </TabItem>
+  <TabItem label="MySQL">
+    MySQL TLS options:
+
+    | Parameter      | Description                              |
+    | -------------- | ---------------------------------------- |
+    | `tls=true`     | Enable TLS                               |
+    | `tls=skip-verify` | TLS without certificate verification  |
+    | `tls=preferred`| Use TLS if available                     |
+
+    **Example:**
+    ```yaml
+    url: "mysql://user:pass@host:3306/db?tls=true"
+    ```
+
+    **Production recommendation:** Use `tls=true` with proper certificates.
+  </TabItem>
+</Tabs>
+
+## Environment Variables
+
+```bash
+# Driver (optional - auto-detected from URL)
+CS_DATABASE_DRIVER="postgres"  # or "mysql"
+
+# Connection string
+CS_DATABASE_URL="postgres://user:pass@host:5432/codesearch?sslmode=require"
+# or for MySQL:
+# CS_DATABASE_URL="mysql://user:pass@host:3306/codesearch?parseTime=true"
+
+# Connection pool settings
+CS_DATABASE_MAX_OPEN_CONNS="25"
+CS_DATABASE_MAX_IDLE_CONNS="5"
+CS_DATABASE_CONN_MAX_LIFETIME="5m"
+```
+
+## Database Requirements
+
+<Aside type="note">
+  **Enterprise edition requires PostgreSQL.** MySQL is only supported for the Community (free) edition. Enterprise features (SSO, RBAC, audit logging) depend on PostgreSQL-specific capabilities such as JSONB, GIN indexes, and table partitioning.
+</Aside>
+
+<Tabs>
+  <TabItem label="PostgreSQL">
+    Code Search requires **PostgreSQL 14** or later.
+
+    ### Required Extensions
+
+    No additional extensions are required. All functionality uses standard PostgreSQL features.
+
+    ### Recommended Settings
+
+    For production PostgreSQL servers:
+
+    ```ini
+    # postgresql.conf
+    max_connections = 100           # Adjust based on number of Code Search instances
+    shared_buffers = 256MB          # 25% of available RAM (up to 8GB)
+    effective_cache_size = 768MB    # 75% of available RAM
+    work_mem = 64MB
+    maintenance_work_mem = 128MB
+    ```
+  </TabItem>
+  <TabItem label="MySQL">
+    Code Search requires **MySQL 8.0** or later (or MariaDB 10.5+).
+
+    ### Required Settings
+
+    Ensure these settings in your MySQL configuration:
+
+    ```ini
+    # my.cnf
+    [mysqld]
+    character-set-server = utf8mb4
+    collation-server = utf8mb4_unicode_ci
+    max_connections = 100
+    innodb_buffer_pool_size = 256M
+    ```
+
+    ### Character Set
+
+    Code Search uses `utf8mb4` for full Unicode support. Ensure your database is created with:
+
+    ```sql
+    CREATE DATABASE codesearch
+      CHARACTER SET utf8mb4
+      COLLATE utf8mb4_unicode_ci;
+    ```
+  </TabItem>
+</Tabs>
+
+## Connection Pooling
+
+For high-traffic deployments, consider using a connection pooler:
+
+<Tabs>
+  <TabItem label="PostgreSQL (PgBouncer)">
+    ```yaml
+    database:
+      # Connect to PgBouncer instead of PostgreSQL directly
+      url: "postgres://user:pass@pgbouncer:6432/codesearch"
+      max_open_conns: 100  # Can be higher with connection pooling
+    ```
+  </TabItem>
+  <TabItem label="MySQL (ProxySQL)">
+    ```yaml
+    database:
+      # Connect to ProxySQL instead of MySQL directly
+      url: "mysql://user:pass@proxysql:6033/codesearch"
+      max_open_conns: 100  # Can be higher with connection pooling
+    ```
+  </TabItem>
+</Tabs>
+
+## Database Schema
+
+Code Search manages its own database schema using migrations. Migrations run automatically on startup.
+
+Tables created:
+
+- `repos` - Repository metadata
+- `connections` - Code host connections
+- `jobs` - Background job queue
+- `schema_migrations` - Migration tracking
+
+## Troubleshooting
+
+### Connection refused
+
+```
+failed to connect to database: connection refused
+```
+
+- Verify the database server is running
+- Check host and port are correct
+- Ensure the database is listening on the correct interface
+
+### Authentication failed
+
+<Tabs>
+  <TabItem label="PostgreSQL">
+    ```
+    password authentication failed for user
+    ```
+
+    - Verify username and password
+    - Check PostgreSQL `pg_hba.conf` allows connections from Code Search
+  </TabItem>
+  <TabItem label="MySQL">
+    ```
+    Access denied for user
+    ```
+
+    - Verify username and password
+    - Check user has correct privileges:
+      ```sql
+      GRANT ALL PRIVILEGES ON codesearch.* TO 'user'@'%';
+      FLUSH PRIVILEGES;
+      ```
+  </TabItem>
+</Tabs>
+
+### SSL required
+
+<Tabs>
+  <TabItem label="PostgreSQL">
+    ```
+    SSL is required
+    ```
+
+    Add `sslmode=require` or `sslmode=disable` to your connection string.
+  </TabItem>
+  <TabItem label="MySQL">
+    ```
+    TLS required
+    ```
+
+    Add `tls=true` or `tls=skip-verify` to your connection string.
+  </TabItem>
+</Tabs>
+
+### Driver auto-detection
+
+Code Search automatically detects the database driver from the URL:
+
+| URL Pattern | Detected Driver |
+|-------------|----------------|
+| `postgres://...` | PostgreSQL |
+| `postgresql://...` | PostgreSQL |
+| `mysql://...` | MySQL |
+| `...@tcp(...)...` | MySQL (DSN format) |
+
+If auto-detection fails, explicitly set `driver: postgres` or `driver: mysql`.

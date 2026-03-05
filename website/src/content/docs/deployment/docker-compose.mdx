@@ -1,0 +1,413 @@
+---
+title: Docker Compose Deployment
+description: Deploy Code Search with Docker Compose for production use
+---
+
+import { Aside, FileTree, Steps } from "@astrojs/starlight/components";
+
+Docker Compose is the recommended way to deploy Code Search for most production environments. It provides a complete stack with all services pre-configured.
+
+## Quick Start
+
+<Steps>
+
+1. **Download the configuration files**
+
+   ```bash
+   # Download docker-compose.yml
+   curl -O https://raw.githubusercontent.com/techquestsdev/code-search/main/docker-compose.yml
+
+   # Download example config
+   curl -O https://raw.githubusercontent.com/techquestsdev/code-search/main/config.example.yaml
+   mv config.example.yaml config.yaml
+   ```
+
+2. **Configure your deployment**
+
+   Edit `config.yaml` with your settings, or use environment variables.
+
+3. **Start all services**
+
+   ```bash
+   docker compose up -d
+   ```
+
+4. **Verify the deployment**
+
+   ```bash
+   docker compose ps
+   curl http://localhost:8080/ready
+   ```
+
+</Steps>
+
+## Docker Compose File
+
+Here's the full `docker-compose.yml`:
+
+```yaml
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: code-search-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: codesearch
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-codesearch}
+      POSTGRES_DB: codesearch
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U codesearch"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Redis Queue
+  redis:
+    image: redis:7-alpine
+    container_name: code-search-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Zoekt Search Server
+  zoekt:
+    image: ghcr.io/techquestsdev/code-search-zoekt:latest
+    container_name: code-search-zoekt
+    restart: unless-stopped
+    ports:
+      - "6070:6070"
+    volumes:
+      - ./data/index:/data/index
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:6070/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # API Server
+  api:
+    image: ghcr.io/techquestsdev/code-search-api:latest
+    container_name: code-search-api
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      CS_DATABASE_URL: postgres://codesearch:${POSTGRES_PASSWORD:-codesearch}@postgres:5432/codesearch?sslmode=disable
+      CS_REDIS_ADDR: redis:6379
+      CS_ZOEKT_URL: http://zoekt:6070
+      CS_REPOS_BASE_PATH: /data/repos
+      # Uncomment and set your code host tokens
+      # CS_GITHUB_TOKEN: ${CS_GITHUB_TOKEN:-}
+      # CS_GITLAB_TOKEN: ${CS_GITLAB_TOKEN:-}
+    volumes:
+      - ./data/repos:/data/repos
+      - ./config.yaml:/app/config.yaml:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      zoekt:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Indexer Worker
+  indexer:
+    image: ghcr.io/techquestsdev/code-search-indexer:latest
+    container_name: code-search-indexer
+    restart: unless-stopped
+    environment:
+      CS_DATABASE_URL: postgres://codesearch:${POSTGRES_PASSWORD:-codesearch}@postgres:5432/codesearch?sslmode=disable
+      CS_REDIS_ADDR: redis:6379
+      CS_ZOEKT_URL: http://zoekt:6070  # Required for replace jobs
+      CS_INDEXER_ZOEKT_BIN: /app/zoekt-git-index
+      CS_INDEXER_INDEX_PATH: /data/index
+      CS_INDEXER_REPOS_PATH: /data/repos
+    volumes:
+      - ./data/repos:/data/repos
+      - ./data/index:/data/index
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      zoekt:
+        condition: service_healthy
+
+  # Web UI
+  web:
+    image: ghcr.io/techquestsdev/code-search-web:latest
+    container_name: code-search-web
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      API_URL: http://api:8080
+    depends_on:
+      - api
+
+volumes:
+  postgres-data:
+  redis-data:
+```
+
+## Service Architecture
+
+<FileTree>
+  - docker-compose.yml
+  - config.yaml
+  - data/
+    - repos/ Cloned repositories
+    - index/ Search indexes
+  - volumes/
+    - postgres-data/ PostgreSQL data
+    - redis-data/ Redis persistence
+</FileTree>
+
+### Services
+
+| Service    | Port | Description               |
+| ---------- | ---- | ------------------------- |
+| `postgres` | 5432 | PostgreSQL database       |
+| `redis`    | 6379 | Job queue and cache       |
+| `zoekt`    | 6070 | Search index server       |
+| `api`      | 8080 | REST API server           |
+| `indexer`  | -    | Background indexer worker |
+| `web`      | 3000 | Next.js web interface     |
+
+## Configuration
+
+### Environment Variables
+
+Create a `.env` file for sensitive configuration:
+
+```bash
+# .env
+POSTGRES_PASSWORD=your-secure-password
+```
+
+### Config File
+
+For detailed configuration, use `config.yaml`:
+
+```yaml
+server:
+  addr: ":8080"
+  read_timeout: 15s
+  write_timeout: 60s
+
+scheduler:
+  enabled: true
+  poll_interval: 6h
+  check_interval: 5m
+  stale_threshold: 24h
+  max_concurrent_checks: 5
+
+indexer:
+  concurrency: 2
+  reindex_interval: 1h
+
+# Readonly mode (set to true to manage connections only via config)
+connections_readonly: false
+
+# Readonly mode (set to true to manage repos only via code host sync)
+repos_readonly: false
+
+# Code host configuration
+codehosts:
+  github:
+    type: github
+    token: "$CS_GITHUB_TOKEN"
+    exclude_archived: true
+```
+
+See [Configuration Reference](/configuration/overview/) for all options.
+
+## Operations
+
+### Starting and Stopping
+
+```bash
+# Start all services
+docker compose up -d
+
+# Stop all services
+docker compose down
+
+# Stop and remove volumes (WARNING: deletes data)
+docker compose down -v
+```
+
+### Viewing Logs
+
+```bash
+# All services
+docker compose logs -f
+
+# Specific service
+docker compose logs -f api
+docker compose logs -f indexer
+
+# Last 100 lines
+docker compose logs --tail 100 api
+```
+
+### Scaling Indexers
+
+Run multiple indexer workers for faster indexing:
+
+```bash
+docker compose up -d --scale indexer=3
+```
+
+### Updating
+
+```bash
+# Pull latest images
+docker compose pull
+
+# Recreate containers with new images
+docker compose up -d
+```
+
+## Production Considerations
+
+### Reverse Proxy
+
+Use a reverse proxy like Nginx or Traefik for SSL termination:
+
+```yaml
+# Add to docker-compose.yml
+services:
+  traefik:
+    image: traefik:v2.10
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik:/etc/traefik
+
+  web:
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.web.rule=Host(`code-search.example.com`)"
+      - "traefik.http.routers.web.tls.certresolver=letsencrypt"
+```
+
+### Resource Limits
+
+Add resource limits for predictable performance:
+
+```yaml
+services:
+  api:
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 2G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+```
+
+### Backups
+
+Backup PostgreSQL data regularly:
+
+```bash
+# Create backup
+docker compose exec postgres pg_dump -U codesearch codesearch > backup.sql
+
+# Restore backup
+docker compose exec -T postgres psql -U codesearch codesearch < backup.sql
+```
+
+### Monitoring
+
+Add Prometheus metrics endpoint:
+
+```yaml
+services:
+  api:
+    environment:
+      CS_METRICS_ENABLED: "true"
+    ports:
+      - "9090:9090" # Prometheus metrics
+```
+
+## Enabling SCIP Code Intelligence
+
+To enable automatic SCIP indexing (go-to-definition, find-references), use the SCIP-enabled indexer image:
+
+```yaml
+services:
+  indexer:
+    image: ghcr.io/techquestsdev/code-search-indexer-scip:latest
+    # Or if building locally:
+    # build:
+    #   context: .
+    #   dockerfile: docker/indexer-scip.Dockerfile
+    environment:
+      CS_SCIP_ENABLED: "true"
+      # ... other env vars unchanged
+```
+
+The SCIP-enabled image includes indexers for Go, TypeScript/JavaScript, and Python. After Zoekt indexing completes, SCIP indexing runs automatically for repos in those languages.
+
+See [Indexer Configuration](/configuration/indexer/#scip-auto-indexing) for per-language settings and configuration details.
+
+## Troubleshooting
+
+### Database connection issues
+
+```bash
+# Check PostgreSQL is healthy
+docker compose exec postgres pg_isready -U codesearch
+
+# View PostgreSQL logs
+docker compose logs postgres
+```
+
+### Indexer not processing jobs
+
+```bash
+# Check Redis connection
+docker compose exec redis redis-cli ping
+
+# View pending jobs
+docker compose exec redis redis-cli LLEN jobs:pending
+```
+
+### Zoekt search not working
+
+```bash
+# Check Zoekt health
+curl http://localhost:6070/health
+
+# Check index directory
+docker compose exec zoekt ls -la /data/index
+```
+
+## Next Steps
+
+- [Kubernetes Deployment](/deployment/kubernetes/) - For high availability
+- [Helm Chart](/deployment/helm/) - Kubernetes with Helm
+- [Configuration](/configuration/overview/) - Detailed configuration options

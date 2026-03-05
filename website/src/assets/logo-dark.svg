@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="32" viewBox="0 0 160 32" fill="none">
+  <!-- Icon -->
+  <rect width="32" height="32" rx="6" fill="#1e293b"/>
+  <path d="m12 10-5 6 5 6" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="m20 10 5 6-5 6" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="m18 8-4 16" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Text -->
+  <text x="42" y="22" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="600" fill="#f9fafb">Code Search</text>
+</svg>

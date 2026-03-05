@@ -1,0 +1,224 @@
+---
+title: Enterprise Overview
+description: Enterprise features for Code Search — SSO, RBAC, audit logging, and license management.
+draft: true
+---
+
+import { Aside, Card, CardGrid } from "@astrojs/starlight/components";
+
+Code Search Enterprise extends the open-source core with security, compliance, and access control features required by organizations.
+
+## Licensing and Plans
+
+Code Search follows an Open Core model. While the core search engine and basic features are free and open source (Apache 2.0), advanced security and governance features require a paid Enterprise license.
+
+| Feature | Community (Free) | Enterprise (Paid) |
+|---|:---:|:---:|
+| Full-text Code Search | ✅ | ✅ |
+| File Browsing | ✅ | ✅ |
+| Bulk Replace (MR creation) | ✅ | ✅ |
+| SCIP Code Intelligence | ✅ | ✅ |
+| MCP Server (AI) | ✅ | ✅ |
+| GitHub/GitLab Integration | ✅ | ✅ |
+| **OIDC Single Sign-On** | ❌ | ✅ |
+| **Role-Based Access Control** | ❌ | ✅ |
+| **Audit Logging** | ❌ | ✅ |
+| **User Seat Limits** | Unlimited | Per-license |
+| **Priority Support** | Community | ✅ |
+
+<Aside type="note">
+  Enterprise features are bundled in a separate binary that replaces the core API server. You can upgrade from Community to Enterprise without losing any data or configuration.
+</Aside>
+
+## Features
+
+<CardGrid>
+  <Card title="OIDC Single Sign-On (Paid)" icon="setting">
+    Authenticate users via any OpenID Connect provider — Okta, Azure AD, Google Workspace, Keycloak, and more.
+    Session management uses stateless JWT tokens stored in secure cookies.
+  </Card>
+  <Card title="Role-Based Access Control (Paid)" icon="approve-check-circle">
+    Define roles with glob-pattern repository permissions. Built-in roles: admin, developer, viewer.
+    Deny rules override allow rules. Search results are filtered per-user.
+  </Card>
+  <Card title="Audit Logging (Paid)" icon="list-format">
+    Every search query, file access, and replace operation is logged asynchronously to PostgreSQL.
+    Query audit events by user, event type, date range, or repository. Configurable retention (default: 90 days).
+  </Card>
+  <Card title="License Management" icon="document">
+    Cryptographically signed licenses using Ed25519. Per-customer feature flags, user limits, and expiration dates.
+  </Card>
+</CardGrid>
+
+## Database Requirements
+
+<Aside type="caution">
+  **Enterprise features require PostgreSQL 14 or later.** MySQL is not supported for enterprise deployments.
+
+  Enterprise features rely on PostgreSQL-specific capabilities including JSONB operators, GIN indexes, table partitioning, and common table expressions. If you are currently using MySQL with the Community edition, you must migrate to PostgreSQL before upgrading to Enterprise.
+</Aside>
+
+## Architecture
+
+Enterprise ships as a separate binary that replaces the core API server. It uses the same configuration, database, Redis, and Zoekt infrastructure — no additional services required.
+
+```
+┌─────────────┐
+│   Web UI    │  (unchanged)
+└──────┬──────┘
+       │
+┌──────▼──────┐
+│ Enterprise  │  Replaces core API server
+│ API Server  │  Adds: OIDC, RBAC, Audit, Admin routes
+└──────┬──────┘
+       │
+       ├─────────► PostgreSQL (+ audit_events, roles, user_roles tables)
+       ├─────────► Redis (unchanged)
+       └─────────► Zoekt (unchanged)
+```
+
+## Quick Start
+
+### 1. Generate License Keys
+
+```bash
+# Generate a key pair (keep private key secret)
+go run enterprise/cmd/keygen/main.go generate
+
+# Create a license file
+cat > license.json << 'EOF'
+{
+  "customer_name": "Your Company",
+  "max_users": 50,
+  "features": ["sso", "rbac", "audit"],
+  "expires_at": "2027-01-01T00:00:00Z",
+  "issued_at": "2026-01-01T00:00:00Z"
+}
+EOF
+
+# Sign the license
+CSE_LICENSE_PRIVATE_KEY=<your-private-key> \
+  go run enterprise/cmd/keygen/main.go sign license.json
+```
+
+### 2. Configure Environment
+
+```bash
+# License
+export CSE_LICENSE_KEY=<signed-license-key>
+export CSE_LICENSE_PUBLIC_KEY=<your-public-key>
+
+# OIDC Provider
+export CSE_OIDC_ISSUER=https://auth.example.com
+export CSE_OIDC_CLIENT_ID=code-search
+export CSE_OIDC_CLIENT_SECRET=<secret>
+export CSE_OIDC_REDIRECT_URL=https://code-search.example.com/api/v1/auth/callback
+
+# Session
+export CSE_SESSION_SECRET=<random-32-char-string>
+
+# Cross-Origin (only needed when the web UI runs on a different origin than the API)
+# export CSE_ALLOWED_ORIGINS=http://localhost:3000
+# export CSE_REDIRECT_AFTER_LOGIN=http://localhost:3000/
+```
+
+### 3. Run Enterprise Server
+
+```bash
+# Build enterprise binary
+cd enterprise && go build -o ../bin/enterprise-api ./cmd/api/
+
+# Run (replaces the core API server)
+./bin/enterprise-api
+```
+
+### 4. Run Enterprise Migrations
+
+```bash
+# Using the migrate tool with -dir flag
+./bin/migrate -dir enterprise/migrations/postgres up
+```
+
+## Kubernetes / Helm
+
+Enable enterprise in your Helm values:
+
+```yaml
+enterprise:
+  enabled: true
+  license:
+    existingSecret: code-search-license
+    keySecretKey: key
+    publicKeySecretKey: public-key
+  oidc:
+    existingSecret: code-search-oidc
+    issuer: https://auth.example.com
+    redirectUrl: https://code-search.example.com/api/v1/auth/callback
+  session:
+    existingSecret: code-search-session
+    secretKey: secret
+
+api:
+  image:
+    repository: code-search-api-enterprise
+```
+
+See the [Helm Chart documentation](/deployment/helm/) for full configuration details.
+
+## Admin API
+
+Enterprise adds admin endpoints under `/api/v1/admin` (requires admin role):
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/api/v1/admin/license` | GET | View license details |
+| `/api/v1/admin/audit` | GET | Query audit events |
+| `/api/v1/admin/roles` | GET | List all roles |
+| `/api/v1/admin/roles` | POST | Create custom role |
+| `/api/v1/admin/roles/{id}/permissions` | PUT | Set role permissions |
+| `/api/v1/admin/users` | GET | List users with roles |
+| `/api/v1/admin/users/{id}/roles` | PUT | Assign roles to user |
+| `/api/v1/admin/tokens` | GET | List all API tokens (all users) |
+| `/api/v1/admin/tokens/{id}` | DELETE | Revoke any API token |
+
+## Auth Endpoints
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/api/v1/auth/login` | GET | Initiate OIDC login flow |
+| `/api/v1/auth/callback` | GET | OIDC callback (sets session cookie) |
+| `/api/v1/auth/logout` | POST | Clear session |
+| `/api/v1/auth/me` | GET | Current user info |
+| `/api/v1/auth/tokens` | GET | List current user's API tokens |
+| `/api/v1/auth/tokens` | POST | Create a new API token |
+| `/api/v1/auth/tokens/{id}` | DELETE | Revoke own API token |
+
+## Cross-Origin Configuration
+
+When the web UI (Next.js) and the API server run on different origins — for example during local development with the UI on `localhost:3000` and the API on `localhost:8080` — two settings are required:
+
+**`allowed_origins`** (env: `CSE_ALLOWED_ORIGINS`) — Lists trusted web UI origins so the CSRF protection middleware accepts state-changing requests (POST, PUT, DELETE) from the frontend. Without this, browser requests from a different origin will be rejected with "origin validation failed".
+
+**`redirect_after_login`** (env: `CSE_REDIRECT_AFTER_LOGIN`) — Controls where users are redirected after SSO login. Defaults to `/` (relative to the API server). Set to an absolute URL like `http://localhost:3000/` to redirect to the web UI. Absolute URLs must match one of the `allowed_origins`.
+
+```yaml
+# config.yaml — local development example
+auth:
+  issuer: https://auth.example.com
+  client_id: code-search
+  client_secret: $CSE_OIDC_CLIENT_SECRET
+  redirect_url: http://localhost:8080/api/v1/auth/callback
+  redirect_after_login: "http://localhost:3000/"
+  allowed_origins:
+    - "http://localhost:3000"
+```
+
+<Aside type="note">
+  In production, when the web UI is served through a reverse proxy on the same origin as the API, these settings are not needed — the defaults work out of the box.
+</Aside>
+
+## Pricing
+
+<Aside type="tip">
+  See our [pricing plans](/pricing/) for details on Team, Business, and Enterprise tiers.
+</Aside>

@@ -1,0 +1,387 @@
+# Code Search Configuration
+#
+# Configuration priority (highest to lowest):
+# 1. Environment variables (CS_* prefix)
+# 2. Config file (this file)
+# 3. Default values
+#
+# Config file locations (checked in order):
+# - ./config.yaml
+# - ./config/config.yaml
+# - /etc/code-search/config.yaml
+# - ~/.code-search/config.yaml
+#
+# Or set CS_CONFIG_FILE env var to specify a custom path.
+#
+# Environment variable naming:
+# - Use CS_ prefix + uppercase config path with underscores
+# - Example: server.addr -> CS_SERVER_ADDR
+# - Example: database.url -> CS_DATABASE_URL
+#
+# Secrets from files (Kubernetes/Docker secrets):
+# - Set CS_SECRETS_PATH to load env vars from secret files
+# - Default paths checked: /etc/secrets, /run/secrets
+# - Each file name becomes an env var, file content becomes the value
+# - Example: /etc/secrets/GITHUB_TOKEN with content "ghp_xxx" sets GITHUB_TOKEN=ghp_xxx
+# - Multiple paths: CS_SECRETS_PATH=/path1,/path2 or CS_SECRETS_PATH=/path1:/path2
+# - Explicit env vars take precedence over file-loaded secrets
+
+# Server configuration
+# Env: CS_SERVER_ADDR, CS_SERVER_READ_TIMEOUT, CS_SERVER_WRITE_TIMEOUT
+server:
+  addr: ":8080"
+  read_timeout: 15s
+  write_timeout: 60s
+
+# Database configuration
+# Env: CS_DATABASE_DRIVER, CS_DATABASE_URL, CS_DATABASE_MAX_OPEN_CONNS, CS_DATABASE_MAX_IDLE_CONNS, CS_DATABASE_CONN_MAX_LIFETIME
+# Supported drivers: postgres, mysql (auto-detected from URL if not set)
+#
+# PostgreSQL example:
+#   url: "postgres://codesearch:codesearch@localhost:5432/codesearch?sslmode=disable"
+#
+# MySQL example:
+#   url: "mysql://codesearch:codesearch@localhost:3306/codesearch"
+#   # OR in DSN format: "codesearch:codesearch@tcp(localhost:3306)/codesearch?parseTime=true"
+database:
+  driver: "" # auto-detect from URL (postgres, mysql)
+  url: "postgres://codesearch:codesearch@localhost:5432/codesearch?sslmode=disable"
+  max_open_conns: 25
+  max_idle_conns: 5
+  conn_max_lifetime: 5m
+
+# Redis configuration
+# Env: CS_REDIS_ADDR, CS_REDIS_PASSWORD, CS_REDIS_DB
+# TLS Env: CS_REDIS_TLS_ENABLED, CS_REDIS_TLS_SKIP_VERIFY, CS_REDIS_TLS_CERT_FILE, CS_REDIS_TLS_KEY_FILE, CS_REDIS_TLS_CA_CERT_FILE, CS_REDIS_TLS_SERVER_NAME
+redis:
+  addr: "localhost:6379"
+  password: ""
+  db: 0
+  # TLS configuration for secure Redis connections (e.g., AWS ElastiCache, Azure Cache)
+  tls_enabled: false        # Enable TLS connection to Redis
+  tls_skip_verify: false    # Skip TLS certificate verification (insecure, not recommended)
+  tls_cert_file: ""         # Path to client certificate file (for mTLS)
+  tls_key_file: ""          # Path to client key file (for mTLS)
+  tls_ca_cert_file: ""      # Path to CA certificate file
+  tls_server_name: ""       # Override server name for TLS verification
+
+# Zoekt search engine
+# Env: CS_ZOEKT_URL, CS_ZOEKT_INDEX_PATH, CS_ZOEKT_SHARDS
+# NOTE: The indexer requires CS_ZOEKT_URL to be set for replace jobs to work.
+# In Docker, use the service name (e.g., http://zoekt:6070).
+# In Kubernetes with sidecars, use localhost (e.g., http://localhost:6070).
+zoekt:
+  url: "http://localhost:6070"
+  index_path: "./data/index"
+  shards: 0
+
+# Indexer settings
+# Env: CS_INDEXER_CONCURRENCY, CS_INDEXER_INDEX_PATH, CS_INDEXER_REPOS_PATH, CS_INDEXER_REINDEX_INTERVAL, CS_INDEXER_ZOEKT_BIN, CS_INDEXER_CTAGS_BIN, CS_INDEXER_REQUIRE_CTAGS, CS_INDEXER_INDEX_TIMEOUT, CS_INDEXER_MAX_REPO_SIZE_MB
+indexer:
+  concurrency: 2
+  index_path: "./data/index"
+  repos_path: "./data/repos"
+  reindex_interval: 1h
+  zoekt_bin: "zoekt-git-index"
+  ctags_bin: "ctags"
+  require_ctags: true
+  # index_all_branches: false  # When true, index all branches (not just default). Increases storage and index time.
+  # index_timeout: 0            # Timeout for zoekt-git-index operations (0 = no timeout/infinite, default: 0)
+  #                             # For large repos (millions of lines), indexing can take hours. Set to 0 for no timeout.
+  #                             # Examples: "2h" (2 hours), "30m" (30 minutes), "0" (infinite)
+  # max_repo_size_mb: 0         # Skip indexing repos larger than this size in MB (0 = no limit, default: 0)
+  #                             # Useful to avoid indexing extremely large monorepos that would take too long or consume too much memory.
+  #                             # Example: 10000 (skip repos larger than 10GB)
+
+# Repository storage
+# Env: CS_REPOS_BASE_PATH
+repos:
+  base_path: "./data/repos"
+
+# Scheduler settings
+# Env: CS_SCHEDULER_ENABLED, CS_SCHEDULER_POLL_INTERVAL, CS_SCHEDULER_CHECK_INTERVAL, CS_SCHEDULER_STALE_THRESHOLD, CS_SCHEDULER_MAX_CONCURRENT_CHECKS, CS_SCHEDULER_JOB_RETENTION
+scheduler:
+  enabled: true
+  poll_interval: 6h
+  check_interval: 5m
+  stale_threshold: 24h
+  max_concurrent_checks: 5
+  job_retention: 1h
+
+# Replace settings (search & replace operations)
+# Env: CS_REPLACE_CONCURRENCY, CS_REPLACE_CLONE_TIMEOUT, CS_REPLACE_PUSH_TIMEOUT, CS_REPLACE_MAX_FILE_SIZE
+replace:
+  concurrency: 3 # Number of repositories to process in parallel
+  clone_timeout: 10m # Timeout for git clone operations
+  push_timeout: 5m # Timeout for git push operations
+  max_file_size: 10485760 # Maximum file size to process (10MB in bytes)
+
+# Horizontal Scaling / Sharding
+# Env: CS_SHARDING_ENABLED, CS_SHARDING_TOTAL_SHARDS, CS_SHARDING_INDEXER_API_PORT, CS_SHARDING_INDEXER_SERVICE, CS_SHARDING_FEDERATED_ACCESS
+#
+# DEPLOYMENT MODES:
+#
+# 1. SINGLE INDEXER (Default)
+#    - One indexer with its own Zoekt sidecar
+#    - Handles thousands of repos
+#    - Simple, recommended for most deployments
+#
+# 2. SHARED STORAGE (RWX)
+#    - Multiple indexers share the same PVC (ReadWriteMany)
+#    - All features work: search, file browsing, replace jobs
+#    - No sharding config needed - just scale indexer replicas
+#    - Requires RWX storage (NFS, CephFS, EFS, Azure Files)
+#
+# 3. HASH-BASED SHARDING WITH FEDERATED ACCESS (Extreme scale)
+#    - Each shard handles a subset of repos (consistent FNV hashing)
+#    - Each shard has its own PersistentVolume (no shared storage)
+#    - Search queries all Zoekt shards via headless service
+#    - File browsing and replace work via federated proxy
+#
+sharding:
+  enabled: false # Enable hash-based sharding
+  total_shards: 1 # Number of indexer shards (must match replica count)
+  indexer_api_port: 8081 # HTTP API port for federated access
+  indexer_service: "code-search-indexer-headless" # Headless service for pod discovery
+  federated_access: false # Enable file browsing/replace via proxy to shards
+
+# Search Settings
+# Env: CS_SEARCH_ENABLE_STREAMING
+#
+# Streaming search uses Zoekt's native gRPC streaming API for faster
+# time-to-first-result. Results are streamed to the client as they are
+# found by Zoekt, rather than waiting for all results to be collected.
+#
+# Benefits:
+#   - Faster time-to-first-result (users see results immediately)
+#   - Better experience for large result sets
+#   - Works with both single and sharded Zoekt deployments
+#
+# Note: Replace operations always use batch search (needs all results upfront).
+search:
+  enable_streaming: false # Enable true streaming from Zoekt (opt-in)
+
+# Rate Limiting
+# Env: CS_RATE_LIMIT_ENABLED, CS_RATE_LIMIT_REQUESTS_PER_SECOND, CS_RATE_LIMIT_BURST_SIZE
+rate_limit:
+  enabled: false # Enable rate limiting
+  requests_per_second: 10 # Requests per second per client IP
+  burst_size: 20 # Maximum burst size
+
+# Prometheus Metrics
+# Env: CS_METRICS_ENABLED, CS_METRICS_PATH
+metrics:
+  enabled: true # Enable Prometheus metrics endpoint
+  path: "/metrics" # Path to expose metrics
+
+# OpenTelemetry Tracing
+# Env: CS_TRACING_ENABLED, CS_TRACING_SERVICE_NAME, CS_TRACING_SERVICE_VERSION, CS_TRACING_ENVIRONMENT, CS_TRACING_ENDPOINT, CS_TRACING_PROTOCOL, CS_TRACING_SAMPLE_RATE, CS_TRACING_INSECURE
+# Also supports standard OTEL_* and DD_* environment variables:
+#   - OTEL_SERVICE_NAME, OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_EXPORTER_OTLP_PROTOCOL
+#   - DD_SERVICE, DD_VERSION, DD_ENV, DD_TRACE_ENABLED
+tracing:
+  enabled: false # Enable OpenTelemetry tracing
+  service_name: "code-search" # Service name for traces
+  service_version: "1.0.0" # Service version
+  environment: "development" # Deployment environment
+  endpoint: "localhost:4317" # OTLP endpoint (Jaeger, Datadog Agent, etc.)
+  protocol: "grpc" # Protocol: grpc or http
+  sample_rate: 1.0 # Sampling rate 0.0-1.0 (1.0 = 100%)
+  insecure: true # Disable TLS (true for local dev)
+
+# SCIP Code Intelligence (Precise Code Navigation)
+# Env: CS_SCIP_ENABLED, CS_SCIP_AUTO_INDEX, CS_SCIP_TIMEOUT, CS_SCIP_WORK_DIR, CS_SCIP_CACHE_DIR
+#
+# When enabled, the indexer automatically runs SCIP indexing after Zoekt search
+# indexing completes, providing precise go-to-definition and find-references.
+#
+# SCIP failure is non-fatal — it never fails the Zoekt index job.
+#
+# Language tiers:
+#   Standalone (auto-enabled when binary found in PATH):
+#     - Go:         Install: go install github.com/sourcegraph/scip-go@latest
+#     - TypeScript:  Install: npm install -g @sourcegraph/scip-typescript (or npx)
+#     - Python:     Install: pip install scip-python
+#
+#   Build-dependent (require explicit opt-in + binary):
+#     - Java:       Install: https://sourcegraph.github.io/scip-java/
+#     - Rust:       Install: rustup component add rust-analyzer
+#     - PHP:        Requires per-project: composer require --dev davidrjenni/scip-php
+#
+scip:
+  enabled: false        # Master switch for SCIP indexing
+  auto_index: true      # Auto-index after Zoekt indexing (set false to only allow API-triggered indexing)
+  timeout: 10m          # Aggregate timeout for all SCIP indexing per repo (across all languages)
+  # work_dir: ""        # Working directory for temporary checkouts (default: system temp)
+  # cache_dir: ""       # Directory for SCIP SQLite databases (default: <repos_path>/../scip)
+  #
+  # Per-language configuration (optional).
+  # Standalone languages are auto-enabled when scip.enabled=true and the binary is in PATH.
+  # Build-dependent languages must be explicitly enabled here.
+  #
+  # languages:
+  #   go:
+  #     enabled: true                              # Standalone: auto-enabled
+  #   typescript:
+  #     enabled: true
+  #   python:
+  #     enabled: true
+  #   java:
+  #     enabled: false                             # Build-dependent: explicit opt-in required
+  #     binary_path: "/usr/local/bin/scip-java"    # Optional: path to indexer binary
+  #   rust:
+  #     enabled: false
+  #     binary_path: "/usr/local/bin/rust-analyzer"
+
+# Security Settings
+# Env: CS_SECURITY_ENCRYPTION_KEY
+#
+# Token Encryption at Rest:
+# When an encryption key is set, connection tokens (GitHub, GitLab, etc.) are
+# encrypted using AES-256-GCM before being stored in the database.
+#
+# Key requirements:
+#   - Can be any string (it's hashed with SHA-256 to derive a 32-byte key)
+#   - Recommended: Use a cryptographically random string of at least 32 characters
+#   - Store securely (environment variable, Kubernetes secret, vault, etc.)
+#
+# Backwards compatibility:
+#   - If no key is set, tokens are stored in plaintext (existing behavior)
+#   - Encrypted tokens have an "enc:" prefix for detection
+#   - Existing plaintext tokens continue to work after enabling encryption
+#   - New/updated tokens will be encrypted automatically
+#
+# Key rotation:
+#   - To rotate keys, you must re-create connections (tokens are re-encrypted on save)
+#   - There is no automatic key rotation mechanism
+#
+# Example:
+#   security:
+#     encryption_key: "your-32-char-minimum-secret-key-here"
+#
+# Or via environment variable (recommended):
+#   export CS_SECURITY_ENCRYPTION_KEY="your-32-char-minimum-secret-key-here"
+#
+security:
+  encryption_key: "" # Empty = encryption disabled (tokens stored in plaintext)
+
+# UI Settings
+# Configure which UI elements are displayed to users.
+# Env: CS_UI_HIDE_READONLY_BANNER, CS_UI_HIDE_FILE_NAVIGATOR, CS_UI_DISABLE_BROWSE_API
+ui:
+  # Hide the read-only mode banner in the UI when connections/repos are read-only.
+  # Set to true to hide the banner (e.g., when you expect read-only mode).
+  hide_readonly_banner: false
+  # Hide the browse links (eye icon) in search results.
+  # When true, clicking on files/repos in search results opens external code host instead.
+  hide_file_navigator: false
+  # Completely disable the browse API endpoints (tree, blob, refs, symbols).
+  # When true, the /repos/by-id/{id}/tree, /blob, /refs, /symbols endpoints return 404.
+  disable_browse_api: false
+  # Hide navigation pages - useful for read-only/search-only deployments
+  # Hide the Repositories page from navigation
+  hide_repos_page: false
+  # Hide the Connections page from navigation
+  hide_connections_page: false
+  # Hide the Jobs page from navigation
+  hide_jobs_page: false
+  # Hide the Replace (search & replace) page from navigation
+  hide_replace_page: false
+
+# Connections Read-Only Mode
+# Env: CS_CONNECTIONS_READONLY
+# When true, connections can only be managed via this config file.
+# The UI will show connections as read-only and disable add/edit/delete buttons.
+# Useful for GitOps workflows where infrastructure is managed declaratively.
+connections_readonly: false
+
+# Repos Read-Only Mode
+# Env: CS_REPOS_READONLY
+# When true, repositories can only be managed via sync from code hosts.
+# Manual repo deletion via API/UI is disabled.
+# Repos can still be excluded (soft delete) - they won't be synced or indexed.
+# Excluded repos are cleaned up from the Zoekt index and disk.
+repos_readonly: false
+# Code Hosts Configuration
+# Define multiple code host connections with unique names.
+#
+# PRIORITY: Config-defined code hosts take precedence over UI-created ones.
+# On startup, config code hosts are synced to the database, overwriting
+# any existing connections with the same name. This allows:
+#   - GitOps: Define connections in config, tokens via env vars
+#   - UI: Add/manage connections via web interface
+#   - Hybrid: Core connections in config, additional via UI
+#
+# Token values can be:
+#   - Literal token string (not recommended for production)
+#   - Environment variable reference: "$CS_GITHUB_TOKEN" (recommended)
+#
+# Supported types:
+#   - github: GitHub.com
+#   - github_enterprise: GitHub Enterprise Server (requires url)
+#   - gitlab: GitLab.com or self-hosted (requires url)
+#   - bitbucket: Bitbucket Cloud (coming soon)
+#   - bitbucket_server: Bitbucket Server (coming soon)
+#
+# Examples (uncomment to use):
+# codehosts:
+#   # GitHub.com - personal account
+#   github:
+#     type: github
+#     token: "$CS_GITHUB_TOKEN"
+#     exclude_archived: true  # Skip archived repos during sync
+#
+#   # GitHub.com - organization with different token
+#   github-org:
+#     type: github
+#     token: "$CS_GITHUB_ORG_TOKEN"
+#     exclude_archived: true
+#
+#   # GitHub Enterprise
+#   github-enterprise:
+#     type: github_enterprise
+#     url: "https://github.mycompany.com"
+#     token: "$CS_GHE_TOKEN"
+#     exclude_archived: false  # Include archived repos
+#
+#   # GitLab.com
+#   gitlab:
+#     type: gitlab
+#     url: "https://gitlab.com"
+#     token: "$CS_GITLAB_TOKEN"
+#     exclude_archived: true
+#
+#   # Self-hosted GitLab
+#   gitlab-internal:
+#     type: gitlab
+#     url: "https://gitlab.mycompany.com"
+#     token: "$CS_GITLAB_INTERNAL_TOKEN"
+#     exclude_archived: true
+#
+#   # GitHub with per-repo branch configuration
+#   github-with-branches:
+#     type: github
+#     token: "$CS_GITHUB_TOKEN"
+#     exclude_archived: true
+#     repos:
+#       - "myorg/myrepo"
+#       - "myorg/another-repo"
+#     # Per-repo configuration for branches, exclusion, etc.
+#     repo_configs:
+#       - name: "myorg/myrepo"
+#         branches:           # Index these specific branches
+#           - "main"
+#           - "develop"
+#           - "release/*"     # Supports glob patterns
+#       - name: "myorg/another-repo"
+#         branches:
+#           - "main"
+#           - "nightly"
+#       - name: "myorg/deprecated-repo"
+#         exclude: true       # Exclude this repo from indexing (can be re-included via UI)
+#       - name: "myorg/old-repo"
+#         delete: true        # Soft-delete this repo (can be restored via UI)
+#
+# NOTE: Config options for exclude/delete only affect NEW repos.
+# If a repo already exists and was restored/included via UI, the UI state takes precedence.
+# This allows operators to set default policies while users can override per-repo.

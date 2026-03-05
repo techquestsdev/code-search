@@ -1,0 +1,38 @@
+🎉 Code Search has been deployed!
+
+{{- if .Values.ingress.enabled }}
+Access the application at:
+{{- range $host := .Values.ingress.hosts }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ $host.host }}
+{{- end }}
+{{- else }}
+
+To access the application, run:
+
+  # Port forward the web frontend
+  kubectl port-forward svc/{{ include "code-search.fullname" . }}-web {{ .Values.web.service.port }}:{{ .Values.web.service.port }}
+
+  # Then open http://localhost:{{ .Values.web.service.port }}
+
+{{- end }}
+
+To check the status of the deployment:
+
+  kubectl get pods -l app.kubernetes.io/instance={{ .Release.Name }}
+
+{{- if .Values.migrations.enabled }}
+
+Database migrations run automatically before deployment.
+Check migration status:
+
+  kubectl logs job/{{ include "code-search.fullname" . }}-migrate
+{{- end }}
+
+{{- if .Values.sharding.enabled }}
+
+Sharding is ENABLED:
+  - Indexer+Zoekt replicas: {{ .Values.sharding.replicas }}
+  - Each pod has an indexer + zoekt sidecar sharing the same volume
+{{- end }}
+
+For more information, see: https://github.com/aanogueira/code-search

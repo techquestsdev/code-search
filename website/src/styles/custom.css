@@ -1,0 +1,1659 @@
+/* Custom styles for Code Search documentation */
+/* Supports both light and dark themes */
+
+/* ============================================
+   Shared variables (both themes)
+   ============================================ */
+:root {
+  /* Brand colors - matching the app's design */
+  /* Accent colors */
+  --sl-color-accent-low: #1e40af; /* blue-800 */
+  --sl-color-accent: #3b82f6; /* blue-500 - matches icon stroke */
+  --sl-color-accent-high: #60a5fa; /* blue-400 */
+
+  /* Icon/Logo background - slate-800 */
+  --app-icon-bg: #1e293b;
+
+  /* Custom font sizes */
+  --sl-text-h1: 2.5rem;
+  --sl-text-h2: 1.875rem;
+
+  /* Font family - matching app's system font stack */
+  --sl-font: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --sl-font-mono: "SF Mono", "Menlo", "Monaco", "Consolas", monospace;
+}
+
+/* ============================================
+   CLI Terminal and App Screenshot Images
+   ============================================ */
+.cli-terminal-image {
+  width: 100%;
+  max-width: 600px;
+  height: auto !important;
+  margin: 1rem auto;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+  flex: none !important;
+  align-self: center !important;
+}
+
+/* App screenshot can be larger since it has smaller text */
+.app-screenshot {
+  width: 100%;
+  max-width: 800px;
+  height: auto !important;
+  margin: 1rem auto;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+  flex: none !important;
+  align-self: center !important;
+}
+
+/* ============================================
+   Logo visibility - ensure correct logo shows for each theme
+   ============================================ */
+/* Dark theme: show dark logo, hide light logo */
+[data-theme="dark"] .site-title img.light\:sl-hidden,
+:root[data-theme="dark"] .site-title img.light\:sl-hidden {
+  display: inline-block !important;
+}
+
+[data-theme="dark"] .site-title img.dark\:sl-hidden,
+:root[data-theme="dark"] .site-title img.dark\:sl-hidden {
+  display: none !important;
+}
+
+/* Light theme: show light logo, hide dark logo */
+[data-theme="light"] .site-title img.dark\:sl-hidden,
+:root[data-theme="light"] .site-title img.dark\:sl-hidden {
+  display: inline-block !important;
+}
+
+[data-theme="light"] .site-title img.light\:sl-hidden,
+:root[data-theme="light"] .site-title img.light\:sl-hidden {
+  display: none !important;
+}
+
+/* ============================================
+   Theme-aware screenshot visibility
+   ============================================ */
+/* Dark theme: show dark:sl-block images, hide others */
+[data-theme="dark"] .cli-terminal-image.dark\:sl-block,
+[data-theme="dark"] .app-screenshot.dark\:sl-block,
+:root[data-theme="dark"] .cli-terminal-image.dark\:sl-block,
+:root[data-theme="dark"] .app-screenshot.dark\:sl-block {
+  display: block !important;
+  width: auto !important;
+  height: auto !important;
+}
+
+[data-theme="dark"] .cli-terminal-image.light\:sl-block,
+[data-theme="dark"] .app-screenshot.light\:sl-block,
+:root[data-theme="dark"] .cli-terminal-image.light\:sl-block,
+:root[data-theme="dark"] .app-screenshot.light\:sl-block {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Light theme: show light:sl-block images, hide others */
+[data-theme="light"] .cli-terminal-image.light\:sl-block,
+[data-theme="light"] .app-screenshot.light\:sl-block,
+:root[data-theme="light"] .cli-terminal-image.light\:sl-block,
+:root[data-theme="light"] .app-screenshot.light\:sl-block {
+  display: block !important;
+  width: auto !important;
+  height: auto !important;
+}
+
+[data-theme="light"] .cli-terminal-image.dark\:sl-block,
+[data-theme="light"] .app-screenshot.dark\:sl-block,
+[data-theme="light"] .cli-terminal-image.sl-hidden:not(.light\:sl-block),
+[data-theme="light"] .app-screenshot.sl-hidden:not(.light\:sl-block),
+:root[data-theme="light"] .cli-terminal-image.dark\:sl-block,
+:root[data-theme="light"] .app-screenshot.dark\:sl-block,
+:root[data-theme="light"] .cli-terminal-image.sl-hidden:not(.light\:sl-block),
+:root[data-theme="light"] .app-screenshot.sl-hidden:not(.light\:sl-block) {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* ============================================
+   Pagination - Fix single link width
+   ============================================ */
+.pagination-links {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+}
+
+.pagination-links a:only-child {
+  grid-column: auto !important;
+}
+
+/* When there's only "Next" link (first page), align right */
+.pagination-links a[rel="next"]:only-child {
+  grid-column: 2 !important;
+}
+
+/* When there's only "Previous" link (last page), align left */
+.pagination-links a[rel="prev"]:only-child {
+  grid-column: 1 !important;
+}
+
+/* ============================================
+   Light theme colors
+   ============================================ */
+:root[data-theme="light"] {
+  /* Text colors - dark text on light background */
+  --sl-color-white: #111827; /* gray-900 - main text */
+  --sl-color-gray-1: #1f2937; /* gray-800 */
+  --sl-color-gray-2: #4b5563; /* gray-600 */
+  --sl-color-gray-3: #6b7280; /* gray-500 */
+  --sl-color-gray-4: #9ca3af; /* gray-400 */
+  --sl-color-gray-5: #d1d5db; /* gray-300 - borders */
+  --sl-color-gray-6: #e5e7eb; /* gray-200 - subtle bg */
+  --sl-color-gray-7: #f3f4f6; /* gray-100 - card bg */
+  --sl-color-black: #ffffff; /* white background */
+
+  --sl-color-bg: #ffffff;
+  --sl-color-bg-nav: #f9fafb; /* gray-50 */
+  --sl-color-bg-sidebar: #ffffff;
+  --sl-color-hairline-light: #e5e7eb; /* gray-200 */
+  --sl-color-hairline: #d1d5db; /* gray-300 */
+  --sl-color-border: #d1d5db; /* gray-300 */
+
+  /* Accent adjustments for light theme */
+  --sl-color-accent-low: #dbeafe; /* blue-100 */
+  --sl-color-accent: #2563eb; /* blue-600 */
+  --sl-color-accent-high: #1d4ed8; /* blue-700 */
+}
+
+/* ============================================
+   Dark theme colors
+   ============================================ */
+:root[data-theme="dark"] {
+  /* Text colors - light text on dark background */
+  --sl-color-white: #ffffff;
+  --sl-color-gray-1: #f9fafb; /* gray-50 */
+  --sl-color-gray-2: #d1d5db; /* gray-300 - secondary text */
+  --sl-color-gray-3: #9ca3af; /* gray-400 */
+  --sl-color-gray-4: #6b7280; /* gray-500 */
+  --sl-color-gray-5: #4b5563; /* gray-600 - borders */
+  --sl-color-gray-6: #374151; /* gray-700 - subtle bg */
+  --sl-color-gray-7: #1f2937; /* gray-800 - card bg */
+  --sl-color-black: #030712; /* gray-950 */
+
+  --sl-color-bg: #030712; /* gray-950 */
+  --sl-color-bg-nav: #111827; /* gray-900 */
+  --sl-color-bg-sidebar: #0a0a0f;
+  --sl-color-hairline-light: #1f2937; /* gray-800 */
+  --sl-color-hairline: #374151; /* gray-700 */
+  --sl-color-border: #374151; /* gray-700 */
+
+  /* Accent for dark theme */
+  --sl-color-accent-low: #1e3a5f; /* darker blue */
+  --sl-color-accent: #3b82f6; /* blue-500 */
+  --sl-color-accent-high: #60a5fa; /* blue-400 */
+}
+
+/* Antialiasing for sharper text */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Sidebar styling - match app navigation */
+.sidebar-content {
+  font-size: 0.875rem;
+}
+
+/* Sidebar group labels */
+.sidebar-content .top-level > li > details > summary,
+.sidebar-content .top-level > li > a {
+  color: var(--sl-color-gray-1);
+  font-weight: 600;
+}
+
+/* Sidebar links */
+.sidebar-content a {
+  color: var(--sl-color-gray-2);
+  border-radius: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  margin: 0.125rem 0.5rem;
+  transition: all 0.15s ease;
+}
+
+.sidebar-content a:hover {
+  color: var(--sl-color-white);
+  background: var(--sl-color-gray-6);
+}
+
+/* Custom scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--sl-color-gray-4) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--sl-color-gray-4);
+  border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--sl-color-gray-3);
+}
+
+/* Landing page styles - matching app design */
+.landing-hero {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: linear-gradient(
+    135deg,
+    var(--sl-color-bg-nav) 0%,
+    var(--sl-color-bg) 100%
+  );
+}
+
+.landing-hero h1 {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  /* Gradient matching app's blue-600 to blue-400 */
+  background: linear-gradient(135deg, #2563eb 0%, #60a5fa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.landing-hero .tagline {
+  font-size: 1.5rem;
+  color: var(--sl-color-gray-2);
+  margin-bottom: 2rem;
+  max-width: 600px;
+  margin-inline: auto;
+}
+
+/* Hero image on docs pages */
+.hero.astro-jbfsktt5 img,
+.hero img[data-image-component="true"],
+[data-has-hero] .hero img {
+  border-radius: 0.75rem !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Make hero image container wider */
+.sl-hero > div {
+  max-width: 100% !important;
+}
+
+/* Hero section layout tweaks */
+.sl-hero,
+[data-has-hero] .hero,
+.hero {
+  padding: 3rem 1rem !important;
+  text-align: center !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+}
+
+/* Center hero content */
+.sl-hero > *,
+[data-has-hero] .hero > *,
+.hero > * {
+  margin-left: auto !important;
+  margin-right: auto !important;
+  text-align: center !important;
+}
+
+/* Center the tagline */
+.sl-hero .tagline,
+[data-has-hero] .hero .tagline,
+.hero .tagline {
+  text-align: center !important;
+  max-width: 700px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  font-size: 1.2rem !important;
+  line-height: 1.6 !important;
+  color: var(--sl-color-gray-2) !important;
+}
+
+/* Center the action buttons */
+.sl-hero .actions,
+[data-has-hero] .hero .actions,
+.hero .actions {
+  justify-content: center !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 1rem !important;
+}
+
+.cta-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.cta-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem; /* rounded-lg matching app */
+  font-weight: 500; /* font-medium matching app */
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.cta-button.primary {
+  background: var(--sl-color-accent);
+  color: white;
+}
+
+.cta-button.primary:hover {
+  background: var(--sl-color-accent-high);
+  transform: translateY(-1px);
+}
+
+.cta-button.secondary {
+  background: var(--sl-color-gray-5);
+  color: var(--sl-color-white);
+  border: 1px solid var(--sl-color-gray-4);
+}
+
+.cta-button.secondary:hover {
+  background: var(--sl-color-gray-4);
+}
+
+/* Feature grid - matching app's card styles */
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  padding: 2rem 0;
+}
+
+.feature-card {
+  padding: 1.5rem;
+  border-radius: 0.75rem; /* rounded-xl */
+  background: var(--sl-color-gray-7);
+  border: 1px solid var(--sl-color-gray-6);
+  transition: all 0.15s ease;
+}
+
+.feature-card:hover {
+  border-color: var(--sl-color-accent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.feature-card .icon {
+  font-size: 2rem;
+  margin-bottom: 0.75rem;
+  color: var(--sl-color-accent);
+}
+
+.feature-card .icon svg {
+  width: 2rem !important;
+  height: 2rem !important;
+}
+
+.feature-card h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.125rem;
+  color: var(--sl-color-white);
+}
+
+.feature-card p {
+  margin: 0;
+  color: var(--sl-color-gray-2);
+  font-size: 0.9rem;
+}
+
+/* Code blocks - theme-aware styling (GitHub Light/Dark via Expressive Code) */
+/* Target Expressive Code internal elements - they use ec-* classes */
+.expressive-code,
+.expressive-code .ec-line,
+.expressive-code .code,
+.expressive-code div.code,
+.expressive-code figure,
+.expressive-code figcaption {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+.expressive-code {
+  margin: 1rem 0 !important;
+}
+
+/* Remove borders from ALL elements first */
+.expressive-code,
+.expressive-code *,
+.expressive-code figure,
+.expressive-code .frame,
+.expressive-code pre,
+.expressive-code code {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* Light theme - let GitHub Light theme colors show through */
+:root[data-theme="light"] .expressive-code .frame {
+  border-radius: 0.5rem !important;
+  overflow: hidden !important;
+  background: #f6f8fa !important; /* GitHub light code bg */
+  border: 1px solid #d1d9e0 !important; /* GitHub light border */
+}
+
+/* Dark theme - override background to match jobs view */
+:root[data-theme="dark"] .expressive-code .frame {
+  border-radius: 0.5rem !important;
+  overflow: hidden !important;
+  background: #111827 !important; /* gray-900 - like jobs view on web app */
+  border: 1px solid #374151 !important; /* gray-700 border */
+}
+
+/* Ensure figure wrapper has no border */
+.expressive-code figure,
+.expressive-code > figure {
+  background: transparent !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Pre element - transparent bg since frame has the dark bg */
+.expressive-code pre {
+  background: transparent !important;
+  background-color: transparent !important;
+  padding: 1rem !important;
+  margin: 0 !important;
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important; /* IE/Edge */
+}
+
+/* Hide scrollbar but keep scroll functionality (webkit browsers) */
+.expressive-code pre::-webkit-scrollbar {
+  display: none !important;
+}
+
+/* Expressive Code line elements */
+.expressive-code .ec-line,
+.expressive-code div.ec-line,
+.expressive-code .code,
+.expressive-code div.code {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* Ensure code blocks in Steps have NO extra borders/backgrounds */
+.sl-steps .expressive-code,
+ol.sl-steps .expressive-code,
+.sl-steps .expressive-code .ec-line,
+.sl-steps .expressive-code .code,
+ol.sl-steps .expressive-code .ec-line,
+ol.sl-steps .expressive-code .code,
+.sl-steps .expressive-code figure,
+ol.sl-steps .expressive-code figure {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* Only the .frame element should have border - theme aware */
+:root[data-theme="light"] .sl-steps .expressive-code .frame,
+:root[data-theme="light"] ol.sl-steps .expressive-code .frame {
+  border: 1px solid #d1d9e0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+:root[data-theme="dark"] .sl-steps .expressive-code .frame,
+:root[data-theme="dark"] ol.sl-steps .expressive-code .frame {
+  background: #111827 !important; /* gray-900 - like jobs view */
+  border: 1px solid #374151 !important; /* gray-700 */
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* Remove any wrapper borders in steps */
+.sl-steps .expressive-code > *:not(.frame),
+ol.sl-steps .expressive-code > *:not(.frame),
+.sl-steps .expressive-code figure:not(.frame),
+ol.sl-steps .expressive-code figure:not(.frame) {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  background: transparent !important;
+}
+
+/* Hide the macOS window chrome completely in code blocks */
+.expressive-code .frame > .header,
+.expressive-code figure > .header {
+  display: none !important;
+}
+
+/* figcaption styling */
+.expressive-code figcaption {
+  margin: 0 !important;
+  background: transparent !important;
+}
+
+/* Code text */
+.expressive-code code {
+  font-family: "SF Mono", "Menlo", "Monaco", "Consolas", monospace !important;
+  font-size: 0.875rem !important;
+  line-height: 1.6 !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+/* Copy button styling - fixed position top-right */
+.expressive-code .copy {
+  position: absolute !important;
+  top: 0.5rem !important;
+  right: 0.5rem !important;
+  opacity: 0;
+  transition: opacity 0.15s ease !important;
+}
+
+.expressive-code:hover .copy,
+.expressive-code .copy:focus-within {
+  opacity: 1;
+}
+
+/* Copy button styling - theme aware */
+:root[data-theme="light"] .expressive-code .copy button {
+  background: rgba(0, 0, 0, 0.06) !important;
+  border: none !important;
+  border-radius: 0.375rem !important;
+  padding: 0.375rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #656d76 !important; /* GitHub light muted text */
+}
+
+:root[data-theme="light"] .expressive-code .copy button:hover {
+  background: rgba(0, 0, 0, 0.12) !important;
+  color: #1f2328 !important;
+}
+
+:root[data-theme="dark"] .expressive-code .copy button {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: none !important;
+  border-radius: 0.375rem !important;
+  padding: 0.375rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #d1d5db !important; /* gray-300 */
+}
+
+:root[data-theme="dark"] .expressive-code .copy button:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Ensure frame is positioned for absolute copy button */
+.expressive-code .frame {
+  position: relative !important;
+}
+
+/* Navigation header styling */
+header.header {
+  background: var(--sl-color-bg-nav);
+  border-bottom: 1px solid var(--sl-color-border);
+}
+
+/* Header text and icons */
+header.header a,
+header.header button {
+  color: var(--sl-color-gray-2) !important;
+}
+
+header.header a:hover,
+header.header button:hover {
+  color: var(--sl-color-white) !important;
+}
+
+/* Keep the logo link unstyled */
+header.header .site-title a {
+  color: inherit !important;
+}
+
+/* Social icons styling */
+.social-icons,
+header .social-icons {
+  display: flex !important;
+  align-items: center !important;
+}
+
+.social-icons a,
+header .social-icons a {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Default icon size - used on desktop */
+.social-icons a svg,
+header .social-icons a svg {
+  width: 1.375rem !important;
+  height: 1.375rem !important;
+}
+
+/* Right group alignment */
+.right-group,
+header .right-group {
+  display: flex !important;
+  align-items: center !important;
+  gap: 1rem !important;
+}
+
+/* ============================================
+   Mobile Header (< 50rem)
+   Show GitHub icon and theme toggle, but compact
+   ============================================ */
+@media (max-width: 49.99rem) {
+  /* Show right-group on mobile (override Starlight's sl-hidden) */
+  .header > .right-group,
+  header .right-group {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 0.75rem !important;
+  }
+
+  /* Slightly smaller icons on mobile */
+  .social-icons a svg,
+  header .social-icons a svg {
+    width: 1.25rem !important;
+    height: 1.25rem !important;
+  }
+
+  .social-icons a,
+  header .social-icons a {
+    padding: 0.25rem !important;
+  }
+
+  /* Hide the separator on mobile */
+  .social-icons::after,
+  header .social-icons::after {
+    display: none !important;
+  }
+
+  /* Theme selector - icon only on mobile */
+  starlight-theme-select,
+  header starlight-theme-select {
+    display: flex !important;
+    align-items: center !important;
+  }
+
+  starlight-theme-select label,
+  header starlight-theme-select label {
+    --sl-select-width: 1.25rem !important;
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 1.25rem !important;
+    height: 1.25rem !important;
+    overflow: hidden !important;
+  }
+
+  /* Hide the select dropdown visually but keep it functional */
+  starlight-theme-select select,
+  header starlight-theme-select select {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    opacity: 0 !important;
+    cursor: pointer !important;
+    z-index: 1 !important;
+  }
+
+  /* Hide the caret icon on mobile */
+  starlight-theme-select .icon.caret,
+  header starlight-theme-select .icon.caret {
+    display: none !important;
+  }
+
+  /* Make label icon the right size */
+  starlight-theme-select .icon.label-icon,
+  header starlight-theme-select .icon.label-icon {
+    width: 1.25rem !important;
+    height: 1.25rem !important;
+    flex-shrink: 0 !important;
+  }
+}
+
+/* ============================================
+   Desktop Header Layout (>= 50rem)
+   Let Starlight handle mobile - only customize desktop
+   ============================================ */
+@media (min-width: 50rem) {
+  /* Add separator between social icons and theme selector */
+  .social-icons::after,
+  .sl-flex.social-icons::after,
+  header .social-icons::after {
+    display: block !important;
+    content: "" !important;
+    height: 1.5rem !important;
+    border-inline-end: 1px solid var(--sl-color-gray-5) !important;
+    margin-inline-start: 0.5rem !important;
+  }
+
+  /* Override Starlight's grid to use flexbox for simpler centering */
+  .header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+  }
+
+  /* Title wrapper - fixed width for balance */
+  .header > .title-wrapper {
+    flex: 0 0 auto !important;
+    min-width: 150px !important;
+  }
+
+  /* The search container should be centered with flex grow */
+  .header > .sl-flex:not(.title-wrapper):not(.right-group):not(.social-icons) {
+    flex: 1 1 auto !important;
+    display: flex !important;
+    justify-content: center !important;
+  }
+
+  /* Right group - fixed width to balance with logo */
+  .header > .right-group {
+    flex: 0 0 auto !important;
+    min-width: 150px !important;
+    justify-content: flex-end !important;
+  }
+
+  /* Search button styling - wider on desktop */
+  site-search button[data-open-modal],
+  header site-search button[data-open-modal],
+  .header site-search button[data-open-modal] {
+    width: 20rem !important;
+    padding: 0.5rem 1rem !important;
+    font-size: 0.875rem !important;
+  }
+}
+
+@media (min-width: 72rem) {
+  site-search button[data-open-modal],
+  header site-search button[data-open-modal],
+  .header site-search button[data-open-modal] {
+    width: 28rem !important;
+  }
+}
+
+/* Theme selector styling on desktop - reset mobile overrides */
+@media (min-width: 50rem) {
+  /* Reset label to normal display - let Starlight handle it */
+  starlight-theme-select label,
+  header starlight-theme-select label {
+    --sl-select-width: 6.25em !important;
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.25rem !important;
+    width: auto !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* Reset select - covers the entire label including icon */
+  starlight-theme-select select,
+  header starlight-theme-select select {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    opacity: 0 !important;
+    cursor: pointer !important;
+  }
+
+  /* Show both icons on desktop */
+  starlight-theme-select .icon,
+  header starlight-theme-select .icon {
+    display: block !important;
+    position: static !important;
+    transform: none !important;
+  }
+
+  /* Icon sizes */
+  starlight-theme-select .icon.label-icon,
+  header starlight-theme-select .icon.label-icon {
+    width: 1.125rem !important;
+    height: 1.125rem !important;
+  }
+
+  starlight-theme-select .icon.caret,
+  header starlight-theme-select .icon.caret {
+    width: 1rem !important;
+    height: 1rem !important;
+  }
+}
+
+/* Button fixes - matching app design */
+.sl-link-button,
+a.sl-link-button {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  padding: 0.625rem 1.25rem !important;
+  border-radius: 0.5rem !important;
+  font-weight: 500 !important;
+  font-size: 0.875rem !important;
+  text-decoration: none !important;
+  transition: all 0.15s ease !important;
+  border: none !important;
+}
+
+/* Primary button */
+.sl-link-button[data-variant="primary"],
+a.sl-link-button[data-variant="primary"] {
+  background: var(--sl-color-accent) !important;
+  color: white !important;
+}
+
+.sl-link-button[data-variant="primary"]:hover,
+a.sl-link-button[data-variant="primary"]:hover {
+  background: var(--sl-color-accent-high) !important;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--sl-color-accent) 40%, transparent) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Secondary/minimal button - same gray-7 as FileTree/tables */
+.sl-link-button:not([data-variant="primary"]),
+a.sl-link-button:not([data-variant="primary"]) {
+  background: var(--sl-color-gray-7) !important;
+  color: var(--sl-color-white) !important;
+  border: 1px solid var(--sl-color-gray-5) !important;
+}
+
+.sl-link-button:not([data-variant="primary"]):hover,
+a.sl-link-button:not([data-variant="primary"]):hover {
+  background: var(--sl-color-gray-6) !important;
+}
+
+/* Sidebar active state */
+.sidebar-content a[aria-current="page"],
+nav[aria-label="Main"] a[aria-current="page"],
+starlight-menu-button[aria-current="page"],
+.sidebar a[aria-current="page"] {
+  background: var(--sl-color-accent-low) !important;
+  color: var(--sl-color-accent-high) !important;
+  border-radius: 0.5rem !important; /* rounded-lg */
+  border-left: none !important;
+  padding-left: 0.75rem !important;
+  margin: 0.125rem 0.5rem !important;
+}
+
+/* Terminal demo - matching app's terminal/code block style */
+.terminal-demo {
+  background: var(--sl-color-black);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  margin: 2rem auto;
+  max-width: 700px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--sl-color-gray-6);
+}
+
+.terminal-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--sl-color-gray-7);
+  border-bottom: 1px solid var(--sl-color-gray-6);
+}
+
+.terminal-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.terminal-dot.red {
+  background: #ff5f56;
+}
+.terminal-dot.yellow {
+  background: #ffbd2e;
+}
+.terminal-dot.green {
+  background: #27c93f;
+}
+
+.terminal-title {
+  flex: 1;
+  text-align: center;
+  color: var(--sl-color-gray-3);
+  font-size: 0.8rem;
+}
+
+.terminal-content {
+  padding: 1rem 1.5rem;
+  font-family: var(--sl-font-mono);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.terminal-content .prompt {
+  color: #27c93f;
+}
+
+.terminal-content .command {
+  color: var(--sl-color-white);
+}
+
+.terminal-content .comment {
+  color: var(--sl-color-gray-3);
+}
+
+.terminal-content .output {
+  color: var(--sl-color-gray-2);
+}
+
+.terminal-content .highlight {
+  color: var(--sl-color-accent);
+}
+
+/* Quick start section */
+.quick-start {
+  padding: 3rem 0;
+}
+
+.quick-start h2 {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+/* Use cases section */
+.use-cases {
+  padding: 3rem 0;
+  background: var(--sl-color-gray-7);
+  margin: 2rem -2rem;
+  padding-left: 2rem;
+  padding-right: 2rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--sl-color-gray-6);
+}
+
+.use-cases h2 {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.use-cases-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.use-case {
+  padding: 1.5rem;
+  background: var(--sl-color-black);
+  border-radius: 0.5rem;
+  border: 1px solid var(--sl-color-gray-6);
+}
+
+.use-case h4 {
+  margin: 0 0 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--sl-color-white);
+}
+
+.use-case p {
+  margin: 0;
+  color: var(--sl-color-gray-2);
+  font-size: 0.9rem;
+}
+
+/* Links - simple underlined style */
+.sl-markdown-content a {
+  color: var(--sl-color-accent-high);
+  text-decoration-color: rgba(96, 165, 250, 0.4);
+  text-underline-offset: 2px;
+  transition: all 0.15s ease;
+}
+
+.sl-markdown-content a:hover {
+  color: var(--sl-color-accent);
+  text-decoration-color: rgba(147, 197, 253, 0.6);
+}
+
+/* Heading anchor links (chain icon) */
+.sl-markdown-content h1 a,
+.sl-markdown-content h2 a,
+.sl-markdown-content h3 a,
+.sl-markdown-content h4 a,
+.sl-markdown-content h5 a,
+.sl-markdown-content h6 a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.sl-markdown-content .heading-wrapper a,
+.sl-markdown-content a[aria-label*="link"],
+.sl-markdown-content a.anchor-link,
+a[data-pagefind-ignore] {
+  text-decoration: none;
+  color: var(--sl-color-gray-3);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.sl-markdown-content h1:hover a,
+.sl-markdown-content h2:hover a,
+.sl-markdown-content h3:hover a,
+.sl-markdown-content h4:hover a,
+.sl-markdown-content h5:hover a,
+.sl-markdown-content h6:hover a,
+.sl-markdown-content .heading-wrapper:hover a,
+.sl-markdown-content a[aria-label*="link"]:hover,
+.sl-markdown-content a.anchor-link:hover {
+  opacity: 1;
+  color: var(--sl-color-gray-2);
+}
+
+/* Headings - use theme-aware colors */
+.sl-markdown-content h1,
+.sl-markdown-content h2,
+.sl-markdown-content h3,
+.sl-markdown-content h4,
+.sl-markdown-content h5,
+.sl-markdown-content h6 {
+  color: var(--sl-color-white);
+}
+
+/* ============================================
+   Feature Cards - matching app's clean design
+   App uses: border, rounded-lg, subtle background
+   ============================================ */
+
+/* Card container - supports both themes */
+.card,
+article.card,
+.sl-link-card {
+  /* Override Starlight's rotating colors with consistent blue accent */
+  --sl-card-border: var(--sl-color-accent) !important;
+  --sl-card-bg: rgba(59, 130, 246, 0.1) !important; /* blue-500 at 10% */
+  background: var(--sl-color-gray-7) !important;
+  border: 1px solid var(--sl-color-gray-5) !important;
+  border-radius: 0.5rem !important;
+  padding: 1.25rem !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease !important;
+}
+
+.card:hover,
+article.card:hover,
+.sl-link-card:hover {
+  border-color: var(--sl-color-gray-4) !important;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.12), 0 1px 3px rgb(0 0 0 / 0.08) !important;
+  transform: translateY(-2px) !important;
+}
+
+:root[data-theme="dark"] .card:hover,
+:root[data-theme="dark"] article.card:hover,
+:root[data-theme="dark"] .sl-link-card:hover {
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.3), 0 1px 4px rgb(0 0 0 / 0.2) !important;
+}
+
+/* Card icon - consistent blue color and styling */
+.card .icon,
+article.card .icon {
+  color: var(--sl-color-accent) !important;
+  background-color: var(--sl-color-accent-low) !important;
+  border-color: var(--sl-color-accent) !important;
+}
+
+/* Make card icons bigger - override Starlight's inline size */
+article.card .title .icon,
+.card .title .icon,
+article.card p.title .icon {
+  font-size: 1.5rem !important;
+}
+
+article.card .title .icon svg,
+.card .title .icon svg,
+article.card p.title .icon svg {
+  width: 2.5rem !important;
+  height: 2.5rem !important;
+}
+
+/* Card headings */
+.card h2,
+.card h3,
+.card .title,
+article.card .title {
+  color: var(--sl-color-white) !important;
+  font-weight: 600 !important;
+}
+
+/* Card text */
+.card p,
+.card .body,
+article.card .body {
+  color: var(--sl-color-gray-2) !important;
+  font-size: 0.875rem !important;
+  line-height: 1.5 !important;
+  margin: 0 !important;
+}
+
+/* CardGrid spacing */
+.card-grid {
+  gap: 1rem !important;
+}
+
+/* ============================================
+   Steps component - gray style matching app
+   ============================================ */
+
+/* Override Starlight's accent-based steps */
+.sl-steps,
+ol.sl-steps {
+  --sl-color-bg-badge: var(--sl-color-gray-4) !important;
+  --sl-color-accent: var(--sl-color-gray-4) !important;
+  --sl-color-accent-high: var(--sl-color-gray-3) !important;
+}
+
+/* Step number circles */
+.sl-steps > li::before,
+ol.sl-steps > li::before {
+  background: var(--sl-color-gray-4) !important;
+  background-color: var(--sl-color-gray-4) !important;
+  color: var(--sl-color-black) !important;
+  border: none !important;
+}
+
+/* Steps vertical line */
+.sl-steps > li::after,
+ol.sl-steps > li::after {
+  background: var(--sl-color-gray-5) !important;
+  background-color: var(--sl-color-gray-5) !important;
+}
+
+/* ============================================
+   Callouts/Asides - matching app's alert style
+   App uses: rounded-lg, border, icon + text inline
+   ============================================ */
+
+/* Base aside styles */
+aside.starlight-aside,
+.starlight-aside {
+  border-radius: 0.5rem !important;
+  padding: 0.75rem 1rem !important;
+  margin: 1rem 0 !important;
+  border: 1px solid !important;
+  font-size: 0.875rem !important;
+  line-height: 1.5 !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-start !important;
+  gap: 0.5rem !important;
+}
+
+/* Title container - hide text via font-size: 0 */
+aside.starlight-aside .starlight-aside__title,
+.starlight-aside .starlight-aside__title {
+  display: flex !important;
+  align-items: flex-start !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  flex-shrink: 0 !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
+  margin-top: 0.1875rem !important;
+}
+
+/* Icon - reset size so it's visible */
+aside.starlight-aside .starlight-aside__icon,
+.starlight-aside .starlight-aside__icon {
+  font-size: 1rem !important;
+  line-height: 1 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 1rem !important;
+  height: 1rem !important;
+  min-width: 1rem !important;
+  max-width: 1rem !important;
+  overflow: hidden !important;
+}
+
+aside.starlight-aside .starlight-aside__icon svg,
+.starlight-aside .starlight-aside__icon svg {
+  width: 1rem !important;
+  height: 1rem !important;
+  min-width: 1rem !important;
+  max-width: 1rem !important;
+  display: block !important;
+}
+
+/* Content flows naturally */
+aside.starlight-aside .starlight-aside__content,
+.starlight-aside .starlight-aside__content {
+  flex: 1 !important;
+  min-width: 0 !important;
+}
+
+aside.starlight-aside .starlight-aside__content p,
+.starlight-aside .starlight-aside__content p {
+  margin: 0 !important;
+  color: inherit !important;
+}
+
+/* Links inside asides - inherit color, subtle underline */
+aside.starlight-aside a,
+.starlight-aside a {
+  color: inherit !important;
+  font-weight: 500 !important;
+  text-underline-offset: 2px !important;
+}
+
+aside.starlight-aside a:hover,
+.starlight-aside a:hover {
+  opacity: 0.8 !important;
+}
+
+/* Note - blue */
+aside.starlight-aside.starlight-aside--note,
+.starlight-aside--note {
+  background: var(--sl-color-accent-low) !important;
+  border-color: var(--sl-color-accent) !important;
+  color: var(--sl-color-white) !important;
+}
+
+aside.starlight-aside.starlight-aside--note .starlight-aside__icon,
+.starlight-aside--note .starlight-aside__icon {
+  color: var(--sl-color-accent) !important;
+}
+
+/* Tip - green */
+aside.starlight-aside.starlight-aside--tip,
+.starlight-aside--tip {
+  background: rgba(22, 163, 74, 0.1) !important;
+  border-color: #16a34a !important;
+  color: var(--sl-color-white) !important;
+}
+
+aside.starlight-aside.starlight-aside--tip .starlight-aside__icon,
+.starlight-aside--tip .starlight-aside__icon {
+  color: #16a34a !important; /* green-600 */
+}
+
+/* Caution - amber */
+aside.starlight-aside.starlight-aside--caution,
+.starlight-aside--caution {
+  background: rgba(217, 119, 6, 0.1) !important;
+  border-color: #d97706 !important;
+  color: var(--sl-color-white) !important;
+}
+
+aside.starlight-aside.starlight-aside--caution .starlight-aside__icon,
+.starlight-aside--caution .starlight-aside__icon {
+  color: #d97706 !important; /* amber-600 */
+}
+
+/* Danger - red */
+aside.starlight-aside.starlight-aside--danger,
+.starlight-aside--danger {
+  background: rgba(220, 38, 38, 0.1) !important;
+  border-color: #dc2626 !important;
+  color: var(--sl-color-white) !important;
+}
+
+aside.starlight-aside.starlight-aside--danger .starlight-aside__icon,
+.starlight-aside--danger .starlight-aside__icon {
+  color: #dc2626 !important; /* red-600 */
+}
+
+/* ============================================
+   Inline code - GitHub style for light/dark themes
+   ============================================ */
+
+/* Light theme - GitHub Light inline code */
+:root[data-theme="light"] .sl-markdown-content code:not(pre code),
+:root[data-theme="light"] .starlight-aside code,
+:root[data-theme="light"] p code,
+:root[data-theme="light"] li code,
+:root[data-theme="light"] td code {
+  color: #1f2328 !important; /* GitHub light text */
+  padding: 0.125rem 0.375rem !important;
+  border-radius: 0.375rem !important;
+  font-size: 0.8125em !important;
+  font-family: "SF Mono", "Menlo", "Monaco", "Consolas", monospace !important;
+  border: none !important;
+}
+
+/* Dark theme - GitHub Dark inline code */
+:root[data-theme="dark"] .sl-markdown-content code:not(pre code),
+:root[data-theme="dark"] .starlight-aside code,
+:root[data-theme="dark"] p code,
+:root[data-theme="dark"] li code,
+:root[data-theme="dark"] td code {
+  color: #e6edf3 !important; /* GitHub dark text */
+  padding: 0.125rem 0.375rem !important;
+  border-radius: 0.375rem !important;
+  font-size: 0.8125em !important;
+  font-family: "SF Mono", "Menlo", "Monaco", "Consolas", monospace !important;
+  border: none !important;
+}
+
+/* ============================================
+   Tables - full width with rounded edges
+   ============================================ */
+
+/* Wrapper to ensure full width and rounded edges */
+.sl-markdown-content > table,
+.sl-markdown-content table {
+  width: 100% !important;
+  min-width: 100% !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  margin: 1.5rem 0 !important;
+  font-size: 0.875rem !important;
+  display: table !important;
+  table-layout: auto !important;
+  border: 1px solid var(--sl-color-gray-5) !important;
+  border-radius: 0.5rem !important;
+  overflow: hidden !important;
+}
+
+article table,
+main table {
+  width: 100% !important;
+  min-width: 100% !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  margin: 1.5rem 0 !important;
+  font-size: 0.875rem !important;
+  border: 1px solid var(--sl-color-gray-5) !important;
+  border-radius: 0.5rem !important;
+  overflow: hidden !important;
+}
+
+/* Force any table wrapper to be full width */
+.sl-markdown-content div:has(> table),
+.sl-markdown-content figure:has(> table) {
+  width: 100% !important;
+  overflow-x: auto !important;
+}
+
+.sl-markdown-content table th,
+.sl-markdown-content table td,
+article table th,
+article table td {
+  padding: 0.75rem 1rem !important;
+  text-align: left !important;
+  border-bottom: 1px solid var(--sl-color-gray-5) !important;
+}
+
+/* Remove bottom border on last row */
+.sl-markdown-content table tbody tr:last-child td,
+article table tbody tr:last-child td {
+  border-bottom: none !important;
+}
+
+/* Table header - same subtle background as FileTree */
+.sl-markdown-content table th,
+article table th {
+  background: var(--sl-color-gray-7) !important;
+  font-weight: 600 !important;
+  color: var(--sl-color-white) !important;
+}
+
+/* Table body rows - subtle hover */
+.sl-markdown-content table tbody tr:hover,
+article table tbody tr:hover {
+  background: var(--sl-color-gray-6) !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .landing-hero h1 {
+    font-size: 2rem;
+  }
+
+  .landing-hero .tagline {
+    font-size: 1.125rem;
+  }
+
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================
+   FileTree - rounded edges like other components
+   ============================================ */
+.sl-markdown-content .sl-file-tree,
+starlight-file-tree,
+.sl-file-tree {
+  background: var(--sl-color-gray-7) !important;
+  border: 1px solid var(--sl-color-gray-5) !important;
+  border-radius: 0.5rem !important;
+  padding: 1rem !important;
+  margin: 1rem 0 !important;
+  overflow: hidden !important;
+}
+
+/* FileTree list styling */
+.sl-file-tree ul {
+  margin: 0 !important;
+  padding: 0 !important;
+  list-style: none !important;
+}
+
+.sl-file-tree ul ul {
+  padding-left: 1.25rem !important;
+}
+
+.sl-file-tree li {
+  padding: 0.125rem 0 !important;
+}
+
+/* FileTree icons and text */
+.sl-file-tree .tree-entry {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.375rem !important;
+}
+
+.sl-file-tree svg {
+  width: 1rem !important;
+  height: 1rem !important;
+  flex-shrink: 0 !important;
+  color: var(--sl-color-gray-3) !important;
+}
+
+/* Folder icons */
+.sl-file-tree .directory > .tree-entry svg {
+  color: var(--sl-color-accent) !important;
+}
+
+/* ============================================
+   Pricing Grid & Cards
+   ============================================ */
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+  margin: 2rem 0;
+}
+
+.pricing-card {
+  background: var(--sl-color-gray-7);
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.pricing-card:hover {
+  border-color: var(--sl-color-gray-4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-3px);
+}
+
+.pricing-card.featured {
+  border-color: var(--sl-color-accent);
+  background: var(--sl-color-accent-low);
+  position: relative;
+  overflow: visible;
+}
+
+.pricing-card.featured::before {
+  content: "Most Popular";
+  position: absolute;
+  top: -0.75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--sl-color-accent);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.2rem 0.875rem;
+  border-radius: 9999px;
+  white-space: nowrap;
+}
+
+.pricing-card.featured:hover {
+  border-color: var(--sl-color-accent-high);
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.2);
+}
+
+.pricing-header {
+  text-align: center;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--sl-color-gray-5);
+}
+
+.pricing-card.featured .pricing-header {
+  border-bottom-color: var(--sl-color-accent);
+}
+
+.pricing-header h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1.25rem;
+  color: var(--sl-color-white);
+}
+
+.pricing-users {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  color: var(--sl-color-gray-3);
+}
+
+.pricing-price {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: var(--sl-color-white);
+  line-height: 1.2;
+}
+
+.pricing-price span {
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--sl-color-gray-3);
+}
+
+.pricing-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem;
+  flex: 1;
+}
+
+.pricing-features li {
+  position: relative;
+  padding: 0.375rem 0 0.375rem 1.5rem;
+  font-size: 0.875rem;
+  color: var(--sl-color-gray-2);
+  line-height: 1.5;
+}
+
+.pricing-features li::before {
+  content: "\2713";
+  position: absolute;
+  left: 0;
+  color: var(--sl-color-accent);
+  font-weight: 700;
+}
+
+.pricing-cta {
+  display: block;
+  text-align: center;
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  text-decoration: none;
+  transition: all 0.15s ease;
+  background: var(--sl-color-gray-6);
+  color: var(--sl-color-white);
+  border: 1px solid var(--sl-color-gray-5);
+  margin-top: auto;
+}
+
+.pricing-cta:hover {
+  background: var(--sl-color-gray-5);
+  color: var(--sl-color-white);
+  transform: translateY(-1px);
+}
+
+.pricing-cta.primary {
+  background: var(--sl-color-accent);
+  color: white;
+  border-color: var(--sl-color-accent);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--sl-color-accent) 25%, transparent);
+}
+
+.pricing-cta.primary:hover {
+  background: var(--sl-color-accent-high);
+  border-color: var(--sl-color-accent-high);
+  color: white;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--sl-color-accent) 35%, transparent);
+  transform: translateY(-1px);
+}
+
+/* Responsive: 1 column on small screens */
+@media (max-width: 560px) {
+  .pricing-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Print styles */
+@media print {
+  .sidebar,
+  .right-sidebar {
+    display: none;
+  }
+}

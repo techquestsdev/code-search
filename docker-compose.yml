@@ -1,0 +1,161 @@
+services:
+  # ============================================
+  # Infrastructure
+  # ============================================
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: code-search-postgres
+    environment:
+      POSTGRES_USER: codesearch
+      POSTGRES_PASSWORD: codesearch
+      POSTGRES_DB: codesearch
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./migrations/001_init.sql:/docker-entrypoint-initdb.d/001_init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U codesearch"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: code-search-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ============================================
+  # Zoekt (Search Engine)
+  # ============================================
+
+  zoekt:
+    build:
+      context: .
+      dockerfile: docker/zoekt.Dockerfile
+    container_name: code-search-zoekt
+    ports:
+      - "6070:6070"
+    volumes:
+      - ./data/index:/data/index
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:6070/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # ============================================
+  # Application Services
+  # ============================================
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    container_name: code-search-api
+    ports:
+      - "8080:8080"
+    environment:
+      # Core configuration (CS_ prefix required)
+      CS_DATABASE_URL: postgres://codesearch:codesearch@postgres:5432/codesearch?sslmode=disable
+      CS_REDIS_ADDR: redis:6379
+      CS_ZOEKT_URL: http://zoekt:6070
+      CS_REPOS_BASE_PATH: /data/repos
+      CS_LOG_LEVEL: debug
+      # Code host tokens (referenced in config.yaml as "$CS_GITHUB_TOKEN")
+      # CS_GITHUB_TOKEN: ${CS_GITHUB_TOKEN:-}
+      # CS_GITLAB_TOKEN: ${CS_GITLAB_TOKEN:-}
+      # Readonly mode (set to true to manage connections only via config)
+      # CS_CONNECTIONS_READONLY: "false"
+      # Readonly mode (set to true to manage repos only via code host sync)
+      # CS_REPOS_READONLY: "false"
+    volumes:
+      - ./data/repos:/data/repos
+      # Mount config file (optional - for codehosts configuration)
+      # - ./config.yaml:/app/config.yaml:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      zoekt:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  indexer:
+    build:
+      context: .
+      dockerfile: docker/indexer.Dockerfile
+      # To enable SCIP code intelligence (go-to-definition, find-references),
+      # use the SCIP-enabled image instead. It includes scip-go, scip-typescript,
+      # and scip-python indexers:
+      # dockerfile: docker/indexer-scip.Dockerfile
+    container_name: code-search-indexer
+    environment:
+      # Core configuration (CS_ prefix required)
+      CS_DATABASE_URL: postgres://codesearch:codesearch@postgres:5432/codesearch?sslmode=disable
+      CS_REDIS_ADDR: redis:6379
+      CS_REDIS_PASSWORD: ""
+      CS_ZOEKT_URL: http://zoekt:6070
+      CS_INDEXER_ZOEKT_BIN: /app/zoekt-git-index
+      CS_INDEXER_INDEX_PATH: /data/index
+      CS_INDEXER_REPOS_PATH: /data/repos
+      CS_LOG_LEVEL: debug
+      # SCIP auto-indexing (requires indexer-scip.Dockerfile)
+      # CS_SCIP_ENABLED: "true"
+    volumes:
+      - ./data/repos:/data/repos
+      - ./data/index:/data/index
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      zoekt:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+    container_name: code-search-web
+    ports:
+      - "3000:3000"
+    environment:
+      - API_URL=http://api:8080
+    depends_on:
+      - api
+
+  website:
+    build:
+      context: .
+      dockerfile: docker/website.Dockerfile
+    container_name: code-search-website
+    ports:
+      - "4321:4321"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:4321/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  default:
+    name: code-search-network

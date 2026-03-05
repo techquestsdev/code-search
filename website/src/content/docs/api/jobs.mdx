@@ -1,0 +1,516 @@
+---
+title: Jobs API
+description: Background job monitoring API endpoints
+---
+
+import { Tabs, TabItem, Aside } from "@astrojs/starlight/components";
+
+The Jobs API allows you to monitor and manage background jobs for indexing, syncing, and find-and-replace operations.
+
+## List Jobs
+
+Get all background jobs with optional filtering and pagination.
+
+```http
+GET /api/v1/jobs
+```
+
+### Query Parameters
+
+| Parameter | Type    | Description                                    |
+| --------- | ------- | ---------------------------------------------- |
+| `type`    | string  | Filter by job type (`index`, `sync`, `replace`)|
+| `status`  | string  | Filter by status                               |
+| `exclude_status` | string | Exclude jobs with this status (e.g., `completed`) |
+| `repo`    | string  | Filter by repository name (partial match)      |
+| `limit`   | integer | Results per page (default: 50, max: 500)       |
+| `offset`  | integer | Pagination offset                              |
+
+### Response
+
+```json
+{
+  "jobs": [
+    {
+      "id": "job_abc123",
+      "type": "index",
+      "status": "running",
+      "payload": {
+        "repository_id": 1,
+        "connection_id": 1,
+        "repo_name": "myorg/api",
+        "clone_url": "https://github.com/myorg/api.git",
+        "branch": "main"
+      },
+      "created_at": "2024-01-15T10:30:00Z",
+      "updated_at": "2024-01-15T10:30:05Z",
+      "started_at": "2024-01-15T10:30:05Z",
+      "progress": {
+        "current": 823,
+        "total": 1234,
+        "message": "Indexing files..."
+      }
+    },
+    {
+      "id": "job_def456",
+      "type": "sync",
+      "status": "completed",
+      "payload": {
+        "connection_id": 1
+      },
+      "created_at": "2024-01-15T10:28:00Z",
+      "updated_at": "2024-01-15T10:29:45Z",
+      "started_at": "2024-01-15T10:28:02Z",
+      "completed_at": "2024-01-15T10:29:45Z"
+    }
+  ],
+  "total_count": 156,
+  "limit": 50,
+  "offset": 0,
+  "has_more": true
+}
+```
+
+## Get Job
+
+Get a specific job by ID.
+
+```http
+GET /api/v1/jobs/{id}
+```
+
+### Response
+
+```json
+{
+  "id": "job_abc123",
+  "type": "index",
+  "status": "running",
+  "payload": {
+    "repository_id": 1,
+    "connection_id": 1,
+    "repo_name": "myorg/api",
+    "clone_url": "https://github.com/myorg/api.git",
+    "branch": "main"
+  },
+  "created_at": "2024-01-15T10:30:00Z",
+  "updated_at": "2024-01-15T10:32:00Z",
+  "started_at": "2024-01-15T10:30:05Z",
+  "progress": {
+    "current": 823,
+    "total": 1234,
+    "message": "Indexing files..."
+  }
+}
+```
+
+### Failed Job Response
+
+```json
+{
+  "id": "job_xyz789",
+  "type": "index",
+  "status": "failed",
+  "payload": {
+    "repository_id": 2,
+    "connection_id": 1,
+    "repo_name": "myorg/broken-repo",
+    "clone_url": "https://github.com/myorg/broken-repo.git",
+    "branch": "main"
+  },
+  "error": "Failed to clone repository: authentication required",
+  "created_at": "2024-01-15T10:25:00Z",
+  "updated_at": "2024-01-15T10:26:00Z",
+  "started_at": "2024-01-15T10:25:05Z",
+  "completed_at": "2024-01-15T10:26:00Z"
+}
+```
+
+## Cancel Job
+
+Cancel a pending job. Only jobs with status `pending` can be cancelled.
+
+```http
+POST /api/v1/jobs/{id}/cancel
+```
+
+### Response
+
+```json
+{
+  "status": "cancelled",
+  "message": "Job cancelled"
+}
+```
+
+<Aside type="caution">
+  Only pending jobs can be cancelled. Running jobs cannot be interrupted.
+</Aside>
+
+## Cleanup Jobs
+
+Remove old completed and failed jobs. This helps prevent Redis from growing indefinitely.
+
+```http
+POST /api/v1/jobs/cleanup
+```
+
+### Query Parameters
+
+| Parameter | Type    | Description                                    |
+| --------- | ------- | ---------------------------------------------- |
+| `max_age_hours` | integer | Maximum age in hours for jobs to keep (default: 1) |
+
+### Response
+
+```json
+{
+  "status": "ok",
+  "deleted_count": 42,
+  "scanned_count": 150,
+  "max_age_hours": 1,
+  "message": "Cleanup completed"
+}
+```
+
+<Aside type="tip">
+  The scheduler automatically runs cleanup every 10 minutes based on the `job_retention` setting.
+  Use this endpoint for manual cleanup or to apply a different retention period.
+</Aside>
+
+## Bulk Cancel Jobs
+
+Cancel all pending and/or running jobs matching the given filters. Only pending and running jobs can be cancelled.
+
+```http
+POST /api/v1/jobs/cancel-all
+```
+
+### Query Parameters
+
+| Parameter | Type    | Description                                    |
+| --------- | ------- | ---------------------------------------------- |
+| `type`    | string  | Filter by job type (`index`, `sync`, `replace`)|
+| `status`  | string  | Filter by status (`pending`, `running`)        |
+
+### Response
+
+```json
+{
+  "status": "ok",
+  "processed": 25,
+  "succeeded": 24,
+  "failed": 1,
+  "message": "Bulk operation completed"
+}
+```
+
+<Aside type="caution">
+  Cancelled jobs are marked as `failed` with an error message indicating they were cancelled.
+</Aside>
+
+## Bulk Delete Jobs
+
+Delete all completed and/or failed jobs matching the given filters. Only completed and failed jobs can be deleted.
+
+```http
+POST /api/v1/jobs/delete-all
+```
+
+### Query Parameters
+
+| Parameter | Type    | Description                                    |
+| --------- | ------- | ---------------------------------------------- |
+| `type`    | string  | Filter by job type (`index`, `sync`, `replace`)|
+| `status`  | string  | Filter by status (`completed`, `failed`)       |
+
+### Response
+
+```json
+{
+  "status": "ok",
+  "processed": 150,
+  "succeeded": 150,
+  "failed": 0,
+  "message": "Bulk operation completed"
+}
+```
+
+## Delete All Jobs
+
+```http
+DELETE /api/v1/jobs?confirm=true
+```
+
+### Query Parameters
+
+| Parameter | Type    | Required | Description                           |
+| --------- | ------- | -------- | ------------------------------------- |
+| `confirm` | string  | Yes      | Must be `"true"` to confirm deletion  |
+
+### Response
+
+```json
+{
+  "status": "ok",
+  "processed": 500,
+  "succeeded": 500,
+  "failed": 0,
+  "message": "Bulk operation completed"
+}
+```
+
+<Aside type="danger">
+  This operation cannot be undone. All jobs including pending and running jobs will be deleted.
+</Aside>
+
+## Examples
+
+<Tabs>
+  <TabItem label="cURL">
+    ```bash
+    # List all jobs
+    curl "http://localhost:8080/api/v1/jobs"
+
+    # Filter by status
+    curl "http://localhost:8080/api/v1/jobs?status=running"
+
+    # Hide completed jobs
+    curl "http://localhost:8080/api/v1/jobs?exclude_status=completed"
+
+    # Filter by type
+    curl "http://localhost:8080/api/v1/jobs?type=index"
+
+    # Filter by repo name (partial match)
+    curl "http://localhost:8080/api/v1/jobs?repo=myorg"
+
+    # Pagination
+    curl "http://localhost:8080/api/v1/jobs?limit=20&offset=0"
+
+    # Get specific job
+    curl "http://localhost:8080/api/v1/jobs/job_abc123"
+
+    # Cancel job
+    curl -X POST "http://localhost:8080/api/v1/jobs/job_abc123/cancel"
+
+    # Cleanup old jobs (default 1 hour)
+    curl -X POST "http://localhost:8080/api/v1/jobs/cleanup"
+
+    # Cleanup jobs older than 2 hours
+    curl -X POST "http://localhost:8080/api/v1/jobs/cleanup?max_age_hours=2"
+
+    # Bulk cancel all pending index jobs
+    curl -X POST "http://localhost:8080/api/v1/jobs/cancel-all?type=index&status=pending"
+
+    # Bulk cancel all pending jobs (any type)
+    curl -X POST "http://localhost:8080/api/v1/jobs/cancel-all?status=pending"
+
+    # Bulk delete all completed jobs
+    curl -X POST "http://localhost:8080/api/v1/jobs/delete-all?status=completed"
+
+    # Bulk delete all failed sync jobs
+    curl -X POST "http://localhost:8080/api/v1/jobs/delete-all?type=sync&status=failed"
+
+    # Delete ALL jobs (dangerous!)
+    curl -X DELETE "http://localhost:8080/api/v1/jobs?confirm=true"
+    ```
+  </TabItem>
+  <TabItem label="JavaScript">
+    ```javascript
+    const API = 'http://localhost:8080/api/v1';
+
+    // List all jobs
+    const allJobs = await fetch(`${API}/jobs`).then(r => r.json());
+
+    // List running jobs
+    const running = await fetch(`${API}/jobs?status=running`).then(r => r.json());
+
+    // Hide completed jobs
+    const active = await fetch(`${API}/jobs?exclude_status=completed`).then(r => r.json());
+
+    // List index jobs
+    const indexJobs = await fetch(`${API}/jobs?type=index`).then(r => r.json());
+
+    // Get job details
+    const job = await fetch(`${API}/jobs/job_abc123`).then(r => r.json());
+
+    // Cancel job
+    await fetch(`${API}/jobs/job_abc123/cancel`, { method: 'POST' });
+
+    // Cleanup old jobs
+    const cleanup = await fetch(`${API}/jobs/cleanup`, { method: 'POST' }).then(r => r.json());
+    console.log(`Deleted ${cleanup.deleted_count} old jobs`);
+
+    // Bulk cancel all pending jobs
+    const cancelResult = await fetch(
+      `${API}/jobs/cancel-all?status=pending`,
+      { method: 'POST' }
+    ).then(r => r.json());
+    console.log(`Cancelled ${cancelResult.succeeded} jobs`);
+
+    // Bulk delete all completed jobs
+    const deleteResult = await fetch(
+      `${API}/jobs/delete-all?status=completed`,
+      { method: 'POST' }
+    ).then(r => r.json());
+    console.log(`Deleted ${deleteResult.succeeded} jobs`);
+
+    // Delete ALL jobs (dangerous!)
+    const deleteAll = await fetch(
+      `${API}/jobs?confirm=true`,
+      { method: 'DELETE' }
+    ).then(r => r.json());
+    console.log(`Deleted ${deleteAll.succeeded} jobs`);
+
+    // Paginate through jobs
+    let offset = 0;
+    const limit = 50;
+    let hasMore = true;
+
+    while (hasMore) {
+      const result = await fetch(
+        `${API}/jobs?limit=${limit}&offset=${offset}`
+      ).then(r => r.json());
+
+      console.log(`Got ${result.jobs.length} jobs`);
+      hasMore = result.has_more;
+      offset += limit;
+    }
+    ```
+  </TabItem>
+  <TabItem label="Python">
+    ```python
+    import requests
+
+    API = "http://localhost:8080/api/v1"
+
+    # List all jobs
+    all_jobs = requests.get(f"{API}/jobs").json()
+
+    # List running jobs
+    running = requests.get(f"{API}/jobs", params={"status": "running"}).json()
+
+    # Hide completed jobs
+    active = requests.get(f"{API}/jobs", params={"exclude_status": "completed"}).json()
+
+    # List index jobs
+    index_jobs = requests.get(f"{API}/jobs", params={"type": "index"}).json()
+
+    # Get job details
+    job = requests.get(f"{API}/jobs/job_abc123").json()
+
+    # Cancel job
+    requests.post(f"{API}/jobs/job_abc123/cancel")
+
+    # Cleanup old jobs
+    cleanup = requests.post(f"{API}/jobs/cleanup").json()
+    print(f"Deleted {cleanup['deleted_count']} old jobs")
+
+    # Bulk cancel all pending jobs
+    cancel_result = requests.post(
+        f"{API}/jobs/cancel-all",
+        params={"status": "pending"}
+    ).json()
+    print(f"Cancelled {cancel_result['succeeded']} jobs")
+
+    # Bulk delete all completed jobs
+    delete_result = requests.post(
+        f"{API}/jobs/delete-all",
+        params={"status": "completed"}
+    ).json()
+    print(f"Deleted {delete_result['succeeded']} jobs")
+
+    # Delete ALL jobs (dangerous!)
+    delete_all = requests.delete(
+        f"{API}/jobs",
+        params={"confirm": "true"}
+    ).json()
+    print(f"Deleted {delete_all['succeeded']} jobs")
+
+    # Paginate through jobs
+    offset = 0
+    limit = 50
+    has_more = True
+
+    while has_more:
+        result = requests.get(
+            f"{API}/jobs",
+            params={"limit": limit, "offset": offset}
+        ).json()
+
+        print(f"Got {len(result['jobs'])} jobs")
+        has_more = result["has_more"]
+        offset += limit
+    ```
+  </TabItem>
+</Tabs>
+
+## Job Types
+
+| Type      | Description                                      |
+| --------- | ------------------------------------------------ |
+| `index`   | Index a repository for searching                 |
+| `sync`    | Sync repositories from a code host connection    |
+| `replace` | Find-and-replace operation across repositories   |
+
+## Job Payloads
+
+Each job type has a specific payload structure:
+
+### Index Payload
+```json
+{
+  "repository_id": 1,
+  "connection_id": 1,
+  "repo_name": "myorg/api",
+  "clone_url": "https://github.com/myorg/api.git",
+  "branch": "main"
+}
+```
+
+### Sync Payload
+```json
+{
+  "connection_id": 1
+}
+```
+
+### Replace Payload
+```json
+{
+  "search_pattern": "oldFunction",
+  "replace_with": "newFunction",
+  "is_regex": false,
+  "case_sensitive": true,
+  "file_patterns": ["*.go", "*.ts"],
+  "matches": [
+    {"repository_id": 1, "repository_name": "myorg/api", "file_path": "internal/service.go"},
+    {"repository_id": 1, "repository_name": "myorg/api", "file_path": "internal/handler.go"}
+  ],
+  "branch_name": "refactor/rename-function",
+  "mr_title": "Rename oldFunction to newFunction",
+  "mr_description": "Automated refactoring"
+}
+```
+
+<Aside type="note">
+  The `matches` array is populated from the preview response. A merge request is always created - changes are never committed directly to main. See [Replace API](/api/replace/) for the two-phase flow.
+</Aside>
+
+## Status Values
+
+| Status      | Description                     |
+| ----------- | ------------------------------- |
+| `pending`   | Waiting in queue                |
+| `running`   | Currently executing             |
+| `completed` | Finished successfully           |
+| `failed`    | Error occurred (check `error`)  |
+
+<Aside>
+  Note: There is no `cancelled` status. Cancelled jobs are marked as `failed` with a cancellation message.
+</Aside>
+
+## Next Steps
+
+- [Repositories API](/api/repositories/) - Repository management
+- [Connections API](/api/connections/) - Connection management

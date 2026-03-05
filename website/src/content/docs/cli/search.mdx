@@ -1,0 +1,176 @@
+---
+title: CLI Search
+description: Search code with the CLI
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+The `code-search search` command lets you search across all indexed repositories.
+
+## Basic Usage
+
+```bash
+# Simple text search
+code-search search "foo"
+
+# Search for a phrase
+code-search search "func main"
+
+# Regex search
+code-search search "func\s+\w+\(" --regex
+```
+
+## Command Syntax
+
+```bash
+code-search search <query> [flags]
+```
+
+## Command Options
+
+### `--regex, -r`
+
+Treat the search query as a regular expression.
+
+```bash
+# Match function definitions
+code-search search "func\s+\w+\(" --regex
+
+# Match version numbers
+code-search search "v\d+\.\d+\.\d+" --regex
+```
+
+### `--repos, -R`
+
+Filter results to specific repositories (can be used multiple times or comma-separated).
+
+```bash
+# Single repo
+code-search search "foo" --repos myorg/myrepo
+
+# Multiple repos
+code-search search "foo" --repos myorg/frontend,myorg/backend
+
+# Or specify multiple times
+code-search search "foo" -R myorg/frontend -R myorg/backend
+```
+
+### `--langs, -l`
+
+Filter by programming languages (can be specified multiple times).
+
+```bash
+code-search search "class" --langs python
+code-search search "interface" --langs typescript,javascript
+```
+
+Supported languages: `go`, `python`, `javascript`, `typescript`, `java`, `ruby`, `rust`, `c`, `cpp`, `csharp`, `php`, `swift`, `kotlin`, and more.
+
+### `--files, -f`
+
+Filter by file path patterns (can be specified multiple times).
+
+```bash
+# By extension
+code-search search "import" --files "*.py"
+
+# By directory
+code-search search "config" --files "src/**"
+
+# By filename
+code-search search "main" --files "main.go,main.ts"
+```
+
+### `--case-sensitive`
+
+Enable case-sensitive search (default is case-insensitive).
+
+```bash
+code-search search "foo" --case-sensitive
+code-search search "foo" --case-sensitive  # Different results
+```
+
+### `--context, -C`
+
+Number of lines to show before and after each match.
+
+```bash
+code-search search "error" --context 5
+```
+
+### `--stream`
+
+Stream results as they arrive for faster time-to-first-result. Useful for interactive searches with large result sets.
+
+```bash
+# Stream results as they're found
+code-search search "TODO" --stream
+
+# Combine with other filters
+code-search search "deprecated" --repos myorg/backend --stream
+```
+
+<Aside type="tip">
+  Streaming mode shows results immediately as they're found, which can feel faster for large searches. Without this flag, results are fetched all at once before display.
+</Aside>
+
+### `--limit, -n`
+
+Maximum number of results to return.
+
+```bash
+code-search search "foo" --limit 50
+```
+
+## Global Options
+
+These options are available on all commands:
+
+| Option       | Description                              |
+| ------------ | ---------------------------------------- |
+| `--config`   | Path to config file                      |
+| `--api-url`  | API server URL (default: localhost:8080) |
+| `--output`   | Output format: text, json, table         |
+
+## Examples
+
+### Symbol search
+
+```bash
+# Find function definitions
+code-search search "func Create" --langs go
+
+# Find class definitions
+code-search search "class User" --langs python
+```
+
+### Import search
+
+```bash
+# Find where a package is imported
+code-search search 'import "github.com/pkg/errors"' --langs go
+code-search search "from flask import" --langs python
+```
+
+### Security patterns
+
+```bash
+# Find hardcoded secrets (be careful!)
+code-search search 'password\s*=' --regex
+code-search search 'api_key\s*=' --regex
+```
+
+## Performance Tips
+
+1. **Use filters** - Narrow results with `--repos`, `--langs`, `--files`
+2. **Limit results** - Use `--limit` for large result sets
+3. **Be specific** - More specific queries are faster
+
+<Aside type="tip">
+  Start with a broad search, then add filters to narrow down results.
+</Aside>
+
+## Next Steps
+
+- [Replace Commands](/cli/replace/) - Bulk replace operations
+- [Find Commands](/cli/find/) - Find files and symbols

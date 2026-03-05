@@ -1,0 +1,308 @@
+---
+title: Observability
+description: Metrics, tracing, and rate limiting configuration
+---
+
+import { Tabs, TabItem, Aside, Steps } from "@astrojs/starlight/components";
+
+Code Search includes built-in observability features for monitoring, troubleshooting, and performance optimization.
+
+## Prometheus Metrics
+
+Code Search exposes Prometheus metrics for monitoring search performance, job queue status, and system health.
+
+### Configuration
+
+```yaml
+metrics:
+  enabled: true        # Enable Prometheus metrics
+  path: "/metrics"     # Endpoint path
+```
+
+**Environment Variables:**
+- `CS_METRICS_ENABLED` - Enable/disable metrics
+- `CS_METRICS_PATH` - Metrics endpoint path (default: `/metrics`)
+
+### Available Metrics
+
+#### HTTP Metrics
+
+| Metric | Type | Description |
+|--------|------|-------------|
+| `code_search_http_requests_total` | Counter | Total HTTP requests by method, path, and status |
+| `code_search_http_request_duration_seconds` | Histogram | Request duration histogram |
+
+#### Search Metrics
+
+| Metric | Type | Description |
+|--------|------|-------------|
+| `code_search_searches_total` | Counter | Total searches by type (text/regex) |
+| `code_search_search_duration_seconds` | Histogram | Search execution time |
+| `code_search_search_results_total` | Histogram | Number of results per search |
+
+#### Job Queue Metrics
+
+| Metric | Type | Description |
+|--------|------|-------------|
+| `code_search_jobs_total` | Counter | Total jobs by type and status |
+| `code_search_job_duration_seconds` | Histogram | Job execution time |
+
+#### Error Metrics
+
+| Metric | Type | Description |
+|--------|------|-------------|
+| `code_search_errors_total` | Counter | Total errors by component and type |
+
+### Prometheus Configuration
+
+Add Code Search to your Prometheus `prometheus.yml`:
+
+```yaml
+scrape_configs:
+  - job_name: 'code-search'
+    static_configs:
+      - targets: ['localhost:8080']
+    metrics_path: /metrics
+    scrape_interval: 15s
+```
+
+### Grafana Dashboard
+
+Example queries for Grafana dashboards:
+
+```promql
+# Request rate
+rate(code_search_http_requests_total[5m])
+
+# Error rate
+rate(code_search_http_requests_total{status=~"5.."}[5m])
+/ rate(code_search_http_requests_total[5m])
+
+# Search latency (p99)
+histogram_quantile(0.99, rate(code_search_search_duration_seconds_bucket[5m]))
+
+# Active jobs
+sum(code_search_jobs_total{status="running"})
+```
+
+## OpenTelemetry Tracing
+
+Code Search supports distributed tracing via OpenTelemetry, compatible with Jaeger, Datadog, and other OTLP-compatible backends.
+
+### Configuration
+
+```yaml
+tracing:
+  enabled: false          # Enable tracing
+  service_name: "code-search"
+  service_version: "1.0.0"
+  environment: "development"
+  endpoint: "localhost:4317"
+  protocol: "grpc"        # grpc or http
+  sample_rate: 1.0        # 0.0 to 1.0
+  insecure: true          # Disable TLS for local dev
+```
+
+**Environment Variables:**
+- `CS_TRACING_ENABLED` - Enable/disable tracing
+- `CS_TRACING_SERVICE_NAME` - Service name in traces
+- `CS_TRACING_SERVICE_VERSION` - Service version
+- `CS_TRACING_ENVIRONMENT` - Environment (development, staging, production)
+- `CS_TRACING_ENDPOINT` - OTLP collector endpoint
+- `CS_TRACING_PROTOCOL` - Protocol (grpc or http)
+- `CS_TRACING_SAMPLE_RATE` - Sampling rate (1.0 = 100%)
+- `CS_TRACING_INSECURE` - Disable TLS
+
+### OpenTelemetry Standard Variables
+
+Code Search also respects standard OpenTelemetry environment variables:
+
+| Standard Variable | CS Variable | Description |
+|------------------|-------------|-------------|
+| `OTEL_SERVICE_NAME` | `CS_TRACING_SERVICE_NAME` | Service name |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | `CS_TRACING_ENDPOINT` | OTLP endpoint |
+| `OTEL_EXPORTER_OTLP_PROTOCOL` | `CS_TRACING_PROTOCOL` | Protocol |
+| `OTEL_EXPORTER_OTLP_INSECURE` | `CS_TRACING_INSECURE` | Disable TLS |
+
+### Datadog Variables
+
+For Datadog APM integration:
+
+| Datadog Variable | CS Variable | Description |
+|-----------------|-------------|-------------|
+| `DD_TRACE_ENABLED` | `CS_TRACING_ENABLED` | Enable tracing |
+| `DD_SERVICE` | `CS_TRACING_SERVICE_NAME` | Service name |
+| `DD_VERSION` | `CS_TRACING_SERVICE_VERSION` | Service version |
+| `DD_ENV` | `CS_TRACING_ENVIRONMENT` | Environment |
+
+### Traced Operations
+
+The following operations are traced:
+
+- **HTTP requests** - All API endpoints with method, path, and status
+- **Search operations** - Query execution with search type, query, and result count
+- **Database operations** - SQL queries with operation type
+- **Job processing** - Background jobs with job type and duration
+
+### Example: Jaeger Setup
+
+<Steps>
+1. Start Jaeger all-in-one:
+   ```bash
+   docker run -d --name jaeger \
+     -p 6831:6831/udp \
+     -p 16686:16686 \
+     -p 4317:4317 \
+     jaegertracing/all-in-one:latest
+   ```
+
+2. Configure Code Search:
+   ```yaml
+   tracing:
+     enabled: true
+     endpoint: "localhost:4317"
+     protocol: "grpc"
+     insecure: true
+   ```
+
+3. Open Jaeger UI at http://localhost:16686
+</Steps>
+
+### Example: Docker Compose with Jaeger
+
+```yaml
+services:
+  api:
+    image: ghcr.io/techquestsdev/code-search-api:latest
+    environment:
+      CS_TRACING_ENABLED: "true"
+      CS_TRACING_ENDPOINT: "jaeger:4317"
+      CS_TRACING_SERVICE_NAME: "code-search-api"
+      CS_TRACING_ENVIRONMENT: "production"
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686"
+      - "4317:4317"
+```
+
+## Rate Limiting
+
+Code Search includes per-client IP rate limiting to protect against abuse.
+
+### Configuration
+
+```yaml
+rate_limit:
+  enabled: false              # Enable rate limiting
+  requests_per_second: 10     # Requests per second per IP
+  burst_size: 20              # Maximum burst size
+```
+
+**Environment Variables:**
+- `CS_RATE_LIMIT_ENABLED` - Enable/disable rate limiting
+- `CS_RATE_LIMIT_REQUESTS_PER_SECOND` - Rate limit (requests/second)
+- `CS_RATE_LIMIT_BURST_SIZE` - Burst capacity
+
+### How It Works
+
+Rate limiting uses a token bucket algorithm:
+
+1. Each client IP gets a bucket with `burst_size` tokens
+2. Tokens refill at `requests_per_second` rate
+3. Each request consumes one token
+4. Requests without tokens receive HTTP 429 (Too Many Requests)
+
+### Response Headers
+
+When rate limiting is enabled, responses include:
+
+| Header | Description |
+|--------|-------------|
+| `X-RateLimit-Limit` | Maximum requests per second |
+| `X-RateLimit-Remaining` | Remaining tokens |
+| `X-RateLimit-Reset` | Seconds until bucket refill |
+
+### Recommended Settings
+
+| Environment | requests_per_second | burst_size |
+|-------------|---------------------|------------|
+| Development | disabled | - |
+| Internal/staging | 50 | 100 |
+| Production | 10-20 | 30-50 |
+
+<Aside type="caution">
+  Rate limiting is per-client IP. If you're behind a load balancer, ensure the `X-Forwarded-For` header is properly set so rate limiting applies to actual client IPs, not the load balancer IP.
+</Aside>
+
+## Health Endpoints
+
+Code Search provides health check endpoints for orchestrators:
+
+| Endpoint | Purpose | Checks |
+|----------|---------|--------|
+| `GET /health` | Liveness probe | Process is running |
+| `GET /ready` | Readiness probe | Database, Redis, Zoekt connectivity |
+
+### Kubernetes Configuration
+
+```yaml
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8080
+  initialDelaySeconds: 5
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /ready
+    port: 8080
+  initialDelaySeconds: 10
+  periodSeconds: 5
+```
+
+## Complete Docker Compose Example
+
+Full observability stack with Prometheus, Grafana, and Jaeger:
+
+```yaml
+services:
+  api:
+    image: ghcr.io/techquestsdev/code-search-api:latest
+    environment:
+      CS_METRICS_ENABLED: "true"
+      CS_TRACING_ENABLED: "true"
+      CS_TRACING_ENDPOINT: "jaeger:4317"
+      CS_RATE_LIMIT_ENABLED: "true"
+      CS_RATE_LIMIT_REQUESTS_PER_SECOND: "20"
+    ports:
+      - "8080:8080"
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    ports:
+      - "3000:3000"
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686"
+      - "4317:4317"
+```
+
+## Next Steps
+
+- [Server Configuration](/configuration/server/) - HTTP server settings
+- [Deployment Guide](/deployment/docker-compose/) - Production deployment
+- [Architecture](/architecture/overview/) - System architecture

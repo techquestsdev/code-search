@@ -1,0 +1,374 @@
+---
+title: Configuration Overview
+description: How to configure Code Search
+---
+
+import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
+
+Code Search can be configured using a YAML configuration file, environment variables, or a combination of both.
+
+## Configuration Methods
+
+### YAML Configuration File
+
+Create a `config.yaml` file:
+
+```yaml
+server:
+  addr: ":8080"
+
+database:
+  url: "postgres://user:pass@localhost:5432/codesearch?sslmode=disable"
+
+redis:
+  addr: "localhost:6379"
+
+zoekt:
+  url: "http://localhost:6070"
+  index_path: "./data/index"
+```
+
+The configuration file is searched in these locations (in order):
+
+1. Path specified by `CS_CONFIG_FILE` environment variable
+2. `./config.yaml` (current directory)
+3. `./config/config.yaml`
+4. `/etc/code-search/config.yaml`
+5. `$HOME/.code-search/config.yaml`
+
+### Environment Variables
+
+All configuration options can be set via environment variables with the `CS_` prefix:
+
+```bash
+export CS_SERVER_ADDR=":8080"
+export CS_DATABASE_URL="postgres://user:pass@localhost:5432/codesearch"
+export CS_REDIS_ADDR="localhost:6379"
+export CS_ZOEKT_URL="http://localhost:6070"
+```
+
+Environment variable names follow this pattern:
+
+- Prefix: `CS_`
+- Nested keys: separated by `_` (uppercase)
+- Example: `server.addr` → `CS_SERVER_ADDR`
+- Example: `scheduler.poll_interval` → `CS_SCHEDULER_POLL_INTERVAL`
+
+### Precedence
+
+When the same option is set in multiple places, this is the order of precedence (highest to lowest):
+
+1. Environment variables
+2. Configuration file
+3. Default values
+
+<Aside type="tip">
+  Use environment variables for sensitive data like database passwords and API
+  tokens. Use the config file for other settings.
+</Aside>
+
+## Configuration Sections
+
+| Section               | Description                | Documentation                                        |
+| --------------------- | -------------------------- | ---------------------------------------------------- |
+| `server`              | API server settings        | [Server Configuration](/configuration/server/)       |
+| `database`            | PostgreSQL/MySQL connection| [Database Configuration](/configuration/database/)   |
+| `redis`               | Redis connection           | [Redis Configuration](/configuration/redis/)         |
+| `zoekt`               | Search engine settings     | [Zoekt Configuration](/configuration/zoekt/)         |
+| `indexer`             | Indexer worker settings    | [Indexer Configuration](/configuration/indexer/)     |
+| `scheduler`           | Automatic sync scheduler   | [Scheduler Configuration](/configuration/scheduler/) |
+| `repos`               | Repository settings        | [Repository Configuration](/configuration/repos/)    |
+| `replace`             | Search/replace settings    | Below                                                |
+| `sharding`            | Horizontal scaling         | [Sharding Configuration](/configuration/sharding/)   |
+| `search`              | Search behavior settings   | Below                                                |
+| `scip`                | SCIP code intelligence     | [Indexer Configuration](/configuration/indexer/#scip-auto-indexing) |
+| `security`            | Token encryption at rest   | [Security Configuration](/configuration/security/)   |
+| `ui`                  | UI display settings        | Below                                                |
+| `rate_limit`          | API rate limiting          | [Observability](/configuration/observability/)       |
+| `metrics`             | Prometheus metrics         | [Observability](/configuration/observability/)       |
+| `tracing`             | OpenTelemetry tracing      | [Observability](/configuration/observability/)       |
+| `codehosts`           | Code host connections      | Below                                                |
+| `connections_readonly`| Lock connections UI        | Below                                                |
+| `repos_readonly`      | Lock repos UI              | Below                                                |
+| Secrets               | File-based secrets         | [Secrets Management](/configuration/secrets/)        |
+
+## Complete Configuration Example
+
+Here's a complete `config.yaml` with all options:
+
+```yaml
+# Server configuration
+server:
+  addr: ":8080"           # Listen address (host:port)
+  read_timeout: 15s       # HTTP read timeout
+  write_timeout: 60s      # HTTP write timeout
+
+# Database configuration
+database:
+  url: "postgres://codesearch:secret@localhost:5432/codesearch?sslmode=disable"
+  max_open_conns: 25      # Maximum open connections
+  max_idle_conns: 5       # Maximum idle connections
+  conn_max_lifetime: 5m   # Connection maximum lifetime
+
+# Redis configuration
+redis:
+  addr: "localhost:6379"  # Redis address (host:port)
+  password: ""            # Redis password (if required)
+  db: 0                   # Redis database number
+
+# Zoekt search engine configuration
+zoekt:
+  url: "http://localhost:6070"  # Zoekt web server URL
+  index_path: "./data/index"    # Path to search indexes
+  shards: 0                     # Number of shards (0 = auto)
+
+# Indexer configuration
+indexer:
+  concurrency: 2                # Concurrent indexing jobs
+  index_path: "./data/index"    # Path to search indexes
+  repos_path: "./data/repos"    # Path to cloned repos
+  reindex_interval: 1h          # Reindex interval
+  zoekt_bin: "zoekt-git-index"  # Zoekt indexer binary
+  ctags_bin: "ctags"            # Path to universal-ctags binary
+  require_ctags: true           # If true, ctags failures will fail indexing
+
+# Repository storage
+repos:
+  base_path: "./data/repos"     # Base path for repo clones
+
+# Scheduler configuration
+scheduler:
+  enabled: true                 # Enable automatic scheduling
+  poll_interval: 6h             # Default time between syncs
+  check_interval: 5m            # How often to check for stale repos
+  stale_threshold: 24h          # Max time before repo is stale
+  max_concurrent_checks: 5      # Parallel git fetch checks
+  job_retention: 1h             # How long to keep completed/failed jobs
+
+# Replace configuration
+replace:
+  concurrency: 3                # Parallel repo processing
+  clone_timeout: 10m            # Git clone timeout
+  push_timeout: 5m              # Git push timeout
+  max_file_size: 10485760       # Max file size (10MB)
+
+# Sharding configuration (horizontal scaling)
+sharding:
+  enabled: false                # Enable hash-based sharding
+  total_shards: 1               # Number of indexer shards
+  indexer_api_port: 8081        # HTTP API port for federated access
+  indexer_service: "code-search-indexer-headless"  # Headless service name
+  federated_access: false       # Enable file browsing/replace via proxy
+
+# Search settings
+search:
+  enable_streaming: false       # Enable true streaming from Zoekt
+
+# SCIP code intelligence
+scip:
+  enabled: false                # Enable SCIP indexing
+  auto_index: true              # Auto-index after Zoekt indexing
+  timeout: 10m                  # Aggregate timeout per repo
+
+# Security settings
+security:
+  encryption_key: ""            # AES-256-GCM key for token encryption (empty = disabled)
+
+# UI settings
+ui:
+  hide_readonly_banner: false   # Hide read-only mode banner
+  hide_file_navigator: false    # Hide browse links in search results
+  disable_browse_api: false     # Disable browse API endpoints
+  hide_repos_page: false        # Hide Repositories page from nav
+  hide_connections_page: false   # Hide Connections page from nav
+  hide_jobs_page: false         # Hide Jobs page from nav
+  hide_replace_page: false      # Hide Replace page from nav
+
+# Rate limiting
+rate_limit:
+  enabled: false                # Enable rate limiting
+  requests_per_second: 10       # Requests per second per IP
+  burst_size: 20                # Maximum burst size
+
+# Prometheus metrics
+metrics:
+  enabled: true                 # Enable /metrics endpoint
+  path: "/metrics"              # Metrics path
+
+# OpenTelemetry tracing
+tracing:
+  enabled: false                # Enable tracing
+  service_name: "code-search"   # Service name
+  endpoint: "localhost:4317"    # OTLP endpoint
+  protocol: "grpc"              # grpc or http
+  sample_rate: 1.0              # Sampling rate
+
+# Read-only modes
+connections_readonly: false     # Lock connections to config-only
+repos_readonly: false           # Lock repos to sync-only (no manual delete)
+
+# Code hosts (optional - can also be configured via UI)
+codehosts:
+  github:
+    type: github
+    token: "$CS_GITHUB_TOKEN"   # Token or env var reference
+    exclude_archived: true
+
+  gitlab-internal:
+    type: gitlab
+    url: "https://gitlab.company.com"
+    token: "$CS_GITLAB_TOKEN"
+    exclude_archived: true
+```
+
+## Search Settings
+
+```yaml
+search:
+  enable_streaming: false   # Enable true streaming from Zoekt (opt-in)
+```
+
+When streaming is enabled, search results are sent to the client as they arrive from Zoekt, rather than waiting for all results to be collected. This provides faster time-to-first-result, especially for large result sets.
+
+<Aside type="note">
+  Replace operations always use batch search regardless of this setting, as they need all results upfront.
+</Aside>
+
+## Read-Only Modes
+
+### Connections Read-Only
+
+When `connections_readonly: true`:
+
+- Connections can only be managed via the config file
+- UI shows connections as read-only
+- Add/Edit/Delete buttons are disabled
+- Testing and syncing still work
+
+This is useful for GitOps workflows where infrastructure is managed declaratively.
+
+### Repos Read-Only
+
+When `repos_readonly: true`:
+
+- Repositories can only be added/removed via sync
+- Manual deletion via UI/API is disabled
+- Excluding repos (soft delete) still works
+- Excluded repos are cleaned from index and disk
+
+## Code Hosts via Config
+
+You can define code hosts in the config file instead of (or in addition to) using the UI:
+
+```yaml
+codehosts:
+  # Use environment variable for token (recommended)
+  github:
+    type: github
+    token: "$CS_GITHUB_TOKEN"
+    exclude_archived: true
+
+  # Self-hosted GitLab
+  gitlab-internal:
+    type: gitlab
+    url: "https://gitlab.company.com"
+    token: "$CS_GITLAB_TOKEN"
+    exclude_archived: true
+
+  # GitHub Enterprise
+  ghe:
+    type: github_enterprise
+    url: "https://github.company.com"
+    token: "$CS_GHE_TOKEN"
+    exclude_archived: false
+```
+
+<Aside type="tip">
+  Use `$ENV_VAR_NAME` syntax for tokens to reference environment variables.
+  This keeps secrets out of config files.
+</Aside>
+
+Config-defined code hosts take precedence over UI-created ones with the same name.
+
+## Per-Repository Configuration
+
+You can configure per-repository settings using `repo_configs` within a code host definition:
+
+```yaml
+codehosts:
+  github:
+    type: github
+    token: "$CS_GITHUB_TOKEN"
+    repo_configs:
+      # Index specific branches
+      - name: "myorg/monorepo"
+        branches:
+          - "main"
+          - "develop"
+          - "release/*"   # Supports glob patterns
+      
+      # Exclude from indexing (can be re-included via UI)
+      - name: "myorg/archived-project"
+        exclude: true
+      
+      # Soft-delete (can be restored via UI)
+      - name: "myorg/deprecated-repo"
+        delete: true
+```
+
+### Available Options
+
+| Option     | Type     | Description                                                |
+| ---------- | -------- | ---------------------------------------------------------- |
+| `name`     | string   | Repository full name (e.g., "org/repo")                    |
+| `branches` | []string | Branches to index (supports glob patterns)                 |
+| `exclude`  | bool     | Exclude from indexing (soft exclude, can be re-included)   |
+| `delete`   | bool     | Soft-delete the repository (can be restored via UI)        |
+
+<Aside type="note">
+  **UI takes precedence**: Config options for `exclude` and `delete` only apply to **new** repositories.
+  If a repository already exists and was restored/included via UI, the UI state is preserved.
+  This allows operators to set default policies while users can override per-repo.
+</Aside>
+
+### Exclude vs Delete
+
+- **Exclude**: The repository stays in the list but is not indexed. Use for repos you might want to index later.
+- **Delete**: The repository is marked as deleted and hidden by default. Use for repos you want to remove but keep the option to restore.
+
+## Validation
+
+Code Search validates configuration on startup. If there are errors, the service will fail to start with a descriptive error message.
+
+Common validation errors:
+
+- Invalid URL formats
+- Invalid duration formats (use Go duration strings like "5m", "1h")
+
+## Reloading Configuration
+
+Configuration changes require a service restart. Hot-reloading is not currently supported.
+
+```bash
+# Docker Compose
+docker compose restart api indexer
+
+# Kubernetes
+kubectl rollout restart deployment/code-search-api -n code-search
+kubectl rollout restart deployment/code-search-indexer -n code-search
+```
+
+## Next Steps
+
+See detailed documentation for each configuration section:
+
+- [Server Configuration](/configuration/server/)
+- [Database Configuration](/configuration/database/)
+- [Redis Configuration](/configuration/redis/)
+- [Zoekt Configuration](/configuration/zoekt/)
+- [Indexer Configuration](/configuration/indexer/) - Includes SCIP code intelligence
+- [Scheduler Configuration](/configuration/scheduler/)
+- [Security Configuration](/configuration/security/) - Token encryption at rest
+- [Observability](/configuration/observability/) - Metrics, tracing, rate limiting
+- [Secrets Management](/configuration/secrets/)
+- [Environment Variables](/configuration/environment-variables/)

@@ -1,0 +1,74 @@
+# Default values for code-search website
+
+imagePullSecrets: []
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/aanogueira/code-search-website
+  tag: ""
+  pullPolicy: Always
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi
+
+service:
+  type: ClusterIP
+  port: 4321
+
+env: {}
+
+# Ingress
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+  host: code-search-website.example.com
+  tls: []
+    # - secretName: code-search-website-tls
+    #   hosts:
+    #     - code-search-website.example.com
+
+# Service Account
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+# Pod Security
+podSecurityContext:
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+# Container Security
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+  capabilities:
+    drop:
+      - ALL
+
+# Node selector for all pods
+nodeSelector: {}
+
+# Tolerations for all pods
+tolerations: []
+
+# Affinity for all pods
+affinity: {}
+
+# Overrides base name of the deployed resources
+fullnameOverride: ""
+
+# Overrides chart name in the deployed resources
+nameOverride: ""

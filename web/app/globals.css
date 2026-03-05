@@ -1,0 +1,196 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Prevent layout shift from scrollbar appearing/disappearing */
+  .overflow-auto,
+  .overflow-y-auto,
+  .overflow-scroll,
+  .overflow-y-scroll {
+    scrollbar-gutter: stable;
+  }
+
+  /* Prevent any scroll on html/body - pages control their own scroll */
+  html {
+    overflow: hidden;
+    height: 100%;
+  }
+
+  /* Light theme - clean white like the website */
+  body {
+    @apply bg-white text-gray-900 antialiased;
+    overflow: hidden;
+    height: 100%;
+  }
+
+  /* Dark theme */
+  .dark body {
+    @apply bg-gray-950 text-gray-100;
+  }
+
+  input,
+  textarea,
+  select {
+    @apply text-gray-900;
+  }
+
+  .dark input,
+  .dark textarea,
+  .dark select {
+    @apply text-gray-100;
+  }
+
+  /* Fix browser autofill grey background */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active,
+  textarea:-webkit-autofill,
+  textarea:-webkit-autofill:hover,
+  textarea:-webkit-autofill:focus,
+  textarea:-webkit-autofill:active,
+  select:-webkit-autofill,
+  select:-webkit-autofill:hover,
+  select:-webkit-autofill:focus,
+  select:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px white inset !important;
+    -webkit-text-fill-color: rgb(17 24 39) !important;
+    box-shadow: 0 0 0 1000px white inset !important;
+    background-clip: content-box !important;
+  }
+
+  .dark input:-webkit-autofill,
+  .dark input:-webkit-autofill:hover,
+  .dark input:-webkit-autofill:focus,
+  .dark input:-webkit-autofill:active,
+  .dark textarea:-webkit-autofill,
+  .dark textarea:-webkit-autofill:hover,
+  .dark textarea:-webkit-autofill:focus,
+  .dark textarea:-webkit-autofill:active,
+  .dark select:-webkit-autofill,
+  .dark select:-webkit-autofill:hover,
+  .dark select:-webkit-autofill:focus,
+  .dark select:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px rgb(31 41 55) inset !important;
+    -webkit-text-fill-color: rgb(243 244 246) !important;
+    box-shadow: 0 0 0 1000px rgb(31 41 55) inset !important;
+    background-clip: content-box !important;
+  }
+
+  /* Remove default input styling that may cause grey effect */
+  input:not([type="checkbox"]):not([type="radio"]),
+  textarea,
+  select {
+    background-color: white;
+  }
+
+  .dark input:not([type="checkbox"]):not([type="radio"]),
+  .dark textarea,
+  .dark select {
+    background-color: rgb(31 41 55);
+  }
+
+  /* Custom checkbox styles */
+  input[type="checkbox"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border: 1.5px solid rgb(209 213 219);
+    border-radius: 4px;
+    background-color: white;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.15s ease-in-out;
+  }
+
+  input[type="checkbox"]:hover {
+    border-color: rgb(156 163 175);
+  }
+
+  input[type="checkbox"]:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+    border-color: rgb(59 130 246);
+  }
+
+  input[type="checkbox"]:checked {
+    background-color: rgb(59 130 246);
+    border-color: rgb(59 130 246);
+  }
+
+  input[type="checkbox"]:checked::after {
+    content: "";
+    position: absolute;
+    left: 4.5px;
+    top: 1.5px;
+    width: 5px;
+    height: 9px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+
+  .dark input[type="checkbox"] {
+    background-color: rgb(55 65 81);
+    border-color: rgb(75 85 99);
+  }
+
+  .dark input[type="checkbox"]:hover {
+    border-color: rgb(107 114 128);
+  }
+
+  .dark input[type="checkbox"]:checked {
+    background-color: rgb(59 130 246);
+    border-color: rgb(59 130 246);
+  }
+
+  /* Custom scrollbar styles */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(156 163 175) transparent;
+  }
+
+  .dark * {
+    scrollbar-color: rgb(75 85 99) transparent;
+  }
+
+  /* Webkit scrollbar (Chrome, Safari, Edge) */
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 4px;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: rgb(209 213 219);
+    border-radius: 4px;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: rgb(156 163 175);
+  }
+
+  .dark *::-webkit-scrollbar-thumb {
+    background: rgb(75 85 99);
+  }
+
+  .dark *::-webkit-scrollbar-thumb:hover {
+    background: rgb(107 114 128);
+  }
+
+  /* Hide scrollbar but keep scrolling functionality */
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}
