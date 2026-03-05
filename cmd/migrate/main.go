@@ -14,8 +14,8 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/jackc/pgx/v5/stdlib"
 
-	"github.com/aanogueira/code-search/internal/db"
-	"github.com/aanogueira/code-search/internal/log"
+	"github.com/techquestsdev/code-search/internal/db"
+	"github.com/techquestsdev/code-search/internal/log"
 )
 
 func main() {

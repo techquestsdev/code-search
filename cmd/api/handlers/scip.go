@@ -10,9 +10,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/aanogueira/code-search/internal/files"
-	"github.com/aanogueira/code-search/internal/middleware"
-	"github.com/aanogueira/code-search/internal/scip"
+	"github.com/techquestsdev/code-search/internal/files"
+	"github.com/techquestsdev/code-search/internal/middleware"
+	"github.com/techquestsdev/code-search/internal/scip"
 )
 
 // SCIPHandler handles SCIP-related endpoints.

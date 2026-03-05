@@ -142,18 +142,18 @@ docker-build: ## Build Docker images
 	$(DOCKER) build -t code-search-zoekt-refresh:latest -f docker/zoekt-refresh.Dockerfile .
 
 docker-push: ## Push Docker images to GitHub Container Registry
-	@$(DOCKER) tag code-search-api:latest ghcr.io/aanogueira/code-search-api:latest
-	@$(DOCKER) tag code-search-indexer:latest ghcr.io/aanogueira/code-search-indexer:latest
-	@$(DOCKER) tag code-search-web:latest ghcr.io/aanogueira/code-search-web:latest
-	@$(DOCKER) tag code-search-website:latest ghcr.io/aanogueira/code-search-website:latest
-	@$(DOCKER) tag code-search-zoekt:latest ghcr.io/aanogueira/code-search-zoekt:latest
-	@$(DOCKER) tag code-search-zoekt-refresh:latest ghcr.io/aanogueira/code-search-zoekt-refresh:latest
-	@$(DOCKER) push ghcr.io/aanogueira/code-search-api:latest
-	@$(DOCKER) push ghcr.io/aanogueira/code-search-indexer:latest
-	@$(DOCKER) push ghcr.io/aanogueira/code-search-web:latest
-	@$(DOCKER) push ghcr.io/aanogueira/code-search-website:latest
-	@$(DOCKER) push ghcr.io/aanogueira/code-search-zoekt:latest
-	@$(DOCKER) push ghcr.io/aanogueira/code-search-zoekt-refresh:latest
+	@$(DOCKER) tag code-search-api:latest ghcr.io/techquestsdev/code-search-api:latest
+	@$(DOCKER) tag code-search-indexer:latest ghcr.io/techquestsdev/code-search-indexer:latest
+	@$(DOCKER) tag code-search-web:latest ghcr.io/techquestsdev/code-search-web:latest
+	@$(DOCKER) tag code-search-website:latest ghcr.io/techquestsdev/code-search-website:latest
+	@$(DOCKER) tag code-search-zoekt:latest ghcr.io/techquestsdev/code-search-zoekt:latest
+	@$(DOCKER) tag code-search-zoekt-refresh:latest ghcr.io/techquestsdev/code-search-zoekt-refresh:latest
+	@$(DOCKER) push ghcr.io/techquestsdev/code-search-api:latest
+	@$(DOCKER) push ghcr.io/techquestsdev/code-search-indexer:latest
+	@$(DOCKER) push ghcr.io/techquestsdev/code-search-web:latest
+	@$(DOCKER) push ghcr.io/techquestsdev/code-search-website:latest
+	@$(DOCKER) push ghcr.io/techquestsdev/code-search-zoekt:latest
+	@$(DOCKER) push ghcr.io/techquestsdev/code-search-zoekt-refresh:latest
 	@echo "✅ Docker images pushed to GitHub Container Registry."
 
 # =============================================================================

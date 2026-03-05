@@ -11,15 +11,15 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 
-	"github.com/aanogueira/code-search/cmd/api/handlers"
-	"github.com/aanogueira/code-search/internal/audit"
-	"github.com/aanogueira/code-search/internal/config"
-	"github.com/aanogueira/code-search/internal/metrics"
-	authmw "github.com/aanogueira/code-search/internal/middleware"
-	"github.com/aanogueira/code-search/internal/ratelimit"
-	"github.com/aanogueira/code-search/internal/scip"
-	"github.com/aanogueira/code-search/internal/search"
-	"github.com/aanogueira/code-search/internal/tracing"
+	"github.com/techquestsdev/code-search/cmd/api/handlers"
+	"github.com/techquestsdev/code-search/internal/audit"
+	"github.com/techquestsdev/code-search/internal/config"
+	"github.com/techquestsdev/code-search/internal/metrics"
+	authmw "github.com/techquestsdev/code-search/internal/middleware"
+	"github.com/techquestsdev/code-search/internal/ratelimit"
+	"github.com/techquestsdev/code-search/internal/scip"
+	"github.com/techquestsdev/code-search/internal/search"
+	"github.com/techquestsdev/code-search/internal/tracing"
 )
 
 //go:embed openapi.yaml

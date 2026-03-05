@@ -11,8 +11,8 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/aanogueira/code-search/internal/log"
-	"github.com/aanogueira/code-search/internal/queue"
+	"github.com/techquestsdev/code-search/internal/log"
+	"github.com/techquestsdev/code-search/internal/queue"
 )
 
 // WebhookConfig holds webhook configuration.

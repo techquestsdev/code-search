@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/aanogueira/code-search/internal/log"
+	"github.com/techquestsdev/code-search/internal/log"
 )
 
 func main() {

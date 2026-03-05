@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aanogueira/code-search/internal/db"
+	"github.com/techquestsdev/code-search/internal/db"
 )
 
 func TestCodeHostConfig_ResolveToken(t *testing.T) {

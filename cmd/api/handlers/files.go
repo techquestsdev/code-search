@@ -11,9 +11,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/aanogueira/code-search/internal/audit"
-	"github.com/aanogueira/code-search/internal/files"
-	"github.com/aanogueira/code-search/internal/middleware"
+	"github.com/techquestsdev/code-search/internal/audit"
+	"github.com/techquestsdev/code-search/internal/files"
+	"github.com/techquestsdev/code-search/internal/middleware"
 )
 
 // TreeResponse represents the response for tree listing.

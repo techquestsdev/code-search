@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aanogueira/code-search/internal/repos"
+	"github.com/techquestsdev/code-search/internal/repos"
 )
 
 func TestRepositoryResponse_JSON(t *testing.T) {

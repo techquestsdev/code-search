@@ -21,12 +21,12 @@ import (
 
 	"github.com/sourcegraph/zoekt/query"
 
-	"github.com/aanogueira/code-search/internal/codehost"
-	"github.com/aanogueira/code-search/internal/gitutil"
-	"github.com/aanogueira/code-search/internal/queue"
-	"github.com/aanogueira/code-search/internal/regexutil"
-	"github.com/aanogueira/code-search/internal/repos"
-	"github.com/aanogueira/code-search/internal/search"
+	"github.com/techquestsdev/code-search/internal/codehost"
+	"github.com/techquestsdev/code-search/internal/gitutil"
+	"github.com/techquestsdev/code-search/internal/queue"
+	"github.com/techquestsdev/code-search/internal/regexutil"
+	"github.com/techquestsdev/code-search/internal/repos"
+	"github.com/techquestsdev/code-search/internal/search"
 )
 
 const (

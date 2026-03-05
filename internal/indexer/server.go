@@ -14,10 +14,10 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"go.uber.org/zap"
 
-	"github.com/aanogueira/code-search/internal/files"
-	"github.com/aanogueira/code-search/internal/queue"
-	"github.com/aanogueira/code-search/internal/replace"
-	"github.com/aanogueira/code-search/internal/scip"
+	"github.com/techquestsdev/code-search/internal/files"
+	"github.com/techquestsdev/code-search/internal/queue"
+	"github.com/techquestsdev/code-search/internal/replace"
+	"github.com/techquestsdev/code-search/internal/scip"
 )
 
 // ServerConfig holds configuration for the indexer HTTP server.

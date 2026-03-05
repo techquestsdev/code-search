@@ -35,4 +35,4 @@ Sharding is ENABLED:
   - Each pod has an indexer + zoekt sidecar sharing the same volume
 {{- end }}
 
-For more information, see: https://github.com/aanogueira/code-search
+For more information, see: https://github.com/techquestsdev/code-search

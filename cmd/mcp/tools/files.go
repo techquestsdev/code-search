@@ -8,7 +8,7 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 
-	"github.com/aanogueira/code-search/cmd/mcp/client"
+	"github.com/techquestsdev/code-search/cmd/mcp/client"
 )
 
 // GetFileTreeTool returns the tool definition for get_file_tree.

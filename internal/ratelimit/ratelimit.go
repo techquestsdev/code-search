@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aanogueira/code-search/internal/metrics"
+	"github.com/techquestsdev/code-search/internal/metrics"
 )
 
 // Config holds rate limiter configuration.

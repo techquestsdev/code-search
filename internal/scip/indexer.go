@@ -13,7 +13,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/aanogueira/code-search/internal/languages"
+	"github.com/techquestsdev/code-search/internal/languages"
 )
 
 // IndexerConfig holds configuration for SCIP indexers.

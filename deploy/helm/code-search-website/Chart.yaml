@@ -11,7 +11,7 @@ keywords:
   - developer-tools
 maintainers:
   - name: André Nogueira
-    url: https://github.com/aanogueira
+    url: https://github.com/techquestsdev
 sources:
-  - https://github.com/aanogueira/code-search
-icon: https://raw.githubusercontent.com/aanogueira/code-search/refs/heads/main/deploy/helm/code-search-website/icon.svg
+  - https://github.com/techquestsdev/code-search
+icon: https://raw.githubusercontent.com/techquestsdev/code-search/refs/heads/main/deploy/helm/code-search-website/icon.svg

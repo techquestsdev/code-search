@@ -4,7 +4,7 @@ package gitutil
 import (
 	"strings"
 
-	"github.com/aanogueira/code-search/internal/repos"
+	"github.com/techquestsdev/code-search/internal/repos"
 )
 
 // AddAuthToURL adds authentication token to a git URL based on connection type.

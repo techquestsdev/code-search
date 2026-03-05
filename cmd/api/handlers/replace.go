@@ -9,11 +9,11 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/aanogueira/code-search/internal/audit"
-	"github.com/aanogueira/code-search/internal/middleware"
-	"github.com/aanogueira/code-search/internal/queue"
-	"github.com/aanogueira/code-search/internal/replace"
-	"github.com/aanogueira/code-search/internal/search"
+	"github.com/techquestsdev/code-search/internal/audit"
+	"github.com/techquestsdev/code-search/internal/middleware"
+	"github.com/techquestsdev/code-search/internal/queue"
+	"github.com/techquestsdev/code-search/internal/replace"
+	"github.com/techquestsdev/code-search/internal/search"
 )
 
 // ReplacePreviewRequest represents a request to preview replacements.

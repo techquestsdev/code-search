@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/aanogueira/code-search/internal/sharding"
+	"github.com/techquestsdev/code-search/internal/sharding"
 )
 
 func TestGetShardConfig_Defaults(t *testing.T) {

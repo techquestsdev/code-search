@@ -16,14 +16,14 @@ import (
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 
-	"github.com/aanogueira/code-search/internal/config"
-	"github.com/aanogueira/code-search/internal/crypto"
-	"github.com/aanogueira/code-search/internal/db"
-	"github.com/aanogueira/code-search/internal/files"
-	"github.com/aanogueira/code-search/internal/indexer"
-	"github.com/aanogueira/code-search/internal/log"
-	"github.com/aanogueira/code-search/internal/queue"
-	"github.com/aanogueira/code-search/internal/scip"
+	"github.com/techquestsdev/code-search/internal/config"
+	"github.com/techquestsdev/code-search/internal/crypto"
+	"github.com/techquestsdev/code-search/internal/db"
+	"github.com/techquestsdev/code-search/internal/files"
+	"github.com/techquestsdev/code-search/internal/indexer"
+	"github.com/techquestsdev/code-search/internal/log"
+	"github.com/techquestsdev/code-search/internal/queue"
+	"github.com/techquestsdev/code-search/internal/scip"
 )
 
 func main() {

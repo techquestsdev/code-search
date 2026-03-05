@@ -16,13 +16,13 @@ import (
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 
-	"github.com/aanogueira/code-search/internal/crypto"
-	"github.com/aanogueira/code-search/internal/db"
-	"github.com/aanogueira/code-search/internal/gitutil"
-	"github.com/aanogueira/code-search/internal/metrics"
-	"github.com/aanogueira/code-search/internal/queue"
-	"github.com/aanogueira/code-search/internal/repos"
-	"github.com/aanogueira/code-search/internal/scip"
+	"github.com/techquestsdev/code-search/internal/crypto"
+	"github.com/techquestsdev/code-search/internal/db"
+	"github.com/techquestsdev/code-search/internal/gitutil"
+	"github.com/techquestsdev/code-search/internal/metrics"
+	"github.com/techquestsdev/code-search/internal/queue"
+	"github.com/techquestsdev/code-search/internal/repos"
+	"github.com/techquestsdev/code-search/internal/scip"
 )
 
 // Config holds scheduler configuration.

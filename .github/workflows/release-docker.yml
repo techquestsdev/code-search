@@ -1,0 +1,85 @@
+name: Release Docker Images
+
+on:
+  push:
+    tags:
+      - 'oss-*/*'
+      - 'website/*'
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  REGISTRY_PREFIX: ghcr.io/techquestsdev
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.parse.outputs.version }}
+      matrix: ${{ steps.parse.outputs.matrix }}
+    steps:
+      - name: Parse tag
+        id: parse
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          COMPONENT="${TAG%/*}"
+          VERSION="${TAG#*/}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+          case "$COMPONENT" in
+            oss-api)
+              MATRIX='[{"dockerfile":"docker/api.Dockerfile","image":"code-search-api"}]'
+              ;;
+            oss-indexer)
+              MATRIX='[{"dockerfile":"docker/indexer.Dockerfile","image":"code-search-indexer"},{"dockerfile":"docker/indexer-scip.Dockerfile","image":"code-search-indexer-scip"}]'
+              ;;
+            oss-web)
+              MATRIX='[{"dockerfile":"docker/web.Dockerfile","image":"code-search-web"}]'
+              ;;
+            oss-zoekt)
+              MATRIX='[{"dockerfile":"docker/zoekt.Dockerfile","image":"code-search-zoekt"},{"dockerfile":"docker/zoekt-refresh.Dockerfile","image":"code-search-zoekt-refresh"}]'
+              ;;
+            website)
+              MATRIX='[{"dockerfile":"docker/website.Dockerfile","image":"code-search-website"}]'
+              ;;
+            *)
+              echo "Unknown component: $COMPONENT"
+              exit 1
+              ;;
+          esac
+
+          echo "matrix=${MATRIX}" >> "$GITHUB_OUTPUT"
+
+  build-and-push:
+    needs: resolve
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include: ${{ fromJson(needs.resolve.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push ${{ matrix.image }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: |
+            ${{ env.REGISTRY_PREFIX }}/${{ matrix.image }}:${{ needs.resolve.outputs.version }}
+            ${{ env.REGISTRY_PREFIX }}/${{ matrix.image }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ needs.resolve.outputs.version }}

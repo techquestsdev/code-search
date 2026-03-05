@@ -1,4 +1,4 @@
-module github.com/aanogueira/code-search
+module github.com/techquestsdev/code-search
 
 go 1.24.1
 

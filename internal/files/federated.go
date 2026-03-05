@@ -10,7 +10,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/aanogueira/code-search/internal/sharding"
+	"github.com/techquestsdev/code-search/internal/sharding"
 )
 
 // FederatedClient handles proxying file requests to the correct indexer shard.

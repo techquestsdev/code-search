@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aanogueira/code-search/internal/queue"
+	"github.com/techquestsdev/code-search/internal/queue"
 )
 
 // FederatedClient handles proxying replace requests to the correct indexer shards.

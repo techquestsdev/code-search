@@ -20,4 +20,4 @@ To check the status of the deployment:
 
   kubectl get pods -l app.kubernetes.io/instance={{ .Release.Name }}
 
-For more information, see: https://github.com/aanogueira/code-search
+For more information, see: https://github.com/techquestsdev/code-search

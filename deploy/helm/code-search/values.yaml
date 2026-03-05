@@ -4,7 +4,7 @@
 
 # Global settings
 global:
-  imageRegistry: ghcr.io/aanogueira
+  imageRegistry: ghcr.io/techquestsdev
   imagePullSecrets: []
 
 # API Server

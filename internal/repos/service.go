@@ -10,9 +10,9 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/aanogueira/code-search/internal/crypto"
-	"github.com/aanogueira/code-search/internal/db"
-	"github.com/aanogueira/code-search/internal/log"
+	"github.com/techquestsdev/code-search/internal/crypto"
+	"github.com/techquestsdev/code-search/internal/db"
+	"github.com/techquestsdev/code-search/internal/log"
 )
 
 // Repository represents a code repository.

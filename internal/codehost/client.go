@@ -14,8 +14,8 @@ import (
 
 	"go.opentelemetry.io/otel/attribute"
 
-	"github.com/aanogueira/code-search/internal/metrics"
-	"github.com/aanogueira/code-search/internal/tracing"
+	"github.com/techquestsdev/code-search/internal/metrics"
+	"github.com/techquestsdev/code-search/internal/tracing"
 )
 
 // sharedTransport is a shared HTTP transport with connection pooling.

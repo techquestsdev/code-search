@@ -8,10 +8,10 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/aanogueira/code-search/cmd/api/handlers"
-	"github.com/aanogueira/code-search/internal/audit"
-	"github.com/aanogueira/code-search/internal/config"
-	authmw "github.com/aanogueira/code-search/internal/middleware"
+	"github.com/techquestsdev/code-search/cmd/api/handlers"
+	"github.com/techquestsdev/code-search/internal/audit"
+	"github.com/techquestsdev/code-search/internal/config"
+	authmw "github.com/techquestsdev/code-search/internal/middleware"
 )
 
 func TestSecurityHeaders_SetsAllHeaders(t *testing.T) {

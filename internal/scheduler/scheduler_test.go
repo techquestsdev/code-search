@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aanogueira/code-search/internal/gitutil"
-	"github.com/aanogueira/code-search/internal/repos"
+	"github.com/techquestsdev/code-search/internal/gitutil"
+	"github.com/techquestsdev/code-search/internal/repos"
 )
 
 func TestConfig_Defaults(t *testing.T) {

@@ -3,8 +3,8 @@ package server
 import (
 	"github.com/mark3labs/mcp-go/server"
 
-	"github.com/aanogueira/code-search/cmd/mcp/client"
-	"github.com/aanogueira/code-search/cmd/mcp/tools"
+	"github.com/techquestsdev/code-search/cmd/mcp/client"
+	"github.com/techquestsdev/code-search/cmd/mcp/tools"
 )
 
 // NewMCPServer creates a new MCP server with all tools registered.

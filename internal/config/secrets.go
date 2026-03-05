@@ -7,7 +7,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/aanogueira/code-search/internal/log"
+	"github.com/techquestsdev/code-search/internal/log"
 )
 
 // LoadSecretsFromDir loads environment variables from files in a directory.

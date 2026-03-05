@@ -1,7 +1,7 @@
 package indexer
 
 import (
-	"github.com/aanogueira/code-search/internal/sharding"
+	"github.com/techquestsdev/code-search/internal/sharding"
 )
 
 // ShardConfig holds sharding configuration.

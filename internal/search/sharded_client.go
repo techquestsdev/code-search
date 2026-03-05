@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aanogueira/code-search/internal/sharding"
+	"github.com/techquestsdev/code-search/internal/sharding"
 )
 
 // ShardedClient manages multiple Zoekt clients for horizontal scaling.

@@ -1,0 +1,143 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      go: ${{ steps.filter.outputs.go }}
+      web: ${{ steps.filter.outputs.web }}
+      website: ${{ steps.filter.outputs.website }}
+      docker: ${{ steps.filter.outputs.docker }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            go:
+              - '**/*.go'
+              - 'go.mod'
+              - 'go.sum'
+              - 'Makefile'
+            web:
+              - 'web/**'
+            website:
+              - 'website/**'
+            docker:
+              - 'docker/**'
+              - '**/*.go'
+              - 'go.mod'
+              - 'go.sum'
+              - 'web/**'
+              - 'website/**'
+
+  go-checks:
+    needs: changes
+    if: needs.changes.outputs.go == 'true'
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: codesearch
+          POSTGRES_PASSWORD: codesearch
+          POSTGRES_DB: codesearch
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U codesearch"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Install golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          args: ./...
+      - name: Run go vet
+        run: make vet
+      - name: Run tests
+        env:
+          CS_DATABASE_URL: postgres://codesearch:codesearch@localhost:5432/codesearch?sslmode=disable
+          CS_REDIS_ADDR: localhost:6379
+        run: make test
+
+  web-checks:
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Install dependencies
+        run: cd web && bun install
+      - name: Lint
+        run: cd web && bun lint
+      - name: Test
+        run: cd web && bun run test:run
+
+  website-checks:
+    needs: changes
+    if: needs.changes.outputs.website == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Install dependencies
+        run: cd website && bun install
+      - name: Build
+        run: cd website && bun run build
+
+  docker-build:
+    needs: changes
+    if: needs.changes.outputs.docker == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - dockerfile: docker/api.Dockerfile
+            image: code-search-api
+          - dockerfile: docker/indexer.Dockerfile
+            image: code-search-indexer
+          - dockerfile: docker/web.Dockerfile
+            image: code-search-web
+          - dockerfile: docker/zoekt.Dockerfile
+            image: code-search-zoekt
+          - dockerfile: docker/zoekt-refresh.Dockerfile
+            image: code-search-zoekt-refresh
+          - dockerfile: docker/indexer-scip.Dockerfile
+            image: code-search-indexer-scip
+          - dockerfile: docker/website.Dockerfile
+            image: code-search-website
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build ${{ matrix.image }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

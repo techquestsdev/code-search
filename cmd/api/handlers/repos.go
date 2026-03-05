@@ -9,11 +9,11 @@ import (
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 
-	"github.com/aanogueira/code-search/internal/audit"
-	"github.com/aanogueira/code-search/internal/log"
-	"github.com/aanogueira/code-search/internal/middleware"
-	"github.com/aanogueira/code-search/internal/queue"
-	"github.com/aanogueira/code-search/internal/repos"
+	"github.com/techquestsdev/code-search/internal/audit"
+	"github.com/techquestsdev/code-search/internal/log"
+	"github.com/techquestsdev/code-search/internal/middleware"
+	"github.com/techquestsdev/code-search/internal/queue"
+	"github.com/techquestsdev/code-search/internal/repos"
 )
 
 // RepositoryResponse represents a repository in API responses.

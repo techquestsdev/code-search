@@ -9,12 +9,12 @@ import (
 
 	"go.opentelemetry.io/otel/attribute"
 
-	"github.com/aanogueira/code-search/internal/audit"
-	"github.com/aanogueira/code-search/internal/metrics"
-	"github.com/aanogueira/code-search/internal/middleware"
-	"github.com/aanogueira/code-search/internal/regexutil"
-	"github.com/aanogueira/code-search/internal/search"
-	"github.com/aanogueira/code-search/internal/tracing"
+	"github.com/techquestsdev/code-search/internal/audit"
+	"github.com/techquestsdev/code-search/internal/metrics"
+	"github.com/techquestsdev/code-search/internal/middleware"
+	"github.com/techquestsdev/code-search/internal/regexutil"
+	"github.com/techquestsdev/code-search/internal/search"
+	"github.com/techquestsdev/code-search/internal/tracing"
 )
 
 // Search handles synchronous search requests.

@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/aanogueira/code-search/internal/search"
+	"github.com/techquestsdev/code-search/internal/search"
 )
 
 func TestSearch_InvalidJSON(t *testing.T) {

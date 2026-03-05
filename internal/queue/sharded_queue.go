@@ -11,8 +11,8 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
-	"github.com/aanogueira/code-search/internal/log"
-	"github.com/aanogueira/code-search/internal/sharding"
+	"github.com/techquestsdev/code-search/internal/log"
+	"github.com/techquestsdev/code-search/internal/sharding"
 )
 
 // ShardedQueue extends Queue with shard-aware job processing.

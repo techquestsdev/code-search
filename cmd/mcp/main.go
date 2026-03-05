@@ -9,7 +9,7 @@ import (
 
 	"github.com/mark3labs/mcp-go/server"
 
-	mcpserver "github.com/aanogueira/code-search/cmd/mcp/server"
+	mcpserver "github.com/techquestsdev/code-search/cmd/mcp/server"
 )
 
 func main() {
