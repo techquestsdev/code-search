@@ -1,0 +1,207 @@
+---
+title: GitLab
+description: Connect Code Search to GitLab.com
+---
+
+import { Aside, Steps } from "@astrojs/starlight/components";
+
+Connect Code Search to GitLab.com to index your GitLab repositories.
+
+## Prerequisites
+
+- A GitLab.com account
+- Access to repositories you want to index
+- A Personal Access Token
+
+## Creating a Personal Access Token
+
+<Steps>
+1. Go to [GitLab.com → User Settings → Access Tokens](https://gitlab.com/-/user_settings/personal_access_tokens)
+
+2. Create a new token:
+   - **Name**: `Code Search`
+   - **Expiration date**: Choose based on your needs
+   - **Scopes**: Select `read_api` and `read_repository`
+
+3. Click **Create personal access token**
+
+4. **Copy the token immediately** - it won't be shown again!
+</Steps>
+
+## Adding the Connection
+
+### Via Web UI
+
+1. Go to **Connections** → **Add Connection**
+2. Fill in:
+   - **Name**: `GitLab`
+   - **Type**: `GitLab`
+   - **URL**: `https://gitlab.com`
+   - **Token**: Your Personal Access Token
+3. Click **Test Connection**
+4. Click **Create**
+
+### Via API
+
+```bash
+curl -X POST "http://localhost:8080/api/v1/connections" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "GitLab",
+    "type": "gitlab",
+    "url": "https://gitlab.com",
+    "token": "glpat-xxxxxxxxxxxx"
+  }'
+```
+
+### Via Configuration File
+
+Add code hosts to your `config.yaml`:
+
+```yaml
+codehosts:
+  # The key is the connection name
+  gitlab:
+    type: gitlab
+    url: "https://gitlab.com"
+    token: "$CS_GITLAB_TOKEN"  # Environment variable reference
+    exclude_archived: true     # Skip archived repos during sync
+```
+
+With environment variable:
+
+```bash
+export CS_GITLAB_TOKEN="glpat-xxxxxxxxxxxx"
+```
+
+## Token Scopes
+
+### Minimum Required Scopes
+
+| Scope             | Purpose                |
+| ----------------- | ---------------------- |
+| `read_api`        | Read access to the API |
+| `read_repository` | Clone repositories     |
+
+### Optional Scopes
+
+| Scope       | Purpose                                  |
+| ----------- | ---------------------------------------- |
+| `api`       | Full API access (for future MR creation) |
+| `read_user` | Read user information                    |
+
+<Aside type="note">
+  For search and indexing, `read_api` and `read_repository` are sufficient. Add
+  `api` scope if you plan to use the replace feature with MR creation.
+</Aside>
+
+## Syncing Repositories
+
+After adding the connection:
+
+1. Click **Sync** on the connection card
+2. Code Search discovers your repositories
+3. Repositories are queued for indexing
+
+### Repository Discovery
+
+Code Search discovers:
+
+- Personal projects you own
+- Projects you're a member of
+- Group projects you have access to
+
+### Filtering Repositories
+
+You can exclude archived repositories:
+
+```yaml
+codehosts:
+  gitlab:
+    type: gitlab
+    url: "https://gitlab.com"
+    token: "$CS_GITLAB_TOKEN"
+    exclude_archived: true  # Skip archived repos during sync
+```
+
+## GitLab Groups
+
+### Personal Namespace
+
+Your personal projects are under your username:
+
+- `username/project-name`
+
+### Group Projects
+
+Group projects follow the group path:
+
+- `group-name/project-name`
+- `group-name/subgroup/project-name`
+
+### Visibility Levels
+
+| Level    | Description                       |
+| -------- | --------------------------------- |
+| Private  | Only visible to project members   |
+| Internal | Visible to logged-in GitLab users |
+| Public   | Visible to everyone               |
+
+Code Search can index all projects your token has access to.
+
+## Rate Limits
+
+GitLab.com rate limits:
+
+| Type                   | Limit                 |
+| ---------------------- | --------------------- |
+| Authenticated requests | 2,000 requests/minute |
+| Git operations         | 300 operations/minute |
+
+Code Search respects these limits and will automatically throttle requests.
+
+## Troubleshooting
+
+### Authentication failed
+
+```
+401 Unauthorized
+```
+
+- Verify the token is correct
+- Check the token hasn't expired
+- Ensure required scopes are selected
+
+### Repository not found
+
+```
+404 Project Not Found
+```
+
+- Verify you have access to the project
+- Check the token has `read_api` scope
+- Ensure the project exists and isn't deleted
+
+### Clone failed
+
+```
+remote: HTTP Basic: Access denied
+```
+
+- Verify `read_repository` scope is selected
+- For subgroups, ensure you have access to the parent group
+
+### Rate limit exceeded
+
+```
+429 Too Many Requests
+```
+
+- Wait for the rate limit to reset
+- Check the `RateLimit-Reset` header for reset time
+- Reduce sync frequency if this happens often
+
+## Next Steps
+
+- [GitLab Self-Hosted](/code-hosts/gitlab-self-hosted/) - For self-hosted GitLab
+- [Repositories](/web-ui/repositories/) - Managing synced repositories

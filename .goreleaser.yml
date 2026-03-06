@@ -1,0 +1,111 @@
+# GoReleaser configuration for Code Search CLI
+# Documentation: https://goreleaser.com
+
+project_name: code-search
+
+version: 2
+
+metadata:
+  mod_timestamp: "{{ .CommitTimestamp }}"
+
+before:
+  hooks:
+    - go mod tidy
+    - go mod verify
+
+builds:
+  - id: code-search
+    binary: code-search
+    main: ./cmd/cli
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+
+archives:
+  - id: default
+    format: tar.gz
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else }}{{ .Arch }}{{ end }}
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - README.md
+      - LICENSE
+
+checksum:
+  name_template: "checksums.txt"
+
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+      - "^ci:"
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: "Bug fixes"
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: "Performance improvements"
+      regexp: '^.*?perf(\([[:word:]]+\))??!?:.+$'
+      order: 2
+    - title: Others
+      order: 999
+
+brews:
+  - repository:
+      owner: techquestsdev
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TOKEN }}"
+    name: code-search
+    homepage: https://code-search.techquests.dev
+    description: "Self-hosted code search and bulk operations across all your repositories"
+    license: Apache-2.0
+    skip_upload: auto
+
+release:
+  draft: false
+  prerelease: auto
+  mode: replace
+  header: |
+    ## Code Search {{ .Tag }}
+
+    Self-hosted code search and bulk operations across all your repositories.
+  footer: |
+    ### Installation
+
+    ```bash
+    # macOS
+    brew install techquestsdev/tap/code-search
+
+    # Go
+    go install github.com/techquestsdev/code-search/cmd/cli@{{ .Tag }}
+    ```
+
+    **Full Changelog**: https://github.com/techquestsdev/code-search/compare/{{ .PreviousTag }}...{{ .Tag }}

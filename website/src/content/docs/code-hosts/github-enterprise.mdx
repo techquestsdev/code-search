@@ -1,0 +1,226 @@
+---
+title: GitHub Enterprise
+description: Connect Code Search to GitHub Enterprise Server
+---
+
+import { Aside, Steps } from "@astrojs/starlight/components";
+
+Connect Code Search to your GitHub Enterprise Server instance.
+
+## Prerequisites
+
+- GitHub Enterprise Server 3.0 or later
+- A user account with access to repositories
+- A Personal Access Token
+
+## Creating a Personal Access Token
+
+<Steps>
+
+1. Go to your GitHub Enterprise instance
+
+2. Navigate to **Settings → Developer Settings → Personal Access Tokens → Tokens (classic)**
+
+3. Click **Generate new token (classic)**
+
+4. Configure the token:
+   - **Name**: `Code Search`
+   - **Expiration**: Choose based on your security policy
+   - **Scopes**: Select `repo` and optionally `read:org`
+
+5. Click **Generate token**
+
+6. Copy the token immediately
+
+</Steps>
+
+## Adding the Connection
+
+### Via Web UI
+
+1. Go to **Connections** → **Add Connection**
+2. Fill in:
+   - **Name**: `GitHub Enterprise`
+   - **Type**: `GitHub Enterprise`
+   - **URL**: `https://github.yourcompany.com/api/v3`
+   - **Token**: Your Personal Access Token
+3. Click **Test Connection**
+4. Click **Create**
+
+<Aside type="tip">
+  The API URL for GitHub Enterprise is your instance URL followed by `/api/v3`.
+</Aside>
+
+### Via API
+
+```bash
+curl -X POST "http://localhost:8080/api/v1/connections" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "GitHub Enterprise",
+    "type": "github_enterprise",
+    "url": "https://github.yourcompany.com/api/v3",
+    "token": "ghp_xxxxxxxxxxxx"
+  }'
+```
+
+### Via Configuration File
+
+Add code hosts to your `config.yaml`:
+
+```yaml
+codehosts:
+  # The key is the connection name
+  github-enterprise:
+    type: github_enterprise
+    url: "https://github.yourcompany.com"
+    token: "$CS_GHE_TOKEN"    # Environment variable reference
+    exclude_archived: false   # Include archived repos
+```
+
+<Aside type="note">
+  For GitHub Enterprise, you only need to provide the base URL (e.g., `https://github.yourcompany.com`). 
+  Code Search will automatically append `/api/v3` when making API calls.
+</Aside>
+
+## URL Configuration
+
+| Instance Type     | Config URL                          |
+| ----------------- | ----------------------------------- |
+| github.com        | (use `type: github` instead)        |
+| GitHub Enterprise | `https://[hostname]`                |
+
+**Examples:**
+
+- `https://github.mycompany.com`
+- `https://ghe.internal.example.com`
+
+<Aside type="tip">
+  Code Search automatically appends `/api/v3` to the URL. You only need to provide the base URL.
+</Aside>
+
+## SSL/TLS Configuration
+
+### Self-Signed Certificates
+
+If your GitHub Enterprise uses a self-signed certificate:
+
+```yaml
+# config.yaml
+codehosts:
+  - name: "GitHub Enterprise"
+    type: "github_enterprise"
+    url: "https://github.yourcompany.com/api/v3"
+    tls:
+      insecure_skip_verify: false # Not recommended
+      ca_cert_path: "/path/to/ca-cert.pem"
+```
+
+Or via environment:
+
+```bash
+export CS_TLS_CA_CERT="/path/to/ca-cert.pem"
+```
+
+### Private CA
+
+If using a private Certificate Authority:
+
+1. Add the CA certificate to the Code Search container
+2. Configure the CA cert path in configuration
+
+**Docker Compose:**
+
+```yaml
+services:
+  api:
+    volumes:
+      - ./ca-cert.pem:/etc/ssl/certs/custom-ca.pem:ro
+    environment:
+      CS_TLS_CA_CERT: /etc/ssl/certs/custom-ca.pem
+```
+
+## Enterprise-Specific Features
+
+### LDAP/SAML Authentication
+
+Code Search uses Personal Access Tokens, which work with any GitHub Enterprise authentication method (LDAP, SAML, etc.).
+
+### Repository Visibility
+
+GitHub Enterprise may have different repository visibility options:
+
+- Public (visible to everyone on the instance)
+- Internal (visible to all organization members)
+- Private (visible only to repository members)
+
+Code Search can index all repositories the token has access to.
+
+### Organization Restrictions
+
+If your organization restricts third-party access:
+
+1. An admin may need to approve the token
+2. Check organization settings for OAuth/token policies
+
+## Token Scopes
+
+Same as standard GitHub:
+
+| Scope      | Purpose                          |
+| ---------- | -------------------------------- |
+| `repo`     | Access repositories              |
+| `read:org` | Access organization repositories |
+
+## Troubleshooting
+
+### Connection refused
+
+```
+connection refused
+```
+
+- Verify the URL is correct
+- Check network connectivity to GitHub Enterprise
+- Ensure the API endpoint is accessible from Code Search
+
+### Certificate errors
+
+```
+x509: certificate signed by unknown authority
+```
+
+- Add your CA certificate to the trusted certificates
+- Or (not recommended) set `insecure_skip_verify: true`
+
+### 403 Forbidden
+
+```
+403 Forbidden: Must have admin rights
+```
+
+- Some endpoints require admin access
+- Verify the token has sufficient permissions
+- Check if the repository requires admin approval for tokens
+
+### SAML enforcement
+
+```
+403 Forbidden: Resource protected by SAML
+```
+
+- The token needs to be authorized for SAML
+- Go to your GitHub Enterprise profile settings
+- Authorize the token for SSO
+
+## High Availability
+
+For GitHub Enterprise HA deployments:
+
+- Use the primary node URL
+- Code Search will follow redirects to replicas if needed
+
+## Next Steps
+
+- [GitLab](/code-hosts/gitlab/) - Connect to GitLab
+- [Configuration](/configuration/overview/) - Connection settings

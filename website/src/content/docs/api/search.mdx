@@ -1,0 +1,300 @@
+---
+title: Search API
+description: Search API endpoints and usage
+---
+
+import { Tabs, TabItem, Aside } from "@astrojs/starlight/components";
+
+The Search API allows you to search across all indexed repositories.
+
+## Search
+
+Search for code across repositories.
+
+```http
+POST /api/v1/search
+```
+
+### Request Body
+
+| Parameter       | Type     | Required | Description                                |
+| --------------- | -------- | -------- | ------------------------------------------ |
+| `query`         | string   | Yes      | Search query                               |
+| `is_regex`      | boolean  | No       | Treat query as regular expression          |
+| `case_sensitive`| boolean  | No       | Case-sensitive search                      |
+| `repos`         | string[] | No       | Filter by repository names (regex patterns)|
+| `languages`     | string[] | No       | Filter by languages                        |
+| `file_patterns` | string[] | No       | Filter by file patterns (e.g., `*.go`)     |
+| `limit`         | integer  | No       | Max results (default: unlimited)           |
+| `context_lines` | integer  | No       | Lines of context before/after (default: 2) |
+
+### Request
+
+```bash
+curl -X POST "http://localhost:8080/api/v1/search" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "handleRequest",
+    "languages": ["go", "typescript"],
+    "limit": 100
+  }'
+```
+
+### Response
+
+```json
+{
+  "results": [
+    {
+      "repo": "github.com/myorg/api",
+      "file": "src/handlers/request.go",
+      "line": 42,
+      "column": 5,
+      "content": "func handleRequest(w http.ResponseWriter, r *http.Request) {",
+      "context": {
+        "before": ["", "// handleRequest processes incoming HTTP requests"],
+        "after": ["    ctx := r.Context()", "    logger := log.FromContext(ctx)"]
+      },
+      "language": "go",
+      "match_start": 5,
+      "match_end": 18
+    }
+  ],
+  "total_count": 156,
+  "truncated": false,
+  "duration": "23ms",
+  "stats": {
+    "files_searched": 15234,
+    "repos_searched": 45
+  }
+}
+```
+
+### Response Fields
+
+| Field               | Type    | Description                        |
+| ------------------- | ------- | ---------------------------------- |
+| `results`           | array   | List of search results             |
+| `results[].repo`    | string  | Repository name (with host)        |
+| `results[].file`    | string  | File path                          |
+| `results[].line`    | integer | Line number                        |
+| `results[].column`  | integer | Column position of match           |
+| `results[].content` | string  | Line content                       |
+| `results[].context` | object  | Lines before/after the match       |
+| `results[].language`| string  | Detected language                  |
+| `results[].match_start` | integer | Start position of match in line|
+| `results[].match_end`   | integer | End position of match in line  |
+| `total_count`       | integer | Total number of matches            |
+| `truncated`         | boolean | Whether results were truncated     |
+| `duration`          | string  | Search duration (e.g., "23ms")     |
+| `stats`             | object  | Search statistics                  |
+
+## Streaming Search
+
+For real-time results, use the streaming endpoint:
+
+```http
+POST /api/v1/search/stream
+```
+
+Returns Server-Sent Events (SSE) with events:
+- `progress` - Search progress updates
+- `result` - Individual search results
+- `done` - Search complete with summary
+- `error` - Error occurred
+
+## Search Suggestions
+
+Get autocomplete suggestions for the search bar:
+
+```http
+GET /api/v1/search/suggestions
+```
+
+Returns available repositories, languages, and filter keywords.
+
+## Query Syntax
+
+The search query supports special operators:
+
+### Literal Search
+
+```json
+{"query": "handleRequest"}
+```
+
+Searches for the literal string.
+
+### Regex Search
+
+Enable with `is_regex: true`:
+
+```json
+{"query": "func.*Handler", "is_regex": true}
+```
+
+### Case Sensitive
+
+Enable with `case_sensitive: true`:
+
+```json
+{"query": "HandleRequest", "case_sensitive": true}
+```
+
+### Repository Filter
+
+Use `repos` array with regex patterns:
+
+```json
+{"query": "handler", "repos": ["^github\\.com/myorg/api$"]}
+```
+
+### Language Filter
+
+```json
+{"query": "handler", "languages": ["go", "typescript"]}
+```
+
+### File Path Filter
+
+```json
+{"query": "handler", "file_patterns": ["*.go", "src/**/*.ts"]}
+```
+
+## Examples
+
+<Tabs>
+  <TabItem label="cURL">
+    ```bash
+    # Basic search
+    curl -X POST "http://localhost:8080/api/v1/search" \
+      -H "Content-Type: application/json" \
+      -d '{"query": "handleRequest"}'
+    
+    # With filters
+    curl -X POST "http://localhost:8080/api/v1/search" \
+      -H "Content-Type: application/json" \
+      -d '{"query": "handleRequest", "languages": ["go"], "limit": 50}'
+    
+    # Regex search
+    curl -X POST "http://localhost:8080/api/v1/search" \
+      -H "Content-Type: application/json" \
+      -d '{"query": "func.*Handler", "is_regex": true}'
+    ```
+  </TabItem>
+  <TabItem label="JavaScript">
+    ```javascript
+    async function search(query, options = {}) {
+      const response = await fetch('http://localhost:8080/api/v1/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, ...options })
+      });
+      return response.json();
+    }
+
+    // Basic search
+    const results = await search('handleRequest');
+
+    // With filters
+    const filtered = await search('handleRequest', {
+      languages: ['go'],
+      limit: 50
+    });
+    ```
+
+  </TabItem>
+  <TabItem label="Python">
+    ```python
+    import requests
+
+    def search(query, **kwargs):
+        payload = {'query': query, **kwargs}
+        response = requests.post(
+            'http://localhost:8080/api/v1/search',
+            json=payload
+        )
+        return response.json()
+
+    # Basic search
+    results = search('handleRequest')
+
+    # With filters
+    filtered = search('handleRequest', languages=['go'], limit=50)
+    ```
+
+  </TabItem>
+  <TabItem label="Go">
+    ```go
+    type SearchRequest struct {
+        Query         string   `json:"query"`
+        IsRegex       bool     `json:"is_regex,omitempty"`
+        CaseSensitive bool     `json:"case_sensitive,omitempty"`
+        Languages     []string `json:"languages,omitempty"`
+        Limit         int      `json:"limit,omitempty"`
+    }
+
+    func search(req SearchRequest) (*SearchResponse, error) {
+        body, _ := json.Marshal(req)
+        resp, err := http.Post(
+            "http://localhost:8080/api/v1/search",
+            "application/json",
+            bytes.NewBuffer(body),
+        )
+        if err != nil {
+            return nil, err
+        }
+        defer resp.Body.Close()
+        
+        var result SearchResponse
+        json.NewDecoder(resp.Body).Decode(&result)
+        return &result, nil
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+## Error Responses
+
+### Invalid Query
+
+```http
+HTTP/1.1 400 Bad Request
+Content-Type: text/plain; charset=utf-8
+
+Invalid request body
+```
+
+### Invalid Regex
+
+```http
+HTTP/1.1 400 Bad Request
+Content-Type: text/plain; charset=utf-8
+
+Invalid regex pattern: error parsing regexp: unclosed parenthesis: `[invalid(`
+```
+
+### Search Failed
+
+```http
+HTTP/1.1 500 Internal Server Error
+Content-Type: text/plain; charset=utf-8
+
+Search failed: zoekt: ...
+```
+
+## Performance Tips
+
+<Aside type="tip">
+  Use filters to narrow down the search scope for faster results.
+</Aside>
+
+1. **Use specific queries**: More specific queries are faster
+2. **Filter by repository**: Reduces search scope
+3. **Filter by language**: Reduces files to search
+4. **Limit results**: Use pagination appropriately
+
+## Next Steps
+
+- [Repositories API](/api/repositories/) - Repository management
+- [Connections API](/api/connections/) - Connection management

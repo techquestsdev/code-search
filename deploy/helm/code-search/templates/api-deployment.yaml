@@ -1,0 +1,122 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "code-search.fullname" . }}-api
+  labels:
+    {{- include "code-search.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+spec:
+  replicas: {{ .Values.api.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "code-search.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: api
+  template:
+    metadata:
+      labels:
+        {{- include "code-search.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: api
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "code-search.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: api
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: {{ include "code-search.image" (dict "global" .Values.global "image" .Values.api.image "appVersion" .Chart.AppVersion) }}
+          imagePullPolicy: {{ .Values.api.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ include "code-search.fullname" . }}-env
+          env:
+            - name: CS_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgresql.existingSecret }}
+                  key: {{ .Values.postgresql.existingSecretKey }}
+            - name: CS_REDIS_ADDR
+              value: {{ include "code-search.redisUrl" . }}
+            - name: CS_REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.redis.existingSecret }}
+                  key: {{ .Values.redis.existingSecretKey }}
+            {{- if or .Values.config.existingConfigMap .Values.config.inline }}
+            - name: CS_CONFIG_FILE
+              value: /etc/code-search/config.yaml
+            {{- end }}
+            {{- range $name, $codehost := .Values.codehosts }}
+            - name: {{ $codehost.envVar }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $codehost.existingSecret }}
+                  key: {{ $codehost.existingSecretKey }}
+            {{- end }}
+            {{- range $key, $value := .Values.api.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- if .Values.api.fileBrowsing.enabled }}
+            - name: CS_INDEXER_REPOS_PATH
+              value: /data/repos
+            - name: CS_INDEXER_INDEX_PATH
+              value: /data/index
+            {{- end }}
+          volumeMounts:
+          {{- if or .Values.config.existingConfigMap .Values.config.inline }}
+            - name: config
+              mountPath: /etc/code-search
+              readOnly: true
+          {{- end }}
+          {{- if .Values.api.fileBrowsing.enabled }}
+            - name: data
+              mountPath: /data
+              # readOnly: false - needed for replace jobs to clone/push repos
+          {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.api.resources | nindent 12 }}
+      volumes:
+      {{- if or .Values.config.existingConfigMap .Values.config.inline }}
+        - name: config
+          configMap:
+            name: {{ .Values.config.existingConfigMap | default (printf "%s-config" (include "code-search.fullname" .)) }}
+      {{- end }}
+      {{- if .Values.api.fileBrowsing.enabled }}
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ .Values.api.fileBrowsing.existingClaim | default (printf "data-%s-indexer-0" (include "code-search.fullname" .)) }}
+            readOnly: true
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

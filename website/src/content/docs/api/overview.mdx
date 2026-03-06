@@ -1,0 +1,261 @@
+---
+title: API Overview
+description: Introduction to the Code Search REST API
+---
+
+import { Card, CardGrid, Aside } from "@astrojs/starlight/components";
+
+Code Search provides a comprehensive REST API for integrating search into your workflows.
+
+## Base URL
+
+```
+http://localhost:8080
+```
+
+Or for production:
+
+```
+https://your-code-search-domain.com
+```
+
+## Authentication
+
+Currently, the API does not require authentication for local deployments. For production deployments, Bearer token authentication can be configured.
+
+## API Endpoints
+
+<CardGrid>
+  <Card title="Search" icon="magnifier">
+    Search across all indexed repositories `POST /api/v1/search`
+  </Card>
+  <Card title="Repositories" icon="document">
+    List and manage repositories `GET /api/v1/repos`
+  </Card>
+  <Card title="Connections" icon="external">
+    Manage code host connections `GET /api/v1/connections`
+  </Card>
+  <Card title="Jobs" icon="list-format">
+    Monitor background jobs `GET /api/v1/jobs`
+  </Card>
+  <Card title="SCIP" icon="right-arrow">
+    Precise code intelligence (go-to-definition, find-references) `POST /api/v1/scip/repos/{id}/definition`
+  </Card>
+  <Card title="Replace" icon="pencil">
+    Search and replace across repositories `POST /api/v1/replace/execute`
+  </Card>
+  <Card title="Webhooks" icon="rocket">
+    Receive push events for instant re-indexing `POST /api/v1/webhooks/{provider}`
+  </Card>
+  <Card title="MCP Server" icon="star">
+    AI assistant integration via Model Context Protocol. Separate binary with 8 tools.
+  </Card>
+</CardGrid>
+
+## Request Format
+
+All requests should include:
+
+```http
+Content-Type: application/json
+Accept: application/json
+```
+
+## Response Format
+
+All responses are JSON. The format varies by endpoint:
+
+### Success Response (Search)
+
+```json
+{
+  "results": [...],
+  "total_count": 100,
+  "duration": "15ms",
+  "stats": {
+    "files_searched": 1234,
+    "repos_searched": 45
+  }
+}
+```
+
+### Success Response (List)
+
+```json
+{
+  "repos": [...],
+  "total_count": 50
+}
+```
+
+### Error Response
+
+Most endpoints return plain text error messages with appropriate HTTP status codes:
+
+```http
+HTTP/1.1 400 Bad Request
+Content-Type: text/plain; charset=utf-8
+
+Invalid query parameter
+```
+
+Some newer or streaming endpoints may return JSON errors:
+
+```json
+{
+  "type": "error",
+  "error": "Failed to connect to search service"
+}
+```
+
+## HTTP Status Codes
+
+| Code | Description  |
+| ---- | ------------ |
+| 200  | Success      |
+| 201  | Created      |
+| 400  | Bad request  |
+| 401  | Unauthorized |
+| 404  | Not found    |
+| 500  | Server error |
+
+## Pagination
+
+List endpoints support pagination using `limit` and `offset`:
+
+```http
+GET /api/v1/jobs?limit=50&offset=100
+```
+
+Response includes pagination metadata:
+
+```json
+{
+  "jobs": [...],
+  "total_count": 150,
+  "limit": 50,
+  "offset": 100,
+  "has_more": false
+}
+```
+
+## Timeouts
+
+API requests have the following timeout limits:
+
+| Operation | Timeout |
+| --------- | ------- |
+| Read      | 15s     |
+| Write     | 60s     |
+
+## Examples
+
+### cURL
+
+```bash
+# Search (POST request with JSON body)
+curl -X POST "http://localhost:8080/api/v1/search" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "handleRequest"}'
+
+# List repos
+curl "http://localhost:8080/api/v1/repos"
+
+# List jobs with filters
+curl "http://localhost:8080/api/v1/jobs?status=running&type=index"
+```
+
+### JavaScript
+
+```javascript
+// Search (POST request)
+const response = await fetch("http://localhost:8080/api/v1/search", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ query: "handleRequest" }),
+});
+const data = await response.json();
+console.log(data.results);
+```
+
+### Python
+
+```python
+import requests
+
+response = requests.post(
+    'http://localhost:8080/api/v1/search',
+    json={'query': 'handleRequest'}
+)
+data = response.json()
+print(data['results'])
+```
+
+### Go
+
+```go
+payload := map[string]string{"query": "handleRequest"}
+body, _ := json.Marshal(payload)
+
+resp, err := http.Post(
+    "http://localhost:8080/api/v1/search",
+    "application/json",
+    bytes.NewBuffer(body),
+)
+if err != nil {
+    log.Fatal(err)
+}
+defer resp.Body.Close()
+
+var result SearchResponse
+json.NewDecoder(resp.Body).Decode(&result)
+```
+
+## OpenAPI Specification & Interactive Docs
+
+Code Search provides a complete OpenAPI 3.1 specification and interactive Swagger UI:
+
+| Resource | URL | Description |
+| -------- | --- | ----------- |
+| **Swagger UI** | `/docs` | Interactive API explorer |
+| **OpenAPI Spec** | `/openapi.yaml` | Full API specification (YAML) |
+| **OpenAPI JSON** | `/openapi.json` | Redirects to YAML |
+
+<Aside type="tip">
+  The **Swagger UI at `/docs`** is the best way to explore and test the API. 
+  It shows all endpoints, request/response schemas, and lets you try API calls directly.
+</Aside>
+
+You can import the OpenAPI spec into tools like Postman, generate client SDKs, or use code generators.
+
+## API Categories
+
+| Category | Description |
+| -------- | ----------- |
+| **Search** | Code search across repositories |
+| **Repositories** | Repository CRUD and management |
+| **File Browsing** | Browse files, directories, branches (can be disabled) |
+| **Connections** | Code host connection management |
+| **Replace** | Search & replace with MR creation |
+| **Symbols** | Find definitions and references |
+| **Jobs** | Background job monitoring |
+| **Scheduler** | Sync scheduler management |
+| **Webhooks** | Push-event-driven instant re-indexing |
+| **MCP** | AI assistant integration (separate binary) |
+| **Health** | Liveness and readiness probes |
+
+## SDKs
+
+Official SDKs are planned for:
+
+- Go
+- TypeScript/JavaScript
+- Python
+
+## Next Steps
+
+- [Search API](/api/search/) - Search endpoints
+- [Repositories API](/api/repositories/) - Repository endpoints
+- [Connections API](/api/connections/) - Connection endpoints
+- [MCP Server](/api/mcp/) - AI assistant integration
+- [Webhooks](/configuration/webhooks/) - Push-driven instant re-indexing

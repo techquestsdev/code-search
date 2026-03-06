@@ -1,0 +1,427 @@
+---
+title: Replace API
+description: Search and replace API endpoints
+---
+
+import { Tabs, TabItem, Aside, Steps } from "@astrojs/starlight/components";
+
+The Replace API enables bulk search and replace operations across multiple repositories with automatic merge request creation.
+
+<Aside type="caution">
+  **All replacements create merge requests.** Changes are never committed directly to the main branch. This ensures all changes go through proper review.
+</Aside>
+
+<Aside type="note" title="Read-Only Repositories">
+  When repositories are in **read-only mode** (managed via sync from code hosts rather than manual configuration), the replace feature requires a **Personal Access Token (PAT)** to create merge requests. In the web UI, users are prompted to provide their token when executing replacements - the token is used for the current session only and is not stored. For API usage, include the `user_token` field in the execute request.
+</Aside>
+
+## Two-Phase Flow
+
+The replace API uses a **two-phase approach** for safety and efficiency:
+
+<Steps>
+1. **Preview**: Search for matches and return what will be changed
+2. **Execute**: Use matches from preview to perform replacements and create MRs
+</Steps>
+
+This design ensures:
+- Users always see exactly what will change before committing
+- Execute phase is fast (no re-searching needed)
+- Exact consistency between preview and execution
+- All changes go through merge request review
+
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│ POST /preview   │────▶│ Review matches  │────▶│ POST /execute   │
+│                 │     │ (with repo IDs) │     │ (creates MR)    │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+```
+
+## Preview Replacements
+
+Search for matches without making any changes.
+
+```http
+POST /api/v1/replace/preview
+```
+
+### Request Body
+
+```json
+{
+  "search_pattern": "oldFunction",
+  "replace_with": "newFunction",
+  "is_regex": false,
+  "case_sensitive": true,
+  "file_patterns": ["*.go", "*.ts"],
+  "repos": ["myorg/api"]
+}
+```
+
+| Field           | Type     | Required | Description                              |
+| --------------- | -------- | -------- | ---------------------------------------- |
+| `search_pattern`| string   | Yes      | Text or regex pattern to search for      |
+| `replace_with`  | string   | Yes      | Replacement text                         |
+| `is_regex`      | boolean  | No       | Treat search_pattern as regex (default: false) |
+| `case_sensitive`| boolean  | No       | Case-sensitive matching (default: false) |
+| `file_patterns` | string[] | No       | Filter files by glob patterns            |
+| `repos`         | string[] | No       | Filter to specific repositories          |
+
+### Response
+
+```json
+{
+  "results": [
+    {
+      "repository_id": 1,
+      "repo": "myorg/api",
+      "file": "internal/service.go",
+      "line": 42,
+      "content": "func oldFunction() {"
+    },
+    {
+      "repository_id": 1,
+      "repo": "myorg/api",
+      "file": "internal/handler.go",
+      "line": 15,
+      "content": "result := oldFunction()"
+    },
+    {
+      "repository_id": 2,
+      "repo": "myorg/web",
+      "file": "src/api.ts",
+      "line": 8,
+      "content": "const data = oldFunction();"
+    }
+  ],
+  "total": 3,
+  "repos_count": 2,
+  "files_count": 3
+}
+```
+
+<Aside type="note">
+  Each match includes a `repository_id` which is required for the execute phase.
+</Aside>
+
+## Execute Replacements
+
+Execute replacements using matches from preview. This creates a background job that will make the changes and create a merge request.
+
+```http
+POST /api/v1/replace/execute
+```
+
+### Request Body
+
+```json
+{
+  "search_pattern": "oldFunction",
+  "replace_with": "newFunction",
+  "is_regex": false,
+  "case_sensitive": true,
+  "file_patterns": ["*.go", "*.ts"],
+  "matches": [
+    {
+      "repository_id": 1,
+      "repository_name": "myorg/api",
+      "file_path": "internal/service.go"
+    },
+    {
+      "repository_id": 1,
+      "repository_name": "myorg/api",
+      "file_path": "internal/handler.go"
+    },
+    {
+      "repository_id": 2,
+      "repository_name": "myorg/web",
+      "file_path": "src/api.ts"
+    }
+  ],
+  "branch_name": "refactor/rename-function",
+  "mr_title": "Rename oldFunction to newFunction",
+  "mr_description": "Automated refactoring via code-search"
+}
+```
+
+| Field           | Type     | Required | Description                              |
+| --------------- | -------- | -------- | ---------------------------------------- |
+| `search_pattern`| string   | Yes      | Same pattern used in preview             |
+| `replace_with`  | string   | Yes      | Replacement text                         |
+| `is_regex`      | boolean  | No       | Treat search_pattern as regex            |
+| `case_sensitive`| boolean  | No       | Case-sensitive matching                  |
+| `file_patterns` | string[] | No       | File patterns (from preview)             |
+| `matches`       | object[] | **Yes**  | Matches from preview (see below)         |
+| `branch_name`   | string   | No       | Branch name for changes (auto-generated if not specified) |
+| `mr_title`      | string   | No       | MR/PR title (auto-generated if not specified) |
+| `mr_description`| string   | No       | MR/PR description (auto-generated if not specified) |
+| `user_tokens`   | object   | No       | Map of `connection_name: token` for authentication |
+
+### Match Object
+
+| Field           | Type   | Required | Description                      |
+| --------------- | ------ | -------- | -------------------------------- |
+| `repository_id` | number | Yes      | Repository ID from preview       |
+| `repository_name`| string| Yes      | Repository name from preview     |
+| `file_path`     | string | Yes      | File path from preview           |
+
+<Aside type="caution">
+  The `matches` field is **required**. You must call the preview endpoint first to get the matches. A merge request is always created for each repository with changes.
+</Aside>
+
+### Response
+
+```json
+{
+  "job_id": "job_abc123",
+  "status": "pending",
+  "message": "Replace job queued"
+}
+```
+
+## List Replace Jobs
+
+Get all replace jobs.
+
+```http
+GET /api/v1/replace/jobs
+```
+
+### Response
+
+```json
+[
+  {
+    "id": "job_abc123",
+    "type": "replace",
+    "status": "running",
+    "payload": {
+      "search_pattern": "oldFunction",
+      "replace_with": "newFunction"
+    },
+    "progress": {
+      "current": 2,
+      "total": 3,
+      "message": "Processing repository 2/3: myorg/web"
+    },
+    "created_at": "2024-01-15T10:30:00Z"
+  }
+]
+```
+
+## Get Replace Job
+
+Get a specific replace job.
+
+```http
+GET /api/v1/replace/jobs/{id}
+```
+
+### Response
+
+```json
+{
+  "id": "job_abc123",
+  "type": "replace",
+  "status": "completed",
+  "payload": {
+    "search_pattern": "oldFunction",
+    "replace_with": "newFunction",
+    "matches": [
+      {"repository_id": 1, "repository_name": "myorg/api", "file_path": "internal/service.go"}
+    ]
+  },
+  "result": {
+    "repositories_processed": 2,
+    "files_modified": 3,
+    "merge_requests_created": 2
+  },
+  "created_at": "2024-01-15T10:30:00Z",
+  "completed_at": "2024-01-15T10:32:00Z"
+}
+```
+
+## Examples
+
+<Tabs>
+  <TabItem label="cURL">
+    ```bash
+    # Step 1: Preview changes
+    curl -X POST "http://localhost:8080/api/v1/replace/preview" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "search_pattern": "oldFunction",
+        "replace_with": "newFunction",
+        "file_patterns": ["*.go"]
+      }'
+    
+    # Step 2: Execute with matches from preview
+    curl -X POST "http://localhost:8080/api/v1/replace/execute" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "search_pattern": "oldFunction",
+        "replace_with": "newFunction",
+        "file_patterns": ["*.go"],
+        "matches": [
+          {"repository_id": 1, "repository_name": "myorg/api", "file_path": "internal/service.go"},
+          {"repository_id": 1, "repository_name": "myorg/api", "file_path": "internal/handler.go"}
+        ],
+        "mr_title": "Rename oldFunction to newFunction"
+      }'
+    
+    # Check job status
+    curl "http://localhost:8080/api/v1/replace/jobs/job_abc123"
+    ```
+  </TabItem>
+  <TabItem label="JavaScript">
+    ```javascript
+    const API = 'http://localhost:8080/api/v1';
+
+    // Step 1: Preview changes
+    const preview = await fetch(`${API}/replace/preview`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        search_pattern: 'oldFunction',
+        replace_with: 'newFunction',
+        file_patterns: ['*.go']
+      })
+    }).then(r => r.json());
+
+    console.log(`Found ${preview.total} matches in ${preview.repos_count} repos`);
+
+    // Step 2: Build matches array from preview results
+    const matches = preview.matches.map(r => ({
+      repository_id: r.repository_id,
+      repository_name: r.repo,
+      file_path: r.file
+    }));
+
+    // Step 3: Execute with matches
+    const job = await fetch(`${API}/replace/execute`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        search_pattern: 'oldFunction',
+        replace_with: 'newFunction',
+        file_patterns: ['*.go'],
+        matches: matches,
+        mr_title: 'Rename oldFunction to newFunction'
+      })
+    }).then(r => r.json());
+
+    console.log(`Job queued: ${job.job_id}`);
+
+    // Poll for completion
+    let status = 'pending';
+    while (status === 'pending' || status === 'running') {
+      const result = await fetch(`${API}/replace/jobs/${job.job_id}`).then(r => r.json());
+      status = result.status;
+      console.log(`Status: ${status} - ${result.progress?.message || ''}`);
+      await new Promise(r => setTimeout(r, 2000));
+    }
+    ```
+  </TabItem>
+  <TabItem label="Python">
+    ```python
+    import requests
+    import time
+
+    API = "http://localhost:8080/api/v1"
+
+    # Step 1: Preview changes
+    preview = requests.post(f"{API}/replace/preview", json={
+        "search_pattern": "oldFunction",
+        "replace_with": "newFunction",
+        "file_patterns": ["*.go"]
+    }).json()
+
+    print(f"Found {preview['total_count']} matches in {preview['stats']['repos_searched']} repos")
+
+    # Step 2: Build matches array from preview results
+    matches = [
+        {
+            "repository_id": r["repository_id"],
+            "repository_name": r["repo"],
+            "file_path": r["file"]
+        }
+        for r in preview["matches"]
+    ]
+
+    # Step 3: Execute with matches
+    job = requests.post(f"{API}/replace/execute", json={
+        "search_pattern": "oldFunction",
+        "replace_with": "newFunction",
+        "file_patterns": ["*.go"],
+        "matches": matches,
+        "mr_title": "Rename oldFunction to newFunction"
+    }).json()
+
+    print(f"Job queued: {job['job_id']}")
+
+    # Poll for completion
+    status = "pending"
+    while status in ("pending", "running"):
+        result = requests.get(f"{API}/replace/jobs/{job['job_id']}").json()
+        status = result["status"]
+        message = result.get("progress", {}).get("message", "")
+        print(f"Status: {status} - {message}")
+        time.sleep(2)
+    ```
+  </TabItem>
+</Tabs>
+
+## Regex Examples
+
+### Version Bump
+
+```bash
+# Preview
+curl -X POST "http://localhost:8080/api/v1/replace/preview" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "search_pattern": "v([0-9]+)\\.([0-9]+)\\.([0-9]+)",
+    "replace_with": "v$1.$2.999",
+    "is_regex": true,
+    "file_patterns": ["*.go", "version.txt"]
+  }'
+```
+
+### Function Rename Pattern
+
+```bash
+# Preview
+curl -X POST "http://localhost:8080/api/v1/replace/preview" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "search_pattern": "get([A-Z]\\w+)ById",
+    "replace_with": "find$1ById",
+    "is_regex": true
+  }'
+```
+
+## Error Responses
+
+| Status | Description                                      |
+| ------ | ------------------------------------------------ |
+| 400    | Invalid request (missing required fields)        |
+| 400    | `matches` is required for execute                |
+| 500    | Internal server error                            |
+
+```http
+HTTP/1.1 400 Bad Request
+Content-Type: text/plain; charset=utf-8
+
+'matches' is required - call preview endpoint first to get matches
+```
+
+## Next Steps
+
+- [Jobs API](/api/jobs/) - Monitor replace job progress
+- [CLI Replace](/cli/replace/) - Command-line interface for replace
+
+
+## Next Steps
+
+- [Jobs API](/api/jobs/) - Monitor replace job progress
+- [CLI Replace](/cli/replace/) - Command-line interface for replace

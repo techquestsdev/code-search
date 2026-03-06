@@ -1,0 +1,241 @@
+---
+title: Repository Management
+description: CLI commands for managing repositories
+---
+
+import { Tabs, TabItem, Steps, Aside } from "@astrojs/starlight/components";
+
+The `code-search repo` commands let you manage which repositories are indexed.
+
+<Aside type="note">
+  Repositories are identified by ID. Use `repo list` to find repository IDs.
+</Aside>
+
+## Commands Overview
+
+| Command        | Description                       |
+| -------------- | --------------------------------- |
+| `repo list`    | List all indexed repositories     |
+| `repo add`     | Add a repository to index         |
+| `repo remove`  | Soft-delete a repository          |
+| `repo restore` | Restore a deleted repository      |
+| `repo sync`    | Trigger re-sync of a repository   |
+| `repo status`  | Check repository status           |
+| `repo exclude` | Exclude repository from indexing  |
+| `repo include` | Include previously excluded repo  |
+
+## List Repositories
+
+View all repositories currently indexed.
+
+```bash
+# List all repos
+code-search repo list
+
+# Filter by connection ID
+code-search repo list --connection 1
+
+# Show detailed info
+code-search repo list --verbose
+```
+
+### Options
+
+| Option        | Short | Description              |
+| ------------- | ----- | ------------------------ |
+| `--connection`| `-c`  | Filter by connection ID  |
+| `--verbose`   | `-v`  | Show detailed info       |
+
+### Output
+
+```
+$ code-search repo list
+
+ID    NAME                    STATUS        BRANCHES
+1     myorg/api               ✓ indexed     main
+2     myorg/frontend          ✓ indexed     main, develop
+3     myorg/services          🔄 indexing   main
+4     internal/docs           ✓ indexed     master
+
+4 repositories
+```
+
+With `--verbose`:
+
+```
+$ code-search repo list --verbose
+
+ID    NAME              STATUS        LAST INDEXED         EXCLUDED   URL
+1     myorg/api         ✓ indexed     2024-01-15T10:30:00Z            https://github.com/myorg/api.git
+2     myorg/frontend    ✓ indexed     2024-01-15T10:28:00Z            https://github.com/myorg/frontend.git
+
+2 repositories
+```
+
+## Add Repository
+
+Add a new repository to be indexed.
+
+```bash
+# Add a repository with connection ID (required)
+code-search repo add https://github.com/myorg/new-service.git --connection 1
+
+# Add with custom name
+code-search repo add https://github.com/myorg/repo.git --connection 1 --name custom-name
+
+# Add with specific branch
+code-search repo add https://github.com/myorg/repo.git --connection 1 --branch develop
+```
+
+### Syntax
+
+```bash
+code-search repo add <clone-url> [flags]
+```
+
+### Options
+
+| Option        | Description                        |
+| ------------- | ---------------------------------- |
+| `--connection`| Connection ID (required)           |
+| `--name`      | Custom name for the repository     |
+| `--branch`    | Default branch (default: main)     |
+
+### Examples
+
+```bash
+# Add a GitHub repository
+code-search repo add https://github.com/company/platform.git --connection 1
+
+# Add with custom name and branch
+code-search repo add https://gitlab.example.com/internal/tools.git \
+  --connection 2 --name internal-tools --branch master
+```
+
+## Remove Repository
+
+Soft-delete a repository from the index.
+
+```bash
+# Remove a repo by ID (will prompt for confirmation)
+code-search repo remove 3
+
+# Remove without confirmation
+code-search repo remove 3 --force
+```
+
+### Options
+
+| Option    | Description              |
+| --------- | ------------------------ |
+| `--force` | Skip confirmation prompt |
+
+<Aside type="tip">
+  Removing a repository is a **soft delete**. The repository remains in the database
+  and can be restored using `code-search repo restore`. Index shards are cleaned up
+  from disk, but the repository metadata is preserved.
+</Aside>
+
+## Restore Repository
+
+Restore a previously deleted repository.
+
+```bash
+code-search repo restore 3
+```
+
+The repository will be re-indexed on the next sync cycle.
+
+## Sync Repository
+
+Trigger a re-sync and re-index of a repository.
+
+```bash
+# Sync a specific repo by ID
+code-search repo sync 1
+
+# Sync all repos
+code-search repo sync --all
+```
+
+### Syntax
+
+```bash
+code-search repo sync [id] [flags]
+```
+
+### Options
+
+| Option  | Description            |
+| ------- | ---------------------- |
+| `--all` | Sync all repositories  |
+
+### Examples
+
+```bash
+# Sync a specific repo
+code-search repo sync 1
+
+# Re-sync everything
+code-search repo sync --all
+```
+
+## Check Status
+
+Get detailed status of a specific repository.
+
+```bash
+# Check status of a specific repo by ID
+code-search repo status 1
+```
+
+### Status Values
+
+| Status     | Indicator | Description                    |
+| ---------- | --------- | ------------------------------ |
+| `indexed`  | ✓         | Ready for search               |
+| `pending`  | ⏳        | Waiting to be indexed          |
+| `cloning`  | 📥        | Cloning repository             |
+| `indexing` | 🔄        | Building search index          |
+| `failed`   | ✗         | Indexing failed                |
+| `excluded` | —         | Excluded from indexing         |
+| `deleted`  | 🗑        | Soft-deleted (can be restored) |
+
+### Output
+
+```
+$ code-search repo status 1
+
+ID:         1
+Name:       myorg/api
+Status:     ✓ indexed
+URL:        https://github.com/myorg/api.git
+Branches:   main, develop, feature/new-api
+Indexed:    2024-01-15T10:30:00Z
+```
+
+## Exclude Repository
+
+Exclude a repository from sync and indexing (soft delete).
+
+```bash
+code-search repo exclude 3
+```
+
+This keeps the repository in the database but excludes it from future syncs.
+
+## Include Repository
+
+Include a previously excluded repository.
+
+```bash
+code-search repo include 3
+```
+
+The repository will be included in the next sync cycle.
+
+## Next Steps
+
+- [Search](/cli/search/) - Search your repositories
+- [Find](/cli/find/) - Find files and symbols
+- [Replace](/cli/replace/) - Make bulk changes

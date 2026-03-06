@@ -1,0 +1,514 @@
+---
+title: Helm Chart Deployment
+description: Deploy Code Search on Kubernetes using Helm
+---
+
+import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+
+Helm is the recommended way to deploy Code Search on Kubernetes. It provides a simple, reproducible deployment with sensible defaults and easy customization.
+
+## Prerequisites
+
+- Kubernetes cluster (1.25+)
+- Helm 3.8+
+- `kubectl` configured for your cluster
+
+## Quick Start
+
+<Steps>
+
+1. **Add the Helm repository**
+
+   ```bash
+   helm repo add code-search https://techquestsdev.github.io/code-search
+   helm repo update
+   ```
+
+2. **Create a values file**
+
+   ```yaml
+   # values.yaml
+   config:
+     database:
+       url: "postgres://user:pass@postgres:5432/codesearch?sslmode=disable"
+     redis:
+       url: "redis://redis:6379"
+
+   ingress:
+     enabled: true
+     host: code-search.example.com
+   ```
+
+3. **Install the chart**
+
+   ```bash
+   helm install code-search code-search/code-search \
+     --namespace code-search \
+     --create-namespace \
+     -f values.yaml
+   ```
+
+4. **Verify the installation**
+
+   ```bash
+   kubectl get pods -n code-search
+   helm status code-search -n code-search
+   ```
+
+</Steps>
+
+## Chart Values Reference
+
+### Global Settings
+
+```yaml
+# Full values.yaml reference
+nameOverride: ""
+fullnameOverride: ""
+
+# Image settings (applies to all components)
+image:
+  registry: ghcr.io
+  pullPolicy: IfNotPresent
+  tag: "latest" # Overridden per component if needed
+
+imagePullSecrets: []
+```
+
+### Configuration
+
+```yaml
+config:
+  # Database connection (PostgreSQL or MySQL)
+  database:
+    url: "" # Required: PostgreSQL or MySQL connection string
+    maxOpenConns: 25
+    maxIdleConns: 5
+    connMaxLifetime: "5m"
+
+  # Redis connection
+  redis:
+    url: "" # Required: Redis connection string
+
+  # Zoekt settings
+  zoekt:
+    indexDir: "/data/index"
+    reposDir: "/data/repos"
+
+  # Indexer settings
+  indexer:
+    concurrency: 2
+    cloneTimeout: "10m"
+
+  # Scheduler settings
+  scheduler:
+    enabled: true
+    pollInterval: "6h"
+    checkInterval: "5m"
+
+  # Repository settings
+  repos:
+    readonly: false
+
+  # Connection settings
+  connections:
+    readonly: false
+
+# Mount config from an existing secret
+existingSecret: ""
+```
+
+### API Server
+
+```yaml
+api:
+  replicaCount: 2
+
+  image:
+    repository: techquestsdev/code-search-api
+    tag: "" # Defaults to chart appVersion
+
+  service:
+    type: ClusterIP
+    port: 8080
+
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "2Gi"
+      cpu: "2000m"
+
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 80
+
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+```
+
+### Indexer Worker
+
+```yaml
+indexer:
+  replicaCount: 2
+
+  image:
+    repository: techquestsdev/code-search-indexer
+    tag: ""
+
+  # Extra environment variables
+  # NOTE: CS_ZOEKT_URL is automatically set to http://localhost:6070
+  # since Zoekt runs as a sidecar in the same pod
+  env: {}
+
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+    limits:
+      memory: "4Gi"
+      cpu: "2000m"
+
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+```
+
+### Zoekt Search Server
+
+```yaml
+zoekt:
+  replicaCount: 1
+
+  image:
+    repository: techquestsdev/code-search-zoekt
+    tag: ""
+
+  service:
+    type: ClusterIP
+    port: 6070
+
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+    limits:
+      memory: "4Gi"
+      cpu: "2000m"
+```
+
+### Web UI
+
+```yaml
+web:
+  replicaCount: 2
+
+  image:
+    repository: techquestsdev/code-search-web
+    tag: ""
+
+  service:
+    type: ClusterIP
+    port: 3000
+
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+```
+
+### Ingress
+
+```yaml
+ingress:
+  enabled: true
+  className: nginx
+
+  annotations:
+    {}
+    # kubernetes.io/tls-acme: "true"
+    # nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+
+  host: code-search.example.com
+
+  tls:
+    enabled: true
+    secretName: code-search-tls
+    # Or use cert-manager:
+    # clusterIssuer: letsencrypt-prod
+```
+
+### Persistence
+
+```yaml
+persistence:
+  # Index storage
+  index:
+    enabled: true
+    storageClassName: "" # Uses default if empty
+    accessMode: ReadWriteMany
+    size: 50Gi
+    existingClaim: ""
+
+  # Repository storage
+  repos:
+    enabled: true
+    storageClassName: ""
+    accessMode: ReadWriteMany
+    size: 100Gi
+    existingClaim: ""
+```
+
+### Built-in PostgreSQL (Optional)
+
+```yaml
+postgresql:
+  enabled: false # Set to true to deploy PostgreSQL in-cluster
+
+  auth:
+    postgresPassword: ""
+    username: codesearch
+    password: ""
+    database: codesearch
+
+  primary:
+    persistence:
+      enabled: true
+      size: 20Gi
+```
+
+### Built-in Redis (Optional)
+
+```yaml
+redis:
+  enabled: false # Set to true to deploy Redis in-cluster
+
+  architecture: standalone
+
+  auth:
+    enabled: false
+
+  master:
+    persistence:
+      enabled: true
+      size: 5Gi
+```
+
+## Common Configurations
+
+### With In-Cluster Database
+
+```yaml
+# values-with-db.yaml
+postgresql:
+  enabled: true
+  auth:
+    password: "secure-password"
+
+redis:
+  enabled: true
+
+config:
+  database:
+    url: "postgres://codesearch:secure-password@code-search-postgresql:5432/codesearch?sslmode=disable"
+  redis:
+    url: "redis://code-search-redis-master:6379"
+```
+
+### External Database
+
+```yaml
+# values-external-db.yaml
+config:
+  database:
+    url: "postgres://user:pass@db.example.com:5432/codesearch?sslmode=require"
+  redis:
+    url: "redis://redis.example.com:6379"
+```
+
+### High Availability (Shared Storage)
+
+Multiple indexer workers sharing the same storage for parallel indexing:
+
+```yaml
+# values-ha.yaml
+api:
+  replicaCount: 3
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+  fileBrowsing:
+    enabled: true  # Enable file browsing from API
+
+indexer:
+  replicaCount: 4  # Multiple workers share the queue
+  persistence:
+    accessMode: ReadWriteMany  # Required for multiple workers
+    size: 200Gi
+
+web:
+  replicaCount: 3
+
+# No sharding needed - workers share storage
+sharding:
+  enabled: false
+```
+
+<Aside type="note">
+  ReadWriteMany (RWX) storage is required for multiple indexer workers. 
+  Compatible storage classes: NFS, CephFS, AWS EFS, Azure Files, GlusterFS.
+</Aside>
+
+### Hash-Based Sharding (Extreme Scale)
+
+For very large deployments without shared storage:
+
+```yaml
+# values-sharded.yaml
+api:
+  replicaCount: 3
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+
+# Sharding distributes repos by consistent hash
+sharding:
+  enabled: true
+  replicas: 5  # Creates indexer-0 through indexer-4
+  federatedAccess:
+    enabled: true  # Enable file browsing and replace via proxy
+    indexerAPIPort: 8081
+
+web:
+  replicaCount: 3
+
+# Each shard has its own storage (no RWX needed)
+indexer:
+  persistence:
+    accessMode: ReadWriteOnce
+    size: 100Gi
+```
+
+<Aside type="tip">
+  With sharding enabled, each indexer processes only repositories assigned to its shard.
+  File browsing and replace jobs work via federated proxy to the correct shard.
+  See [Sharding Configuration](/configuration/sharding/) for details.
+</Aside>
+
+### With TLS and cert-manager
+
+```yaml
+# values-tls.yaml
+ingress:
+  enabled: true
+  className: nginx
+  host: code-search.example.com
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  tls:
+    enabled: true
+    secretName: code-search-tls
+```
+
+## Installation Examples
+
+### Basic Installation
+
+```bash
+helm install code-search code-search/code-search \
+  --namespace code-search \
+  --create-namespace \
+  --set config.database.url="postgres://user:pass@postgres:5432/codesearch" \
+  --set config.redis.url="redis://redis:6379"
+```
+
+### With Values File
+
+```bash
+helm install code-search code-search/code-search \
+  --namespace code-search \
+  --create-namespace \
+  -f values.yaml
+```
+
+### With Existing Secret
+
+```bash
+# Create secret with database URL
+kubectl create secret generic code-search-config \
+  --from-literal=database-url="postgres://user:pass@host:5432/db" \
+  --from-literal=redis-url="redis://host:6379" \
+  -n code-search
+
+# Install with existing secret
+helm install code-search code-search/code-search \
+  --namespace code-search \
+  --set existingSecret=code-search-config
+```
+
+## Upgrading
+
+```bash
+# Update repo
+helm repo update
+
+# Upgrade release
+helm upgrade code-search code-search/code-search \
+  --namespace code-search \
+  -f values.yaml
+```
+
+## Uninstalling
+
+```bash
+# Uninstall release
+helm uninstall code-search -n code-search
+
+# Delete PVCs (WARNING: data will be lost)
+kubectl delete pvc -l app.kubernetes.io/instance=code-search -n code-search
+```
+
+## Troubleshooting
+
+### Check Release Status
+
+```bash
+helm status code-search -n code-search
+helm history code-search -n code-search
+```
+
+### Get Generated Manifests
+
+```bash
+helm get manifest code-search -n code-search
+```
+
+### Debug Installation
+
+```bash
+helm install code-search code-search/code-search \
+  --namespace code-search \
+  --dry-run --debug \
+  -f values.yaml
+```
+
+### Rollback
+
+```bash
+helm rollback code-search 1 -n code-search
+```
+
+## Next Steps
+
+- [Configuration](/configuration/overview/) - Detailed configuration options
+- [Code Hosts](/code-hosts/github/) - Connect to GitHub, GitLab, etc.

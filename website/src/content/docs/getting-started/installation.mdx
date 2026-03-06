@@ -1,0 +1,201 @@
+---
+title: Installation
+description: How to install Code Search on your infrastructure
+---
+
+import { Tabs, TabItem, Steps } from "@astrojs/starlight/components";
+import KubernetesTabItem from "../../../components/KubernetesTabItem.astro";
+
+Code Search can be installed in several ways depending on your needs and infrastructure.
+
+## Prerequisites
+
+Before installing, ensure you have:
+
+- **Docker** (version 20.10+) and **Docker Compose** (v2)
+- **PostgreSQL 14+** or **MySQL 8+** (or use the included Docker container)
+- **Redis 7+** (or use the included Docker container)
+- At least **4GB RAM** and **10GB disk space** for small deployments
+
+For development or building from source:
+
+- **Go 1.22+**
+- **Node.js 20+**
+
+## Installation Methods
+
+<Tabs>
+  <TabItem label="Docker" icon="seti:docker">
+    The easiest way to get started. Run all services with a single command.
+
+    <Steps>
+
+    1. Download the docker-compose file:
+       ```bash
+       curl -O https://raw.githubusercontent.com/techquestsdev/code-search/main/docker-compose.yml
+       ```
+
+    2. Create a configuration file:
+       ```bash
+       curl -O https://raw.githubusercontent.com/techquestsdev/code-search/main/config.example.yaml
+       mv config.example.yaml config.yaml
+       ```
+
+    3. Edit `config.yaml` with your settings (optional for basic usage)
+
+    4. Start all services:
+       ```bash
+       docker compose up -d
+       ```
+
+    5. Verify everything is running:
+       ```bash
+       docker compose ps
+       ```
+
+    </Steps>
+
+    Services will be available at:
+    - **Web UI**: http://localhost:3000
+    - **API**: http://localhost:8080
+    - **API Docs**: http://localhost:8080/docs
+
+  </TabItem>
+
+  <TabItem label="Source" icon="github">
+    Build from source for development or customization.
+
+    <Steps>
+
+    1. Clone the repository:
+       ```bash
+       git clone https://github.com/techquestsdev/code-search.git
+       cd code-search
+       ```
+
+    2. Install Go dependencies:
+       ```bash
+       go mod tidy
+       ```
+
+    3. Build all binaries:
+       ```bash
+       make build
+       ```
+
+    4. Build the web UI:
+       ```bash
+       cd web
+       npm install
+       npm run build
+       cd ..
+       ```
+
+    5. Start infrastructure (PostgreSQL, Redis, Zoekt):
+       ```bash
+       docker compose up -d postgres redis zoekt
+       ```
+
+    6. Run database migrations:
+       ```bash
+       make migrate-up
+       ```
+
+    7. Start the services:
+       ```bash
+       # Terminal 1: API Server
+       ./bin/code-search-api
+
+       # Terminal 2: Indexer
+       ./bin/code-search-indexer
+
+       # Terminal 3: Web UI (development)
+       cd web && npm run dev
+       ```
+
+    </Steps>
+
+  </TabItem>
+
+  <KubernetesTabItem>
+    Deploy to Kubernetes using Helm or raw manifests.
+
+    <Steps>
+
+    1. Install the chart from OCI registry:
+       ```bash
+       helm install code-search oci://ghcr.io/techquestsdev/charts/code-search \
+         --namespace code-search \
+         --create-namespace
+       ```
+
+    2. Port-forward to access locally:
+       ```bash
+       kubectl port-forward svc/code-search-web 3000:3000 -n code-search
+       ```
+
+    </Steps>
+
+    See [Helm Deployment](/deployment/helm/) for detailed configuration options.
+
+  </KubernetesTabItem>
+</Tabs>
+
+## CLI Installation
+
+The CLI can be installed separately for interacting with a Code Search server.
+
+<Tabs>
+  <TabItem label="macOS" icon="apple">
+    ```bash
+    # Using Homebrew (recommended)
+    brew install techquestsdev/tap/code-search
+
+    # Or download binary
+    curl -L https://github.com/techquestsdev/code-search/releases/latest/download/code-search_Darwin_arm64.tar.gz | tar xz
+    sudo mv code-search /usr/local/bin/
+    ```
+
+  </TabItem>
+
+  <TabItem label="Linux" icon="linux">
+    ```bash
+    # Download binary
+    curl -L https://github.com/techquestsdev/code-search/releases/latest/download/code-search_Linux_x86_64.tar.gz | tar xz
+    sudo mv code-search /usr/local/bin/
+
+    # Or use Go install
+    go install github.com/techquestsdev/code-search/cmd/cli@latest
+    ```
+
+  </TabItem>
+
+  <TabItem label="Windows" icon="seti:windows">
+    Download the latest `.zip` from the [releases page](https://github.com/techquestsdev/code-search/releases/latest) and extract `code-search.exe` to a directory in your `PATH`.
+  </TabItem>
+</Tabs>
+
+## Verify Installation
+
+After installation, verify everything is working:
+
+```bash
+# Check the API is responding
+curl http://localhost:8080/health
+# Expected: {"status":"ok"}
+
+# Check all services are ready
+curl http://localhost:8080/ready
+# Expected: {"status":"ready","checks":{"database":"ok","redis":"ok","zoekt":"ok"}}
+
+# Test the CLI
+code-search --version
+```
+
+## Next Steps
+
+Now that Code Search is installed:
+
+1. [Quick Start](/getting-started/quick-start/) - Add your first repository and start searching
+2. [Configuration](/configuration/overview/) - Customize your installation
+3. [Code Hosts](/code-hosts/github/) - Connect to GitHub, GitLab, and more

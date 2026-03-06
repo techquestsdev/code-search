@@ -1,0 +1,567 @@
+---
+title: Kubernetes Deployment
+description: Deploy Code Search on Kubernetes with manifests
+---
+
+import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
+
+This guide covers deploying Code Search on Kubernetes using raw manifests. For a simpler deployment, see [Helm Chart](/deployment/helm/).
+
+## Prerequisites
+
+- Kubernetes cluster (1.25+)
+- `kubectl` configured for your cluster
+- PostgreSQL and Redis available (in-cluster or external)
+- Persistent volume provisioner (for repository storage)
+
+## Namespace
+
+Create a dedicated namespace:
+
+```yaml
+# namespace.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: code-search
+```
+
+```bash
+kubectl apply -f namespace.yaml
+```
+
+## ConfigMap
+
+```yaml
+# configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: code-search-config
+  namespace: code-search
+data:
+  config.yaml: |
+    server:
+      host: "0.0.0.0"
+      port: 8080
+
+    scheduler:
+      enabled: true
+      poll_interval: "6h"
+      check_interval: "5m"
+
+    indexer:
+      concurrency: 2
+      clone_timeout: "10m"
+```
+
+## Secrets
+
+```yaml
+# secrets.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: code-search-secrets
+  namespace: code-search
+type: Opaque
+stringData:
+  database-url: "postgres://user:password@postgres:5432/codesearch?sslmode=disable"
+  redis-url: "redis://redis:6379"
+```
+
+<Aside type="caution">
+  In production, use a secrets management solution like HashiCorp Vault, AWS
+  Secrets Manager, or Kubernetes External Secrets.
+</Aside>
+
+## PersistentVolumeClaims
+
+```yaml
+# pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: code-search-index
+  namespace: code-search
+spec:
+  accessModes:
+    - ReadWriteMany # Required for multiple pods
+  storageClassName: standard # Adjust for your cluster
+  resources:
+    requests:
+      storage: 50Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: code-search-repos
+  namespace: code-search
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: standard
+  resources:
+    requests:
+      storage: 100Gi
+```
+
+## Deployments
+
+### API Server
+
+```yaml
+# api-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: code-search-api
+  namespace: code-search
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: code-search-api
+  template:
+    metadata:
+      labels:
+        app: code-search-api
+    spec:
+      containers:
+        - name: api
+          image: ghcr.io/techquestsdev/code-search-api:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: CS_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: code-search-secrets
+                  key: database-url
+            - name: CS_REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: code-search-secrets
+                  key: redis-url
+            - name: CS_ZOEKT_URL
+              value: "http://code-search-zoekt:6070"
+            - name: CS_ZOEKT_INDEX_DIR
+              value: "/data/index"
+            - name: CS_ZOEKT_REPOS_DIR
+              value: "/data/repos"
+          volumeMounts:
+            - name: config
+              mountPath: /app/config.yaml
+              subPath: config.yaml
+            - name: index
+              mountPath: /data/index
+            - name: repos
+              mountPath: /data/repos
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "2Gi"
+              cpu: "2000m"
+      volumes:
+        - name: config
+          configMap:
+            name: code-search-config
+        - name: index
+          persistentVolumeClaim:
+            claimName: code-search-index
+        - name: repos
+          persistentVolumeClaim:
+            claimName: code-search-repos
+```
+
+### Indexer Worker
+
+```yaml
+# indexer-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: code-search-indexer
+  namespace: code-search
+spec:
+  replicas: 2 # Scale based on indexing needs
+  selector:
+    matchLabels:
+      app: code-search-indexer
+  template:
+    metadata:
+      labels:
+        app: code-search-indexer
+    spec:
+      containers:
+        - name: indexer
+          image: ghcr.io/techquestsdev/code-search-indexer:latest
+          env:
+            - name: CS_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: code-search-secrets
+                  key: database-url
+            - name: CS_REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: code-search-secrets
+                  key: redis-url
+            - name: CS_ZOEKT_INDEX_DIR
+              value: "/data/index"
+            - name: CS_ZOEKT_REPOS_DIR
+              value: "/data/repos"
+          volumeMounts:
+            - name: config
+              mountPath: /app/config.yaml
+              subPath: config.yaml
+            - name: index
+              mountPath: /data/index
+            - name: repos
+              mountPath: /data/repos
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "4Gi"
+              cpu: "2000m"
+      volumes:
+        - name: config
+          configMap:
+            name: code-search-config
+        - name: index
+          persistentVolumeClaim:
+            claimName: code-search-index
+        - name: repos
+          persistentVolumeClaim:
+            claimName: code-search-repos
+```
+
+### Zoekt Search Server
+
+```yaml
+# zoekt-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: code-search-zoekt
+  namespace: code-search
+spec:
+  replicas: 1 # Single replica for search index consistency
+  selector:
+    matchLabels:
+      app: code-search-zoekt
+  template:
+    metadata:
+      labels:
+        app: code-search-zoekt
+    spec:
+      containers:
+        - name: zoekt
+          image: ghcr.io/techquestsdev/code-search-zoekt:latest
+          ports:
+            - containerPort: 6070
+          volumeMounts:
+            - name: index
+              mountPath: /data/index
+            - name: repos
+              mountPath: /data/repos
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 6070
+            periodSeconds: 30
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "4Gi"
+              cpu: "2000m"
+      volumes:
+        - name: index
+          persistentVolumeClaim:
+            claimName: code-search-index
+        - name: repos
+          persistentVolumeClaim:
+            claimName: code-search-repos
+```
+
+### Web UI
+
+```yaml
+# web-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: code-search-web
+  namespace: code-search
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: code-search-web
+  template:
+    metadata:
+      labels:
+        app: code-search-web
+    spec:
+      containers:
+        - name: web
+          image: ghcr.io/techquestsdev/code-search-web:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: API_URL
+              value: "http://code-search-api:8080"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+```
+
+## Services
+
+```yaml
+# services.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: code-search-api
+  namespace: code-search
+spec:
+  selector:
+    app: code-search-api
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: code-search-zoekt
+  namespace: code-search
+spec:
+  selector:
+    app: code-search-zoekt
+  ports:
+    - port: 6070
+      targetPort: 6070
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: code-search-web
+  namespace: code-search
+spec:
+  selector:
+    app: code-search-web
+  ports:
+    - port: 3000
+      targetPort: 3000
+```
+
+## Ingress
+
+<Tabs>
+  <TabItem label="nginx">
+    ```yaml # ingress-nginx.yaml apiVersion: networking.k8s.io/v1 kind: Ingress
+    metadata: name: code-search namespace: code-search annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m" spec: ingressClassName:
+    nginx tls: - hosts: - code-search.example.com secretName: code-search-tls
+    rules: - host: code-search.example.com http: paths: - path: /api pathType:
+    Prefix backend: service: name: code-search-api port: number: 8080 - path: /
+    pathType: Prefix backend: service: name: code-search-web port: number: 3000
+    ```
+  </TabItem>
+  <TabItem label="Traefik">
+    ```yaml # ingress-traefik.yaml apiVersion: networking.k8s.io/v1 kind:
+    Ingress metadata: name: code-search namespace: code-search annotations:
+    traefik.ingress.kubernetes.io/router.tls: "true" spec: ingressClassName:
+    traefik tls: - hosts: - code-search.example.com secretName: code-search-tls
+    rules: - host: code-search.example.com http: paths: - path: /api pathType:
+    Prefix backend: service: name: code-search-api port: number: 8080 - path: /
+    pathType: Prefix backend: service: name: code-search-web port: number: 3000
+    ```
+  </TabItem>
+</Tabs>
+
+## Apply All Resources
+
+```bash
+kubectl apply -f namespace.yaml
+kubectl apply -f configmap.yaml
+kubectl apply -f secrets.yaml
+kubectl apply -f pvc.yaml
+kubectl apply -f zoekt-deployment.yaml
+kubectl apply -f api-deployment.yaml
+kubectl apply -f indexer-deployment.yaml
+kubectl apply -f web-deployment.yaml
+kubectl apply -f services.yaml
+kubectl apply -f ingress.yaml
+```
+
+Or apply all at once:
+
+```bash
+kubectl apply -f .
+```
+
+## Verify Deployment
+
+```bash
+# Check pod status
+kubectl get pods -n code-search
+
+# Check services
+kubectl get svc -n code-search
+
+# View logs
+kubectl logs -f deployment/code-search-api -n code-search
+
+# Check readiness
+kubectl exec -it deploy/code-search-api -n code-search -- curl http://localhost:8080/ready
+```
+
+## Scaling
+
+### Shared Storage (Multiple Workers)
+
+For parallel indexing with shared storage (requires ReadWriteMany PVC):
+
+```bash
+# Scale indexers - they share the queue and storage
+kubectl scale deployment code-search-indexer --replicas=4 -n code-search
+
+# Scale API servers
+kubectl scale deployment code-search-api --replicas=3 -n code-search
+```
+
+### Hash-Based Sharding (StatefulSet)
+
+For extreme scale without shared storage, use a StatefulSet with hash-based sharding:
+
+```yaml
+# indexer-statefulset.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: code-search-indexer
+  namespace: code-search
+spec:
+  serviceName: code-search-indexer-headless
+  replicas: 3  # Creates indexer-0, indexer-1, indexer-2
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app: code-search-indexer
+  template:
+    metadata:
+      labels:
+        app: code-search-indexer
+    spec:
+      containers:
+        - name: indexer
+          image: ghcr.io/techquestsdev/code-search-indexer:latest
+          ports:
+            - containerPort: 8081  # Federated API port
+              name: api
+          env:
+            - name: CS_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: code-search-secrets
+                  key: database-url
+            - name: CS_REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: code-search-secrets
+                  key: redis-url
+            - name: CS_SHARDING_ENABLED
+              value: "true"
+            - name: CS_SHARDING_TOTAL_SHARDS
+              value: "3"
+            - name: CS_SHARDING_FEDERATED_ACCESS
+              value: "true"
+            - name: CS_SHARDING_INDEXER_API_PORT
+              value: "8081"
+          volumeMounts:
+            - name: data
+              mountPath: /data
+        - name: zoekt
+          image: ghcr.io/techquestsdev/code-search-zoekt:latest
+          ports:
+            - containerPort: 6070
+          volumeMounts:
+            - name: data
+              mountPath: /data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]  # Each shard has its own volume
+        resources:
+          requests:
+            storage: 50Gi
+---
+# Headless service for pod discovery
+apiVersion: v1
+kind: Service
+metadata:
+  name: code-search-indexer-headless
+  namespace: code-search
+spec:
+  clusterIP: None
+  selector:
+    app: code-search-indexer
+  ports:
+    - port: 8081
+      name: api
+    - port: 6070
+      name: zoekt
+```
+
+Then configure the API to use federated access:
+
+```yaml
+# api-deployment.yaml (add these env vars)
+env:
+  - name: CS_SHARDING_ENABLED
+    value: "true"
+  - name: CS_SHARDING_TOTAL_SHARDS
+    value: "3"
+  - name: CS_SHARDING_FEDERATED_ACCESS
+    value: "true"
+  - name: CS_SHARDING_INDEXER_SERVICE
+    value: "code-search-indexer-headless"
+```
+
+<Aside type="tip">
+  With sharding, each indexer pod (indexer-0, indexer-1, etc.) processes only repositories 
+  assigned to its shard via consistent hashing. File browsing and replace jobs are proxied 
+  to the correct shard via the headless service.
+</Aside>
+
+## Next Steps
+
+- [Helm Chart](/deployment/helm/) - Simplified Kubernetes deployment
+- [Configuration](/configuration/overview/) - Detailed configuration options
+- [Sharding Configuration](/configuration/sharding/) - Horizontal scaling details

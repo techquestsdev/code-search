@@ -1,0 +1,223 @@
+---
+title: GitHub
+description: Connect Code Search to GitHub
+---
+
+import { Aside, Steps } from "@astrojs/starlight/components";
+
+Connect Code Search to GitHub to index your GitHub repositories.
+
+## Prerequisites
+
+- A GitHub account
+- Access to repositories you want to index
+- A Personal Access Token (PAT) or GitHub App
+
+## Creating a Personal Access Token
+
+<Steps>
+
+1. Go to [GitHub Settings → Developer Settings → Personal Access Tokens → Tokens (classic)](https://github.com/settings/tokens/new)
+
+2. Give your token a descriptive name (e.g., "Code Search")
+
+3. Set an expiration (or "No expiration" for long-term use)
+
+4. Select these scopes:
+
+   - `repo` - Full control of private repositories
+   - `read:org` - Read organization membership (optional, for org repos)
+
+5. Click **Generate token**
+
+6. **Copy the token immediately** - you won't be able to see it again!
+
+</Steps>
+
+<Aside type="caution">
+  Store your token securely. Never commit tokens to version control. Use
+  environment variables or secrets management.
+</Aside>
+
+## Adding the Connection
+
+### Via Web UI
+
+1. Open the Code Search web UI
+2. Go to **Connections** → **Add Connection**
+3. Fill in:
+   - **Name**: `GitHub` (or any descriptive name)
+   - **Type**: `GitHub`
+   - **URL**: `https://api.github.com`
+   - **Token**: Your Personal Access Token
+4. Click **Test Connection** to verify
+5. Click **Create**
+
+### Via API
+
+```bash
+curl -X POST "http://localhost:8080/api/v1/connections" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "GitHub",
+    "type": "github",
+    "url": "https://api.github.com",
+    "token": "ghp_xxxxxxxxxxxx"
+  }'
+```
+
+### Via Configuration File
+
+Add code hosts to your `config.yaml`:
+
+```yaml
+codehosts:
+  # The key is the connection name
+  github:
+    type: github
+    token: "$CS_GITHUB_TOKEN"  # Environment variable reference
+    exclude_archived: true     # Skip archived repos during sync
+```
+
+With environment variable:
+
+```bash
+export CS_GITHUB_TOKEN="ghp_xxxxxxxxxxxx"
+```
+
+You can define multiple GitHub connections with different names:
+
+```yaml
+codehosts:
+  # Personal GitHub account
+  github-personal:
+    type: github
+    token: "$CS_GITHUB_PERSONAL_TOKEN"
+    exclude_archived: true
+    
+  # Organization with different token
+  github-work:
+    type: github
+    token: "$CS_GITHUB_WORK_TOKEN"
+    exclude_archived: true
+```
+
+## Syncing Repositories
+
+After adding the connection:
+
+1. Click **Sync** on the connection card
+2. Code Search will discover your repositories
+3. Repositories are automatically queued for indexing
+
+### Filtering Repositories
+
+You can exclude archived repositories:
+
+```yaml
+codehosts:
+  github:
+    type: github
+    token: "$CS_GITHUB_TOKEN"
+    exclude_archived: true  # Skip archived repos during sync
+```
+
+## Token Scopes
+
+### Minimum Required Scopes
+
+| Scope  | Purpose                                     |
+| ------ | ------------------------------------------- |
+| `repo` | Access to repositories (public and private) |
+
+### Optional Scopes
+
+| Scope       | Purpose                          |
+| ----------- | -------------------------------- |
+| `read:org`  | Access organization repositories |
+| `read:user` | Access user profile information  |
+| `workflow`  | Access GitHub Actions workflows  |
+
+## Fine-Grained Tokens (Beta)
+
+GitHub also supports fine-grained personal access tokens with more specific permissions:
+
+1. Go to [GitHub Settings → Developer Settings → Personal Access Tokens → Fine-grained tokens](https://github.com/settings/personal-access-tokens/new)
+
+2. Set repository access:
+
+   - **All repositories** or
+   - **Only select repositories**
+
+3. Set permissions:
+   - **Contents**: Read-only (required)
+   - **Metadata**: Read-only (required)
+
+## GitHub Apps
+
+For organization-wide access, consider using a GitHub App:
+
+1. Create a GitHub App in your organization settings
+2. Grant it repository permissions
+3. Install the app on desired repositories
+4. Use the app's private key for authentication
+
+<Aside type="note">
+  GitHub App authentication is not yet fully supported. Use Personal Access
+  Tokens for now.
+</Aside>
+
+## Rate Limits
+
+GitHub API has rate limits:
+
+| Authentication        | Limit                |
+| --------------------- | -------------------- |
+| Personal Access Token | 5,000 requests/hour  |
+| GitHub App            | 15,000 requests/hour |
+
+Code Search respects rate limits and will automatically slow down when approaching limits.
+
+## Troubleshooting
+
+### Authentication failed
+
+```
+401 Unauthorized: Bad credentials
+```
+
+- Verify the token is correct
+- Check the token hasn't expired
+- Ensure the token has required scopes
+
+### Repository not found
+
+```
+404 Not Found: Repository not found
+```
+
+- Verify you have access to the repository
+- Check the token has `repo` scope
+- For organization repos, ensure you have org membership
+
+### Rate limit exceeded
+
+```
+403 Forbidden: API rate limit exceeded
+```
+
+- Wait for the rate limit to reset (check `X-RateLimit-Reset` header)
+- Use a GitHub App for higher rate limits
+- Reduce sync frequency
+
+### Sync not discovering repos
+
+- Verify `read:org` scope for organization repositories
+- Check repository visibility settings
+- Ensure the token owner has access to the repositories
+
+## Next Steps
+
+- [GitHub Enterprise](/code-hosts/github-enterprise/) - For GitHub Enterprise Server
+- [Repositories](/web-ui/repositories/) - Managing synced repositories
+- [Configuration](/configuration/overview/) - Connection settings

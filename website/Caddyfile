@@ -1,0 +1,40 @@
+http://:4321 {
+	root * /dist
+
+	# Enable compression
+	encode gzip zstd
+
+	# Pagefind assets
+	# Pagefind ships a WASM binary with a non-standard extension (*.pagefind).
+	# Some browsers require the correct Content-Type for streaming compilation.
+	@pagefindWasm path /pagefind/wasm.*.pagefind
+	header @pagefindWasm Content-Type "application/wasm"
+
+	# Cache immutable assets (hashed filenames in _astro/)
+	@immutable {
+		path /_astro/*
+	}
+	header @immutable Cache-Control "public, max-age=31536000, immutable"
+
+	# Cache static assets (shorter cache, may change)
+	@static {
+		path *.js *.css *.png *.jpg *.jpeg *.gif *.ico *.svg *.woff *.woff2 *.mp4 *.webm
+	}
+	header @static Cache-Control "public, max-age=86400"
+
+	# SEO files - no cache, always fresh
+	@seo {
+		path /robots.txt /sitemap*.xml
+	}
+	header @seo Cache-Control "public, max-age=3600"
+
+	# Health check endpoint
+	respond /health 200 {
+		body "{\"status\":\"ok\"}"
+		close
+	}
+
+	# Serve files
+	try_files {path} {path}.html {path}/index.html
+	file_server
+}

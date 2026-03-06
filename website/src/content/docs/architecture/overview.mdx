@@ -1,0 +1,182 @@
+---
+title: Architecture Overview
+description: High-level architecture of Code Search
+---
+
+import { Card, CardGrid } from "@astrojs/starlight/components";
+
+Code Search is built with a modular architecture designed for scalability and extensibility.
+
+## System Overview
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         Web UI / CLI                             │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                          API Server                              │
+│                                                                  │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────────┐ │
+│  │  Search  │  │   Repos  │  │   Jobs   │  │   Connections    │ │
+│  │ Handler  │  │ Handler  │  │ Handler  │  │     Handler      │ │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+        │                │               │
+        ▼                ▼               ▼
+┌──────────────┐ ┌──────────────┐ ┌──────────────┐
+│    Zoekt     │ │PostgreSQL/   │ │    Redis     │
+│ (Search Index)│ │MySQL (Data)  │ │   (Queue)    │
+└──────────────┘ └──────────────┘ └──────────────┘
+        ▲                ▲
+        │                │
+┌─────────────────────────────────────────────────────────────────┐
+│                         Indexer Service                          │
+│                                                                  │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────────┐ │
+│  │Scheduler │  │  Worker  │  │  Cloner  │  │   Index Builder  │ │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                        Code Hosts                                │
+│                                                                  │
+│  ┌──────────┐  ┌──────────────────┐  ┌────────────────────────┐ │
+│  │  GitHub  │  │  GitHub          │  │        GitLab          │ │
+│  │          │  │  Enterprise      │  │                        │ │
+│  └──────────┘  └──────────────────┘  └────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## Components
+
+<CardGrid>
+  <Card title="API Server" icon="rocket">
+    REST API serving the web UI and CLI. Handles search requests, repository
+    management, and job coordination.
+  </Card>
+  <Card title="Indexer Service" icon="setting">
+    Background service that discovers, clones, and indexes repositories from
+    configured code hosts.
+  </Card>
+  <Card title="Zoekt" icon="magnifier">
+    Fast trigram-based code search engine. Provides millisecond search across
+    large codebases.
+  </Card>
+  <Card title="PostgreSQL / MySQL" icon="document">
+    Stores metadata about connections, repositories, jobs, and configuration.
+  </Card>
+  <Card title="Redis" icon="list-format">
+    Job queue and distributed locking for coordinating indexer workers.
+  </Card>
+  <Card title="Web UI" icon="laptop">
+    Next.js frontend providing search interface and management dashboard.
+  </Card>
+</CardGrid>
+
+## Design Principles
+
+### Modular Architecture
+
+Each component has a single responsibility:
+
+- **API**: Request handling and response formatting
+- **Indexer**: Repository management and indexing
+- **Zoekt**: Search execution
+
+### Horizontal Scalability
+
+Components can be scaled independently:
+
+- Multiple API servers behind a load balancer
+- Multiple indexer workers processing jobs
+- Zoekt shards for large-scale deployments
+
+### Fault Tolerance
+
+- Job queue persists across restarts
+- Failed jobs are automatically retried
+- Health checks for all components
+
+### Extensibility
+
+- Pluggable code host providers
+- Configurable indexing strategies
+- Custom search filters
+
+## Scaling Architecture
+
+### Single Instance (Default)
+
+One indexer with Zoekt sidecar, handling search, file browsing, and replace jobs.
+
+### Shared Storage (RWX)
+
+Multiple indexer workers sharing the same PersistentVolume:
+- All workers process from the same Redis queue
+- Requires ReadWriteMany storage (NFS, CephFS, EFS)
+- All features work: search, file browsing, replace
+
+### Hash-Based Sharding
+
+Each shard handles a subset of repositories:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                          API Server                              │
+│                                                                  │
+│  ┌──────────┐  ┌──────────────────┐  ┌──────────────────────┐   │
+│  │  Search  │  │ Federated Files  │  │ Federated Replace    │   │
+│  │(parallel)│  │     (proxy)      │  │    (fan-out)         │   │
+│  └──────────┘  └──────────────────┘  └──────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+        │                │                       │
+        ▼                ▼                       ▼
+┌──────────────┐ ┌──────────────┐ ┌──────────────┐
+│  Indexer-0   │ │  Indexer-1   │ │  Indexer-2   │
+│   + Zoekt    │ │   + Zoekt    │ │   + Zoekt    │
+│  (shard 0)   │ │  (shard 1)   │ │  (shard 2)   │
+└──────────────┘ └──────────────┘ └──────────────┘
+```
+
+- Repos distributed via consistent FNV hashing
+- Search queries all Zoekt shards in parallel
+- File browsing proxied to correct shard
+- Replace jobs fanned out and results merged
+
+See [Sharding Configuration](/configuration/sharding/) for details.
+
+## Technology Stack
+
+| Layer         | Technology                  |
+| ------------- | --------------------------- |
+| Frontend      | Next.js, React, TailwindCSS |
+| API           | Go, Chi router              |
+| Database      | PostgreSQL / MySQL          |
+| Queue         | Redis                       |
+| Search        | Zoekt (trigram index)       |
+| Container     | Docker                      |
+| Orchestration | Kubernetes (optional)       |
+
+## Communication Patterns
+
+### Synchronous
+
+- **Web UI → API**: HTTP REST
+- **CLI → API**: HTTP REST
+- **API → Zoekt**: HTTP
+- **API → Indexer**: HTTP (federated file/replace in sharded mode)
+
+### Asynchronous
+
+- **API → Indexer**: Redis job queue
+- **Indexer → Code Hosts**: Git clone/fetch
+
+## Next Steps
+
+- [Components](/architecture/components/) - Detailed component docs
+- [Data Flow](/architecture/data-flow/) - Request and indexing flows
+- [Indexing](/architecture/indexing/) - How indexing works
+- [Sharding](/configuration/sharding/) - Horizontal scaling

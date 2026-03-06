@@ -1,0 +1,185 @@
+# Prometheus Alert Rules for Code Search
+#
+# To use these alerts, add this file to your Prometheus configuration:
+#
+#   rule_files:
+#     - "prometheus-alerts.yaml"
+#
+# Or in Kubernetes with Prometheus Operator:
+#
+#   kubectl apply -f prometheus-alerts.yaml
+
+groups:
+  - name: code-search-indexing
+    interval: 5m
+    rules:
+      # Alert on repeated index job failures
+      - alert: RepeatedIndexFailures
+        expr: |
+          increase(codesearch_jobs_total{type="index",status="failed"}[1h]) > 3
+        for: 10m
+        labels:
+          severity: warning
+          component: indexer
+        annotations:
+          summary: "Index jobs failing repeatedly"
+          description: "{{ $value }} index job failures in the last hour. Check indexer logs for details."
+
+      # Alert on repos stuck in indexing state for >24 hours
+      - alert: IndexJobStuck24h
+        expr: |
+          codesearch_stuck_index_jobs{duration="24h"} > 0
+        for: 1h
+        labels:
+          severity: critical
+          component: indexer
+        annotations:
+          summary: "Repositories stuck in indexing for >24 hours"
+          description: "{{ $value }} repositories are stuck in indexing state for over 24 hours. Likely crashed jobs."
+
+      # Alert on OOM kills during indexing
+      - alert: IndexerOOMKills
+        expr: |
+          increase(codesearch_index_failures_total{reason="oom_killed"}[1h]) > 0
+        for: 5m
+        labels:
+          severity: critical
+          component: indexer
+        annotations:
+          summary: "Indexer experiencing OOM kills"
+          description: "{{ $value }} OOM kills detected in the last hour. Consider increasing indexer memory limits."
+
+      # Alert on growing orphaned temp files (indicates repeated crashes)
+      - alert: OrphanedTempFilesGrowing
+        expr: |
+          delta(codesearch_orphaned_temp_files[6h]) > 10
+        for: 30m
+        labels:
+          severity: warning
+          component: indexer
+        annotations:
+          summary: "Orphaned .tmp files accumulating"
+          description: "{{ $value }} new orphaned temp files in the last 6 hours. Indexer may be crashing."
+
+      # Alert on high number of orphaned temp files (disk space concern)
+      - alert: OrphanedTempFilesHigh
+        expr: |
+          codesearch_orphaned_temp_files > 50
+        for: 1h
+        labels:
+          severity: warning
+          component: indexer
+        annotations:
+          summary: "High number of orphaned temp files"
+          description: "{{ $value }} orphaned .tmp files detected. Consider cleanup to free disk space."
+
+      # Alert on timeout failures
+      - alert: IndexTimeouts
+        expr: |
+          increase(codesearch_index_failures_total{reason="timeout"}[2h]) > 2
+        for: 15m
+        labels:
+          severity: warning
+          component: indexer
+        annotations:
+          summary: "Index jobs timing out"
+          description: "{{ $value }} index timeouts in the last 2 hours. May need to increase timeout or optimize repos."
+
+      # Alert on low index success rate
+      - alert: IndexSuccessRateLow
+        expr: |
+          (
+            rate(codesearch_jobs_total{type="index",status="success"}[1h])
+            /
+            rate(codesearch_jobs_total{type="index"}[1h])
+          ) < 0.8
+        for: 30m
+        labels:
+          severity: warning
+          component: indexer
+        annotations:
+          summary: "Index success rate below 80%"
+          description: "Index success rate is {{ $value | humanizePercentage }}. Check for systemic issues."
+
+      # Alert on orphaned active markers (recovery working but high volume indicates crashes)
+      - alert: FrequentOrphanedActiveMarkers
+        expr: |
+          increase(codesearch_orphaned_active_markers_total[1h]) > 5
+        for: 30m
+        labels:
+          severity: warning
+          component: indexer
+        annotations:
+          summary: "Frequent orphaned active markers detected"
+          description: "{{ $value }} orphaned markers recovered in the last hour. Indexer may be restarting frequently."
+
+      # Alert on large repos failing (may need special handling)
+      - alert: LargeRepoIndexFailures
+        expr: |
+          increase(codesearch_index_failures_total{reason="oom_killed"}[6h]) > 0
+          and
+          histogram_quantile(0.95, rate(codesearch_repository_size_bytes_bucket{status="failed"}[6h])) > 1e9
+        for: 1h
+        labels:
+          severity: warning
+          component: indexer
+        annotations:
+          summary: "Large repositories failing to index"
+          description: "Repos >1GB are failing to index with OOM errors. Consider increasing memory or excluding large repos."
+
+  - name: code-search-queue
+    interval: 5m
+    rules:
+      # Alert on queue depth growing (may indicate indexer not processing)
+      - alert: IndexQueueDepthHigh
+        expr: |
+          codesearch_jobs_in_queue{type="index"} > 100
+        for: 30m
+        labels:
+          severity: warning
+          component: queue
+        annotations:
+          summary: "Index job queue depth high"
+          description: "{{ $value }} index jobs pending. Indexer may be slow or stuck."
+
+      # Alert on active index repos count staying high (may indicate stuck jobs)
+      - alert: ActiveIndexReposHigh
+        expr: |
+          codesearch_active_index_repos > 20
+        for: 2h
+        labels:
+          severity: info
+          component: indexer
+        annotations:
+          summary: "Many repos actively indexing"
+          description: "{{ $value }} repos currently in active index set for >2 hours. Monitor for stuck jobs."
+
+  - name: code-search-search
+    interval: 5m
+    rules:
+      # Alert on slow search queries
+      - alert: SearchQueriesSlow
+        expr: |
+          histogram_quantile(0.95, rate(codesearch_search_duration_seconds_bucket[5m])) > 5
+        for: 15m
+        labels:
+          severity: warning
+          component: search
+        annotations:
+          summary: "Search queries are slow"
+          description: "95th percentile search latency is {{ $value }}s. Index may be large or need optimization."
+
+  - name: code-search-git-operations
+    interval: 5m
+    rules:
+      # Alert on git clone/fetch failures
+      - alert: GitOperationFailures
+        expr: |
+          increase(codesearch_git_operations_total{status="failed"}[1h]) > 5
+        for: 15m
+        labels:
+          severity: warning
+          component: indexer
+        annotations:
+          summary: "Git operations failing"
+          description: "{{ $value }} git clone/fetch failures in the last hour. Check network or repository access."

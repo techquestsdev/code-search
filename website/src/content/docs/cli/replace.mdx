@@ -1,0 +1,205 @@
+---
+title: CLI Replace
+description: Bulk search and replace with MR creation
+---
+
+import { Aside, Steps } from "@astrojs/starlight/components";
+
+The `code-search replace` command enables bulk search and replace operations across multiple repositories with automatic merge/pull request creation.
+
+<Aside type="caution">
+  **All replacements create merge requests.** Changes are never committed directly to the main branch. This ensures all changes go through proper review.
+</Aside>
+
+<Aside type="note" title="Read-Only Repositories">
+  When repositories are in **read-only mode** (managed via sync from code hosts), ensure the indexer/API server has appropriate write access (via the connection's token) to create merge requests.
+</Aside>
+
+## How It Works
+
+The replace command uses a **two-phase flow**:
+
+<Steps>
+1. **Preview Phase**: Searches for matches and displays what will be changed
+2. **Execute Phase**: Uses the matches from preview to perform replacements and create MRs
+</Steps>
+
+This design ensures:
+- You always see what will change before committing
+- The execute phase is fast since it doesn't need to re-search
+- Exact consistency between preview and execution
+- All changes go through merge request review
+
+## Basic Usage
+
+```bash
+# Preview changes (default mode)
+code-search replace "oldFunction" "newFunction"
+
+# Execute changes (creates MR)
+code-search replace "oldFunction" "newFunction" --execute
+
+# With custom branch and MR title
+code-search replace "oldFunction" "newFunction" --execute \
+  --branch "refactor/rename-function" \
+  --mr-title "Rename oldFunction to newFunction"
+```
+
+## Command Syntax
+
+```bash
+code-search replace <old> <new> [flags]
+```
+
+## Command Options
+
+### Execution Control
+
+| Option       | Short | Description                                      |
+| ------------ | ----- | ------------------------------------------------ |
+| `--preview`  | `-p`  | Preview changes without applying (default: true) |
+| `--execute`  |       | Execute the replacements (creates MR)            |
+
+### Filters
+
+| Option             | Short | Description                               |
+| ------------------ | ----- | ----------------------------------------- |
+| `--repos`          | `-R`  | Filter to specific repositories (comma-separated) |
+| `--files`          | `-f`  | Filter by file patterns (comma-separated) |
+| `--case-sensitive` |       | Enable case-sensitive matching            |
+
+### Pattern Options
+
+| Option    | Short | Description                   |
+| --------- | ----- | ----------------------------- |
+| `--regex` | `-r`  | Treat search pattern as regex |
+
+### MR/PR Options
+
+| Option            | Short | Description                   |
+| ----------------- | ----- | ----------------------------- |
+| `--branch`        | `-b`  | Branch name for changes       |
+| `--mr-title`      |       | MR/PR title                   |
+| `--mr-description`|       | MR/PR description             |
+
+### Authentication
+
+| Option            | Short | Description                               |
+| ----------------- | ----- | ----------------------------------------- |
+| `--tokens`        |       | Per-connection tokens for push access (see below) |
+
+<Aside type="tip" title="Per-Connection Tokens">
+  When **repos are read-only** (managed via sync) or when using **IAP/SSO** authentication, 
+  the stored connection token may not have push access. Use `--tokens` to provide your 
+  personal access tokens:
+
+  ```bash
+  code-search replace "old" "new" --execute \
+    --tokens "github.com=ghp_xxx,gitlab.com=glpat_yyy"
+  ```
+
+  Format: `host=token` pairs separated by commas. The host is matched against the repository URL.
+</Aside>
+
+## Examples
+
+### Simple Replace
+
+```bash
+# Preview renaming a function
+code-search replace "getUserById" "findUserById" --repos myorg/api
+
+# Execute the rename (creates MR)
+code-search replace "getUserById" "findUserById" --repos myorg/api --execute
+```
+
+### Regex Replace
+
+```bash
+# Update version numbers
+code-search replace 'v(\d+)\.(\d+)\.(\d+)' 'v$1.$2.999' --regex
+
+# Rename function with pattern
+code-search replace 'get(\w+)ById' 'find$1ById' --regex
+```
+
+### With Custom MR Options
+
+```bash
+code-search replace "v1.0.0" "v2.0.0" \
+  --repos "myorg/api" \
+  --files "version.go" \
+  --execute \
+  --branch "release/v2.0.0" \
+  --mr-title "Bump version to v2.0.0"
+```
+
+## Common Use Cases
+
+### Version Bumps
+
+```bash
+code-search replace "1.2.3" "1.3.0" \
+  --files "package.json" \
+  --repos "myorg/api" \
+  --execute
+```
+
+### Dependency Updates
+
+```bash
+code-search replace '"lodash": "4.17.20"' '"lodash": "4.17.21"' \
+  --files "package.json" \
+  --repos "myorg/frontend" \
+  --execute
+```
+
+### API Migration
+
+```bash
+code-search replace "api/v1" "api/v2" \
+  --repos "myorg/backend" \
+  --execute \
+  --branch "api-v2-migration"
+```
+
+## Replace Jobs
+
+When you execute a replace with `--execute`, the operation is queued as a background job. The CLI sends the matches from the preview to the server, so the job doesn't need to re-search.
+
+### Job Flow
+
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│ CLI Preview │────▶│ Show Matches│────▶│ Confirm (y) │────▶│ Queue Job   │
+└─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
+                                                                   │
+                                                                   ▼
+                                                           ┌─────────────┐
+                                                           │ Worker runs │
+                                                           │ creates MR  │
+                                                           └─────────────┘
+```
+
+<Aside type="note">
+  For replace jobs to work, the indexer must have `CS_ZOEKT_URL` configured correctly.
+  In Docker Compose, use `http://zoekt:6070`. In Kubernetes with Zoekt as a sidecar, use `http://localhost:6070`.
+</Aside>
+
+```bash
+# The execute command returns a job ID
+code-search replace "old" "new" --execute
+# Preview:
+#   myorg/repo/file.go:10: oldValue
+#   myorg/repo/file.go:25: oldValue
+# 
+# Found 2 matches. Execute replacement (MR will be created)? [y/N]: y
+# ✅ Replace job queued
+#    Job ID: abc123
+#    Status: pending
+```
+
+## Next Steps
+
+- [Find Commands](/cli/find/) - Find files and symbols
+- [Repository Management](/cli/repo-management/) - Manage repos via CLI

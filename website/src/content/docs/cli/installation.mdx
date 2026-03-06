@@ -1,0 +1,129 @@
+---
+title: CLI Installation
+description: Install the Code Search CLI
+---
+
+import { Tabs, TabItem, Steps } from "@astrojs/starlight/components";
+import cliTerminalDark from '../../../assets/hero-terminal.svg';
+import cliTerminalLight from '../../../assets/hero-terminal-light.svg';
+
+The Code Search CLI provides powerful command-line access to search, replace, and manage repositories.
+
+<img src={cliTerminalDark.src} alt="Code Search CLI terminal output" class="cli-terminal-image dark:sl-block sl-hidden" />
+<img src={cliTerminalLight.src} alt="Code Search CLI terminal output" class="cli-terminal-image light:sl-block dark:sl-hidden" />
+
+## Installation Methods
+
+<Tabs>
+  <TabItem label="macOS" icon="apple">
+    ### Homebrew (Recommended)
+
+    ```bash
+    brew install techquestsdev/tap/code-search
+    ```
+
+    ### Direct Download
+
+    ```bash
+    # Apple Silicon (M1/M2/M3)
+    curl -L https://github.com/techquestsdev/code-search/releases/latest/download/code-search_Darwin_arm64.tar.gz | tar xz
+    sudo mv code-search /usr/local/bin/
+
+    # Intel
+    curl -L https://github.com/techquestsdev/code-search/releases/latest/download/code-search_Darwin_x86_64.tar.gz | tar xz
+    sudo mv code-search /usr/local/bin/
+    ```
+  </TabItem>
+
+  <TabItem label="Linux" icon="linux">
+    ### Direct Download
+
+    ```bash
+    # x86_64
+    curl -L https://github.com/techquestsdev/code-search/releases/latest/download/code-search_Linux_x86_64.tar.gz | tar xz
+    sudo mv code-search /usr/local/bin/
+
+    # ARM64
+    curl -L https://github.com/techquestsdev/code-search/releases/latest/download/code-search_Linux_arm64.tar.gz | tar xz
+    sudo mv code-search /usr/local/bin/
+    ```
+  </TabItem>
+
+  <TabItem label="Windows" icon="seti:windows">
+    ### PowerShell
+
+    Download the latest `.zip` from the [releases page](https://github.com/techquestsdev/code-search/releases/latest) and extract `code-search.exe` to a directory in your `PATH`.
+  </TabItem>
+
+  <TabItem label="Go" icon="seti:go">
+    ### From Source
+
+    ```bash
+    go install github.com/techquestsdev/code-search/cmd/cli@latest
+    ```
+
+    This installs to `$GOPATH/bin/cli`. You may want to rename it:
+
+    ```bash
+    mv $GOPATH/bin/cli $GOPATH/bin/code-search
+    ```
+  </TabItem>
+</Tabs>
+
+## Verify Installation
+
+Check that the CLI is installed correctly:
+
+```bash
+code-search --version
+# code-search version 1.0.0
+
+code-search --help
+```
+
+## Shell Completions
+
+Enable command-line completions for your shell:
+
+<Tabs>
+  <TabItem label="Bash">
+    ```bash
+    # Add to ~/.bashrc
+    source <(code-search completion bash)
+    ```
+  </TabItem>
+
+  <TabItem label="Zsh">
+    ```bash
+    # Add to ~/.zshrc
+    source <(code-search completion zsh)
+
+    # Or generate to fpath
+    code-search completion zsh > "${fpath[1]}/_code-search"
+    ```
+  </TabItem>
+
+  <TabItem label="Fish">
+    ```bash
+    code-search completion fish | source
+
+    # Or save to completions directory
+    code-search completion fish > ~/.config/fish/completions/code-search.fish
+    ```
+  </TabItem>
+
+  <TabItem label="PowerShell">
+    ```powershell
+    code-search completion powershell | Out-String | Invoke-Expression
+
+    # Or add to profile
+    code-search completion powershell >> $PROFILE
+    ```
+  </TabItem>
+</Tabs>
+
+## Next Steps
+
+- [CLI Configuration](/cli/configuration/) - Configure the CLI
+- [Search Commands](/cli/search/) - Learn to search with the CLI
+- [Replace Commands](/cli/replace/) - Bulk replace operations

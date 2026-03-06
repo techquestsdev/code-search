@@ -1,0 +1,317 @@
+# Default values for code-search
+# All configuration uses CS_ prefixed environment variables
+# Example: CS_DATABASE_URL, CS_REDIS_ADDR, CS_INDEXER_CONCURRENCY
+
+# Global settings
+global:
+  imageRegistry: ghcr.io/techquestsdev
+  imagePullSecrets: []
+
+# API Server
+api:
+  replicaCount: 1
+  image:
+    repository: code-search-api
+    tag: "" # Defaults to appVersion (chart release version). Override to pin a specific image version
+    pullPolicy: Always
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  service:
+    type: ClusterIP
+    port: 8080
+  # File browsing & replace jobs require access to cloned repos
+  # This requires ReadWriteMany (RWX) storage shared between API and indexer
+  #
+  # To enable:
+  # 1. Set indexer.persistence.accessMode to ReadWriteMany
+  # 2. Set api.fileBrowsing.enabled to true
+  # 3. Leave existingClaim empty to auto-mount the indexer's PVC
+  fileBrowsing:
+    enabled: false
+    # Override to use a specific PVC (otherwise uses indexer's PVC)
+    existingClaim: ""
+  # Additional environment variables (use CS_ prefix)
+  # Example:
+  #   CS_SCHEDULER_ENABLED: "true"
+  #   CS_SCHEDULER_POLL_INTERVAL: "6h"
+  env:
+    # Sane defaults - connections and repos managed via config/sync
+    CS_CONNECTIONS_READONLY: "true"
+    CS_REPOS_READONLY: "true"
+
+# Indexer Worker
+indexer:
+  replicaCount: 1
+  image:
+    repository: code-search-indexer
+    tag: "" # Defaults to appVersion (chart release version). Override to pin a specific image version
+    pullPolicy: Always
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  persistence:
+    enabled: true
+    size: 50Gi
+    storageClass: ""
+    # Access mode options:
+    # - ReadWriteOnce (RWO): Single node access - default, works everywhere
+    # - ReadWriteMany (RWX): Multi-node access - required for:
+    #   * Multiple indexer workers (replicaCount > 1 without sharding)
+    #   * API file browsing feature
+    #   * Replace jobs from API
+    # RWX storage classes: NFS, CephFS, AWS EFS, Azure Files, GlusterFS
+    accessMode: ReadWriteOnce
+  # Additional environment variables (use CS_ prefix)
+  # Example:
+  #   CS_INDEXER_CONCURRENCY: "4"
+  #   CS_INDEXER_REINDEX_INTERVAL: "2h"
+  env:
+    CS_INDEXER_CONCURRENCY: "4"
+    CS_SCHEDULER_ENABLED: "true"
+    CS_SCHEDULER_POLL_INTERVAL: "6h"
+
+# Web Frontend
+web:
+  replicaCount: 1
+  image:
+    repository: code-search-web
+    tag: "" # Defaults to appVersion (chart release version). Override to pin a specific image version
+    pullPolicy: Always
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+  service:
+    type: ClusterIP
+    port: 3000
+  env: {}
+
+# Ingress
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+    #
+    # SSE streaming annotations (applied by default on API ingress):
+    #   nginx.ingress.kubernetes.io/proxy-buffering: "off"
+    #   nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    #   nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    #
+    # For Traefik ingress, add:
+    #   traefik.ingress.kubernetes.io/buffering: "off"
+    #
+    # For Cloudflare Tunnel (cloudflared), ensure your tunnel config has:
+    #   noTLSVerify: true  (if using self-signed certs)
+    #   disableChunkedEncoding: false  (default, required for SSE)
+  host: code-search.example.com
+  tls: []
+    # - secretName: code-search-tls
+    #   hosts:
+    #     - code-search.example.com
+
+# Zoekt Search Engine (runs as sidecar in indexer pod, shares volume)
+zoekt:
+  image:
+    repository: code-search-zoekt
+    tag: "" # Defaults to appVersion (chart release version). Override to pin a specific image version
+    pullPolicy: Always
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: "2"
+      memory: 4Gi
+  service:
+    type: ClusterIP
+    port: 6070
+  # Refresh sidecar for network filesystems (CephFS, NFS, EFS, Azure Files)
+  # that don't propagate inotify filesystem events reliably.
+  # When enabled, a lightweight native sidecar (Kubernetes 1.28+) periodically
+  # triggers zoekt to reload updated index shards.
+  # RECOMMENDED for ReadWriteMany storage.
+  #
+  # Uses initContainers with restartPolicy: Always for proper lifecycle management:
+  # - Starts before main containers, ensuring index directory exists
+  # - Runs continuously alongside main containers
+  # - Gracefully handles fresh boots with no index files
+  refresh:
+    enabled: false
+    image:
+      repository: code-search-zoekt-refresh
+      tag: "" # Defaults to appVersion (chart release version). Override to pin a specific image version
+      pullPolicy: Always
+    # Interval between refresh checks (default: 30s)
+    interval: "30s"
+    resources:
+      requests:
+        cpu: 10m
+        memory: 16Mi
+      limits:
+        cpu: 50m
+        memory: 32Mi
+
+# Sharding configuration (for large deployments)
+#
+# ARCHITECTURE OPTIONS:
+#
+# 1. SINGLE INDEXER (Default - Recommended for most deployments)
+#    - Single indexer with its own zoekt sidecar
+#    - Simple, handles thousands of repos
+#    - For file browsing: enable RWX storage and share PVC with API
+#
+# 2. SHARED STORAGE WITH MULTIPLE WORKERS (Recommended for parallelism)
+#    - Multiple indexer workers sharing the SAME PVC (requires RWX storage)
+#    - All features work: search, file browsing, replace jobs
+#    - Set sharding.enabled=false, indexer.replicaCount=N
+#    - Requires: indexer.persistence.accessMode=ReadWriteMany
+#    - Workers process different repos from the same queue (no hash-based sharding)
+#
+#    Example:
+#      indexer:
+#        replicaCount: 3  # 3 workers sharing storage
+#        persistence:
+#          accessMode: ReadWriteMany  # NFS, CephFS, EFS, Azure Files, etc.
+#      api:
+#        fileBrowsing:
+#          enabled: true
+#          existingClaim: ""  # Uses the shared indexer PVC
+#
+# 3. HASH-BASED SHARDING WITH FEDERATED ACCESS (For extreme scale)
+#    - Each shard handles a subset of repos (distributed by consistent FNV hashing)
+#    - Each shard has its OWN PersistentVolume (no shared storage needed)
+#    - Search queries all zoekt shards in parallel via headless service
+#    - File browsing and replace work via proxy to the correct shard
+#    - Each indexer runs an HTTP API for federated file/replace access
+#
+#    Example:
+#      sharding:
+#        enabled: true
+#        replicas: 3  # Creates indexer-0, indexer-1, indexer-2
+#        federatedAccess:
+#          enabled: true  # Enable file browsing and replace via proxy
+#
+sharding:
+  enabled: false
+  replicas: 3 # Number of indexer+zoekt pairs (creates StatefulSet)
+  # Federated access enables file browsing and replace jobs in sharded mode
+  # by proxying requests to the correct indexer shard
+  federatedAccess:
+    enabled: false
+    indexerAPIPort: 8081 # HTTP API port on each indexer
+
+# PostgreSQL
+postgresql:
+  # Connection details
+  host: code-search-postgres
+  port: 5432
+  existingSecret: code-search-postgres-url
+  existingSecretKey: url
+
+# Redis
+redis:
+  # Connection details
+  host: code-search-redis
+  port: 6379
+  existingSecret: code-search-redis-password
+  existingSecretKey: password
+
+# Code Hosts Configuration
+# Configure code host tokens via secrets
+# The config file references these as environment variables (e.g., "$CS_GITHUB_TOKEN")
+#
+# Example with existing secrets:
+#   codehosts:
+#     github:
+#       existingSecret: github-token
+#       existingSecretKey: token
+#       envVar: CS_GITHUB_TOKEN
+#     gitlab:
+#       existingSecret: gitlab-token
+#       existingSecretKey: token
+#       envVar: CS_GITLAB_TOKEN
+#
+# This will inject CS_GITHUB_TOKEN and CS_GITLAB_TOKEN environment variables
+# which the config file references as "$CS_GITHUB_TOKEN" and "$CS_GITLAB_TOKEN"
+codehosts: {}
+  # github:
+  #   existingSecret: github-token
+  #   existingSecretKey: token
+  #   envVar: CS_GITHUB_TOKEN
+  # gitlab:
+  #   existingSecret: gitlab-token
+  #   existingSecretKey: token
+  #   envVar: CS_GITLAB_TOKEN
+  # github-enterprise:
+  #   existingSecret: ghe-token
+  #   existingSecretKey: token
+  #   envVar: CS_GHE_TOKEN
+
+# Application Config File
+# Mount a config.yaml file from a ConfigMap
+# The ConfigMap should contain the full config.yaml content
+config:
+  # Use an existing ConfigMap containing config.yaml
+  existingConfigMap: ""
+  # Or provide inline config (will create a ConfigMap)
+  # inline: |
+  #   codehosts:
+  #     github:
+  #       type: github
+  #       token: "$CS_GITHUB_TOKEN"
+  inline: ""
+
+# Database migrations
+migrations:
+  enabled: true
+
+# Service Account
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+# Pod Security
+podSecurityContext:
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+# Container Security
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+  capabilities:
+    drop:
+      - ALL
+
+# Node selector for all pods
+nodeSelector: {}
+
+# Tolerations for all pods
+tolerations: []
+
+# Affinity for all pods
+affinity: {}
+
+# Overrides base name of the deployed resources
+fullnameOverride: ""
+
+# Overrides chart name in the deployed resources
+nameOverride: ""

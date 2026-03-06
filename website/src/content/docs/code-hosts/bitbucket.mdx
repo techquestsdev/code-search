@@ -1,0 +1,268 @@
+---
+title: Bitbucket
+description: Connect Code Search to Bitbucket
+---
+
+import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+
+Connect Code Search to Bitbucket Cloud or Bitbucket Server (Data Center).
+
+## Bitbucket Cloud
+
+### Creating an App Password
+
+<Steps>
+
+1. Go to [Bitbucket Settings → App passwords](https://bitbucket.org/account/settings/app-passwords/)
+
+2. Click **Create app password**
+
+3. Give it a label: `Code Search`
+
+4. Select permissions:
+
+   - **Repositories**: Read
+   - **Workspaces**: Read (optional)
+
+5. Click **Create**
+
+6. Copy the password immediately
+
+</Steps>
+
+### Adding the Connection
+
+#### Via Web UI
+
+1. Go to **Connections** → **Add Connection**
+2. Fill in:
+   - **Name**: `Bitbucket`
+   - **Type**: `Bitbucket`
+   - **URL**: `https://api.bitbucket.org/2.0`
+   - **Username**: Your Bitbucket username
+   - **Token**: Your app password
+3. Click **Test Connection**
+4. Click **Create**
+
+#### Via API
+
+```bash
+curl -X POST "http://localhost:8080/api/v1/connections" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Bitbucket",
+    "type": "bitbucket",
+    "url": "https://api.bitbucket.org/2.0",
+    "username": "your-username",
+    "token": "your-app-password"
+  }'
+```
+
+#### Via Configuration File
+
+Add code hosts to your `config.yaml`:
+
+```yaml
+codehosts:
+  # The key is the connection name
+  bitbucket:
+    type: bitbucket
+    url: "https://api.bitbucket.org/2.0"
+    username: "$CS_BITBUCKET_USERNAME"  # Environment variable reference
+    token: "$CS_BITBUCKET_TOKEN"        # App password
+    exclude_archived: true              # Skip archived repos during sync
+```
+
+With environment variables:
+
+```bash
+export CS_BITBUCKET_USERNAME="your-username"
+export CS_BITBUCKET_TOKEN="your-app-password"
+```
+
+## Bitbucket Server / Data Center
+
+### Creating a Personal Access Token
+
+<Steps>
+
+1. Go to your Bitbucket Server instance
+
+2. Navigate to **Manage account → Personal access tokens**
+
+3. Click **Create a token**
+
+4. Configure:
+   - **Name**: `Code Search`
+   - **Permissions**: **Repository read**
+
+5. Click **Create**
+
+6. Copy the token
+
+</Steps>
+
+### Adding the Connection
+
+#### Via API
+
+```bash
+curl -X POST "http://localhost:8080/api/v1/connections" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Bitbucket Server",
+    "type": "bitbucket_server",
+    "url": "https://bitbucket.yourcompany.com",
+    "token": "your-personal-access-token"
+  }'
+```
+
+#### Via Configuration File
+
+```yaml
+codehosts:
+  bitbucket-server:
+    type: bitbucket_server
+    url: "https://bitbucket.yourcompany.com"
+    token: "$CS_BITBUCKET_SERVER_TOKEN"  # Personal access token
+    exclude_archived: true
+```
+
+## URL Configuration
+
+<Tabs>
+  <TabItem label="Cloud">Always use `https://api.bitbucket.org/2.0`</TabItem>
+  <TabItem label="Server/DC">
+    Use your instance URL: `https://bitbucket.yourcompany.com`
+  </TabItem>
+</Tabs>
+
+## App Password Permissions
+
+### Minimum Required
+
+| Permission         | Purpose                     |
+| ------------------ | --------------------------- |
+| Repositories: Read | Clone and read repositories |
+
+### For Replace Feature
+
+| Permission           | Purpose                      |
+| -------------------- | ---------------------------- |
+| Repositories: Write  | Push branches for replace    |
+| Pull requests: Write | Create pull requests         |
+
+### Optional
+
+| Permission           | Purpose                      |
+| -------------------- | ---------------------------- |
+| Workspaces: Read     | List workspaces              |
+| Pull requests: Read  | Read PR information          |
+
+## Repository Discovery
+
+### Bitbucket Cloud
+
+Code Search discovers repositories from:
+
+- Personal workspace
+- Team workspaces you're a member of
+
+### Bitbucket Server
+
+Code Search discovers:
+
+- Projects you have access to
+- Personal repositories
+
+## Syncing Repositories
+
+After adding the connection:
+
+1. Click **Sync** on the connection card
+2. Code Search discovers your repositories
+3. Repositories are queued for indexing
+
+### Filtering Repositories
+
+You can exclude archived repositories using the `exclude_archived: true` option in your configuration (shown above in the Configuration File sections).
+
+## Authentication
+
+### Bitbucket Cloud
+
+Uses app password with username:
+
+- Username: Your Bitbucket username (not email)
+- Password: App password
+
+### Bitbucket Server
+
+Options:
+
+- Personal Access Token (recommended)
+- Username/Password (legacy)
+
+## Troubleshooting
+
+### Authentication failed
+
+```
+401 Unauthorized
+```
+
+**Bitbucket Cloud:**
+
+- Verify username is your Bitbucket username, not email
+- Check app password is correct
+- Ensure app password has required permissions
+
+**Bitbucket Server:**
+
+- Verify personal access token is correct
+- Check token hasn't expired
+
+### Workspace not found
+
+```
+404 Workspace not found
+```
+
+- Verify workspace name is correct
+- Ensure you're a member of the workspace
+- Check app password has workspace read permission
+
+### Rate limits
+
+Bitbucket Cloud has API rate limits. If you hit them:
+
+- Reduce sync frequency
+- Wait for limit reset
+
+### SSH keys
+
+Code Search uses HTTPS for cloning. SSH is not supported.
+
+## Bitbucket Pipelines
+
+For CI/CD integration, you can trigger syncs from Bitbucket Pipelines:
+
+```yaml
+# bitbucket-pipelines.yml
+pipelines:
+  custom:
+    sync-code-search:
+      - step:
+          script:
+            - curl -X POST "https://code-search.example.com/api/v1/connections/1/sync"
+```
+
+## Limitations
+
+- **Archived repositories**: Bitbucket API doesn't expose archived status, so `exclude_archived` has no effect for Bitbucket connections
+- **SSH cloning**: Not supported - Code Search uses HTTPS with app passwords
+
+## Next Steps
+
+- [GitHub](/code-hosts/github/) - Connect to GitHub
+- [Configuration](/configuration/overview/) - Connection settings

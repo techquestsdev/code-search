@@ -1,0 +1,65 @@
+<svg viewBox="0 0 560 400"
+  xmlns="http://www.w3.org/2000/svg">
+  <!-- Terminal window - light theme colors -->
+  <rect width="560" height="400" rx="12" fill="#ffffff" stroke="#d1d5db" stroke-width="1"/>
+
+  <!-- Terminal header -->
+  <rect width="560" height="44" rx="12" fill="#f3f4f6"/>
+  <rect y="32" width="560" height="12" fill="#f3f4f6"/>
+
+  <!-- Traffic lights -->
+  <circle cx="22" cy="22" r="7" fill="#ff5f56"/>
+  <circle cx="46" cy="22" r="7" fill="#ffbd2e"/>
+  <circle cx="70" cy="22" r="7" fill="#27c93f"/>
+
+  <!-- Terminal title -->
+  <text x="280" y="27" font-family="SF Mono, Monaco, monospace" font-size="13" fill="#6b7280" text-anchor="middle">Terminal</text>
+
+  <!-- Command prompt -->
+  <text x="22" y="80" font-family="SF Mono, Monaco, monospace" font-size="14" fill="#16a34a">$</text>
+  <text x="38" y="80" font-family="SF Mono, Monaco, monospace" font-size="14" fill="#111827">code-search search handleRequest --repos myorg -n 3</text>
+
+  <!-- Config file message -->
+  <text x="22" y="108" font-family="SF Mono, Monaco, monospace" font-size="12" fill="#9ca3af">Using config file: ~/.code-search.yaml</text>
+
+  <!-- Result 1: repo and file header -->
+  <text x="22" y="144" font-family="SF Mono, Monaco, monospace" font-size="14" fill="#16a34a">myorg/api-gateway</text>
+  <text x="188" y="144" font-family="SF Mono, Monaco, monospace" font-size="14" fill="#2563eb">src/handlers/request.go</text>
+
+  <!-- Line with match -->
+  <text x="30" y="168" font-family="SF Mono, Monaco, monospace" font-size="13" fill="#9ca3af">42 │</text>
+  <text x="72" y="168" font-family="SF Mono, Monaco, monospace" font-size="13" fill="#4b5563">func </text>
+  <text x="112" y="168" font-family="SF Mono, Monaco, monospace" font-size="13" fill="#d97706" font-weight="bold">handleRequest</text>
+  <text x="220" y="168" font-family="SF Mono, Monaco, monospace" font-size="13" fill="#4b5563">(ctx context.Context) {</text>
+
+  <!-- Result 2: repo and file header -->
+  <text x="22" y="208" font-family="SF Mono, Monaco, monospace" font-size="14" fill="#16a34a">myorg/web-frontend</text>
+  <text x="196" y="208" font-family="SF Mono, Monaco, monospace" font-size="14" fill="#2563eb">lib/api/client.ts</text>
+
+  <!-- Line with match -->
+  <text x="30" y="232" font-family="SF Mono, Monaco, monospace" font-size="13" fill="#9ca3af">88 │</text>
+  <text x="72" y="232" font-family="SF Mono, Monaco, monospace" font-size="13" fill="#9333ea">async </text>
+  <text x="120" y="232" font-family="SF Mono, Monaco, monospace" font-size="13" fill="#d97706" font-weight="bold">handleRequest</text>
+  <text x="228" y="232" font-family="SF Mono, Monaco, monospace" font-size="13" fill="#4b5563">(req: Request) {</text>
+
+  <!-- Result 3: repo and file header -->
+  <text x="22" y="272" font-family="SF Mono, Monaco, monospace" font-size="14" fill="#16a34a">myorg/auth-service</text>
+  <text x="192" y="272" font-family="SF Mono, Monaco, monospace" font-size="14" fill="#2563eb">pkg/http/middleware.go</text>
+
+  <!-- Line with match -->
+  <text x="30" y="296" font-family="SF Mono, Monaco, monospace" font-size="13" fill="#9ca3af">15 │</text>
+  <text x="72" y="296" font-family="SF Mono, Monaco, monospace" font-size="13" fill="#4b5563">func </text>
+  <text x="112" y="296" font-family="SF Mono, Monaco, monospace" font-size="13" fill="#d97706" font-weight="bold">handleRequest</text>
+  <text x="220" y="296" font-family="SF Mono, Monaco, monospace" font-size="13" fill="#4b5563">(w http.ResponseWriter) {</text>
+
+  <!-- Summary line -->
+  <text x="22" y="336" font-family="SF Mono, Monaco, monospace" font-size="13" fill="#111827">156 matches</text>
+  <text x="116" y="336" font-family="SF Mono, Monaco, monospace" font-size="13" fill="#9ca3af">in</text>
+  <text x="140" y="336" font-family="SF Mono, Monaco, monospace" font-size="13" fill="#16a34a">1.203ms</text>
+
+  <!-- Blinking cursor -->
+  <text x="22" y="372" font-family="SF Mono, Monaco, monospace" font-size="14" fill="#16a34a">$</text>
+  <rect x="38" y="358" width="10" height="18" fill="#16a34a">
+    <animate attributeName="opacity" values="1;0;1" dur="1.2s" repeatCount="indefinite"/>
+  </rect>
+</svg>

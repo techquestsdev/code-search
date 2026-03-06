@@ -1,0 +1,212 @@
+---
+title: Quick Start
+description: Get searching in 5 minutes
+---
+
+import { Steps, Aside, Tabs, TabItem } from "@astrojs/starlight/components";
+
+This guide will have you searching code in just 5 minutes. We'll set up Code Search, connect to GitHub, and run your first search.
+
+## Prerequisites
+
+- Docker and Docker Compose installed
+- A GitHub account with at least one repository
+- A GitHub Personal Access Token (we'll create one)
+
+## Setup
+
+<Steps>
+
+1. **Start Code Search**
+
+   Download and start all services:
+
+   ```bash
+   # Download docker-compose.yml
+   curl -O https://raw.githubusercontent.com/techquestsdev/code-search/main/docker-compose.yml
+
+   # Start services
+   docker compose up -d
+   ```
+
+   Wait about 30 seconds for all services to start.
+
+2. **Create a GitHub Token**
+
+   Go to [GitHub Settings → Developer Settings → Personal Access Tokens → Tokens (classic)](https://github.com/settings/tokens/new)
+
+   Create a new token with these scopes:
+
+   - `repo` (Full control of private repositories)
+   - `read:org` (Read organization membership - optional, for org repos)
+
+   Copy the generated token.
+
+3. **Open the Web UI**
+
+   Open http://localhost:3000 in your browser.
+
+   You'll see the Code Search dashboard, ready to configure.
+
+4. **Add a GitHub Connection**
+
+   Click **Connections** in the sidebar, then **Add Connection**.
+
+   Fill in:
+
+   - **Name**: `GitHub` (or any name you prefer)
+   - **Type**: `GitHub`
+   - **URL**: `https://api.github.com`
+   - **Token**: Paste your GitHub token
+
+   Click **Test Connection** to verify, then **Create**.
+
+5. **Sync Repositories**
+
+   Click **Sync** on your new connection to discover repositories.
+
+   The system will fetch your repositories and queue them for indexing.
+
+6. **Wait for Indexing**
+
+   Click **Repositories** to see the indexing progress.
+
+   Initial indexing takes a few minutes depending on repository size. You'll see status change from "pending" → "indexing" → "indexed".
+
+7. **Search!**
+
+   Click **Search** in the sidebar or use the search bar.
+
+   Try searching for:
+
+   ```
+   foo
+   ```
+
+   Or with filters:
+
+   ```
+   func main lang:go
+   ```
+
+</Steps>
+
+<Aside type="tip">
+  You don't have to wait for all repositories to finish indexing. As soon as one
+  repository is indexed, you can start searching it!
+</Aside>
+
+## Your First CLI Search
+
+Now let's try the CLI:
+
+```bash
+# Configure the CLI
+code-search config set server.url http://localhost:8080
+
+# Search for code
+code-search search "foo"
+
+# Search with filters
+code-search search "func" --langs go --files "*.go"
+
+# List repositories
+code-search repo list
+```
+
+## Quick Reference
+
+### Search Syntax
+
+| Query             | Description             |
+| ----------------- | ----------------------- |
+| `foo`             | Simple text search      |
+| `func main`       | Search for phrase       |
+| `"exact phrase"`  | Exact match with quotes |
+| `repo:myorg/repo` | Filter by repository    |
+| `lang:go`         | Filter by language      |
+| `file:*.ts`       | Filter by file pattern  |
+| `case:yes`        | Case-sensitive search   |
+
+### Common CLI Commands
+
+```bash
+# Search
+code-search search "pattern" --repos "org/*"
+
+# Find files
+code-search find files "*.proto"
+
+# Find symbol definitions
+code-search find symbols "UserService"
+
+# Preview replace (default)
+code-search replace "oldFunc" "newFunc"
+
+# Execute replace with MR creation
+code-search replace "v1.0" "v2.0" --execute
+```
+
+## What's Next?
+
+You're now up and running! Here's what to explore next:
+
+### Add More Code Hosts
+
+Connect additional platforms:
+
+- [GitHub Enterprise](/code-hosts/github-enterprise/)
+- [GitLab](/code-hosts/gitlab/)
+- [Gitea](/code-hosts/gitea/)
+- [Bitbucket](/code-hosts/bitbucket/)
+
+### Configure for Production
+
+Customize your deployment:
+
+- [Configuration Overview](/configuration/overview/)
+- [Database Setup](/configuration/database/)
+- [Scheduler Settings](/configuration/scheduler/)
+
+### Master the CLI
+
+Learn advanced CLI features:
+
+- [Search Commands](/cli/search/)
+- [Bulk Replace](/cli/replace/)
+- [CI/CD Integration](/cli/configuration/)
+
+### Use the API
+
+Build integrations:
+
+- [API Overview](/api/overview/)
+- [Authentication](/api/authentication/)
+- [Search Endpoints](/api/search/)
+
+## Troubleshooting
+
+### Services not starting?
+
+Check the logs:
+
+```bash
+docker compose logs -f
+```
+
+### Can't connect to GitHub?
+
+1. Verify your token has the correct scopes
+2. Check the token hasn't expired
+3. Test connection in the UI to see the error message
+
+### Search not finding results?
+
+1. Ensure repositories are indexed (status: "indexed")
+2. Check the Zoekt service is running: `curl http://localhost:6070/health`
+3. Wait for indexing to complete for new repos
+
+### Need more help?
+
+- Check [GitHub Issues](https://github.com/techquestsdev/code-search/issues)
+- Read the [Architecture docs](/architecture/overview/) for deeper understanding

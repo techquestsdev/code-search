@@ -1,0 +1,190 @@
+---
+title: Docker Deployment
+description: Deploy Code Search with a single Docker container
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+This guide covers deploying Code Search using a single Docker container. This method is suitable for small deployments or testing.
+
+<Aside type="caution">
+  For production deployments with high availability, consider using [Docker
+  Compose](/deployment/docker-compose/) or
+  [Kubernetes](/deployment/kubernetes/).
+</Aside>
+
+## Single Container Deployment
+
+For simple deployments where all components run in one container:
+
+```bash
+docker run -d \
+  --name code-search \
+  -p 8080:8080 \
+  -p 3000:3000 \
+  -v code-search-data:/data \
+  -e CS_DATABASE_URL="postgres://user:pass@host:5432/codesearch" \
+  -e CS_REDIS_URL="redis://host:6379" \
+  ghcr.io/techquestsdev/code-search:latest
+```
+
+## Environment Variables
+
+Configure Code Search using environment variables:
+
+| Variable                    | Description                  | Default                 |
+| --------------------------- | ---------------------------- | ----------------------- |
+| `CS_SERVER_ADDR`            | API server address           | `:8080`                 |
+| `CS_DATABASE_URL`           | PostgreSQL or MySQL connection string | Required                |
+| `CS_REDIS_ADDR`             | Redis address                | `localhost:6379`        |
+| `CS_ZOEKT_URL`              | Zoekt server URL             | `http://localhost:6070` |
+| `CS_INDEXER_INDEX_PATH`     | Zoekt index directory        | `./data/index`          |
+| `CS_INDEXER_REPOS_PATH`     | Git repositories directory   | `./data/repos`          |
+| `CS_REPOS_BASE_PATH`        | Base path for repos          | `./data/repos`          |
+
+See [Environment Variables](/configuration/environment-variables/) for the complete list.
+
+## Volumes
+
+Mount these volumes for data persistence:
+
+```bash
+docker run -d \
+  --name code-search \
+  -v /path/to/data:/data \           # All data
+  -v /path/to/config:/config \        # Configuration
+  ghcr.io/techquestsdev/code-search:latest
+```
+
+Volume structure:
+
+```
+/data/
+├── index/      # Zoekt search indexes
+├── repos/      # Cloned Git repositories
+└── logs/       # Application logs
+```
+
+## External Services
+
+### PostgreSQL
+
+Code Search supports PostgreSQL 14+ or MySQL 8+. Example with PostgreSQL:
+
+```bash
+docker run -d \
+  --name code-search-postgres \
+  -e POSTGRES_USER=codesearch \
+  -e POSTGRES_PASSWORD=secret \
+  -e POSTGRES_DB=codesearch \
+  -v postgres-data:/var/lib/postgresql/data \
+  postgres:16-alpine
+```
+
+### Redis
+
+Redis 7+ is required for the job queue:
+
+```bash
+docker run -d \
+  --name code-search-redis \
+  -v redis-data:/data \
+  redis:7-alpine
+```
+
+## Docker Networks
+
+Create a network to connect all services:
+
+```bash
+# Create network
+docker network create code-search-net
+
+# Run services on the network
+docker run -d --network code-search-net --name postgres ...
+docker run -d --network code-search-net --name redis ...
+docker run -d --network code-search-net --name code-search \
+  -e CS_DATABASE_URL="postgres://codesearch:secret@postgres:5432/codesearch" \
+  -e CS_REDIS_URL="redis://redis:6379" \
+  ghcr.io/techquestsdev/code-search:latest
+```
+
+## Health Checks
+
+The container includes health check endpoints:
+
+```bash
+# Liveness
+curl http://localhost:8080/health
+
+# Readiness (checks all dependencies)
+curl http://localhost:8080/ready
+```
+
+Configure Docker health check:
+
+```bash
+docker run -d \
+  --name code-search \
+  --health-cmd="curl -f http://localhost:8080/health || exit 1" \
+  --health-interval=30s \
+  --health-timeout=10s \
+  --health-retries=3 \
+  ghcr.io/techquestsdev/code-search:latest
+```
+
+## Resource Limits
+
+Set resource limits for production:
+
+```bash
+docker run -d \
+  --name code-search \
+  --memory=4g \
+  --cpus=2 \
+  ghcr.io/techquestsdev/code-search:latest
+```
+
+Recommended minimums:
+
+- **Memory**: 2GB (4GB+ for large codebases)
+- **CPU**: 2 cores
+- **Disk**: 10GB + 2x your total repository size
+
+## Logs
+
+View container logs:
+
+```bash
+# Follow logs
+docker logs -f code-search
+
+# Last 100 lines
+docker logs --tail 100 code-search
+```
+
+## Updating
+
+To update to a new version:
+
+```bash
+# Pull new image
+docker pull ghcr.io/techquestsdev/code-search:latest
+
+# Stop and remove old container
+docker stop code-search
+docker rm code-search
+
+# Run new container (with same volumes)
+docker run -d \
+  --name code-search \
+  -v code-search-data:/data \
+  ... \
+  ghcr.io/techquestsdev/code-search:latest
+```
+
+## Next Steps
+
+- [Docker Compose](/deployment/docker-compose/) - Multi-container deployment
+- [Configuration](/configuration/overview/) - All configuration options
+- [Code Hosts](/code-hosts/github/) - Connect to GitHub, GitLab, etc.

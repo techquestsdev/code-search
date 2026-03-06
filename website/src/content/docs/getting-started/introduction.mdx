@@ -1,0 +1,115 @@
+---
+title: Introduction
+description: What is Code Search and why you should use it
+---
+
+import { Card, CardGrid } from "@astrojs/starlight/components";
+import appSearchDark from '../../../assets/screenshots/app-search-dark.svg';
+import appSearchLight from '../../../assets/screenshots/app-search-light.svg';
+
+**Code Search** is a self-hosted code search and replace platform with CLI support for batch operations across repositories. It helps development teams search, analyze, and modify code across their entire codebase.
+
+<img src={appSearchDark.src} alt="Code Search web application" class="app-screenshot dark:sl-block sl-hidden" />
+<img src={appSearchLight.src} alt="Code Search web application" class="app-screenshot light:sl-block dark:sl-hidden" />
+
+## What is Code Search?
+
+Code Search is designed for organizations that need to:
+
+- **Search code quickly** across hundreds or thousands of repositories
+- **Make bulk changes** across multiple repos with automated MR/PR creation
+- **Maintain consistency** in large codebases with many microservices
+- **Keep data private** by self-hosting on their own infrastructure
+
+## Key Features
+
+<CardGrid>
+  <Card title="Indexed Search" icon="magnifier">
+    Sub-second search across all repositories using Zoekt, the same engine
+    Google uses for internal code search.
+  </Card>
+  <Card title="Bulk Replace" icon="random">
+    Find and replace across multiple repositories. Automatically create branches
+    and merge requests.
+  </Card>
+  <Card title="Code Intelligence" icon="seti:config">
+    SCIP-powered go-to-definition, find-references, and symbol search.
+    Navigate code like an IDE across all your repositories.
+  </Card>
+  <Card title="AI Integration" icon="star">
+    Built-in MCP server connects AI assistants like Claude and Cursor directly
+    to your codebase for search, browsing, and navigation.
+  </Card>
+  <Card title="CLI First" icon="laptop">
+    Powerful command-line tool for automation, scripting, and CI/CD integration.
+  </Card>
+  <Card title="Web Interface" icon="external">
+    Modern web UI for searching, browsing, and managing your code search
+    instance.
+  </Card>
+</CardGrid>
+
+## How It Works
+
+```
+┌───────────────────────────────────────────────────────────────────────┐
+│                             Code Search                               │
+├───────────────────────────────────────────────────────────────────────┤
+│                                                                       │
+│  ┌─────────┐  ┌─────────┐  ┌──────────┐  ┌─────────┐  ┌───────────┐  │
+│  │   CLI   │  │ Web UI  │  │   MCP    │  │   API   │  │  Indexer  │  │
+│  └────┬────┘  └────┬────┘  └────┬─────┘  └────┬────┘  └─────┬─────┘  │
+│       │            │            │              │             │        │
+│       └────────────┴────────────┴──────┬───────┘             │        │
+│                                        │                     │        │
+│                              ┌─────────▼────────┐  ┌────────▼──────┐ │
+│                              │   API Server     │  │     Zoekt     │ │
+│                              │  (Go, REST API)  │  │ (Search Index)│ │
+│                              └─────────┬────────┘  └───────────────┘ │
+│                                        │                     │       │
+│           ┌────────────────────────────┼─────────────────────┤       │
+│           │                            │                     │       │
+│      ┌────▼────┐               ┌───────▼──────┐     ┌───────▼─────┐ │
+│      │  Redis  │               │ PostgreSQL/  │     │  Git Repos  │ │
+│      │ (Queue) │               │    MySQL     │     │  (Storage)  │ │
+│      └─────────┘               └──────────────┘     └─────────────┘ │
+│                                                                       │
+└───────────────────────────────────────────────────────────────────────┘
+```
+
+1. **Connect code hosts** - Configure connections to GitHub, GitLab, Gitea, or Bitbucket
+2. **Sync repositories** - The indexer clones and indexes your repositories
+3. **Search instantly** - Use the CLI, Web UI, MCP server, or API to search across all code
+4. **Make bulk changes** - Replace patterns and create merge requests automatically
+
+## When to Use Code Search
+
+Code Search is ideal for:
+
+### Large Codebases
+
+Organizations with many repositories benefit from centralized search. Find code patterns, track dependencies, and understand how APIs are used across services.
+
+### Refactoring Projects
+
+When renaming functions, updating API signatures, or migrating to new patterns, Code Search can apply changes across all repos and create MRs automatically.
+
+### Security Audits
+
+Quickly find vulnerable code patterns, outdated dependencies, or sensitive data exposure across your entire codebase.
+
+### Developer Onboarding
+
+Help new team members discover existing code, find examples, and understand how things work across the organization.
+
+### AI-Assisted Development
+
+Connect AI coding assistants to your full codebase via the built-in MCP server. AI tools can search code, browse files, and use go-to-definition across all repositories.
+
+## Next Steps
+
+Ready to get started?
+
+- [Installation](/getting-started/installation/) - Learn how to install Code Search
+- [Quick Start](/getting-started/quick-start/) - Get searching in 5 minutes
+- [Configuration](/configuration/overview/) - Customize your installation

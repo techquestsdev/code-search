@@ -1,0 +1,303 @@
+---
+title: MCP Server
+description: Integrate Code Search with AI assistants via the Model Context Protocol
+---
+
+import { Card, CardGrid, Aside, Tabs, TabItem } from "@astrojs/starlight/components";
+
+Code Search includes a built-in [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server that lets AI assistants search your code, browse files, and navigate symbols directly.
+
+<Aside type="tip">
+  MCP is an open standard that lets AI tools interact with external data sources. Code Search's MCP server works with any MCP-compatible client, including Claude, Cursor, Windsurf, and other AI coding assistants.
+</Aside>
+
+## Tools
+
+The MCP server exposes 8 tools:
+
+<CardGrid>
+  <Card title="search_code" icon="magnifier">
+    Full-text code search with regex, repo filters, and language filters. Returns matched lines with context.
+  </Card>
+  <Card title="list_repos" icon="document">
+    List all indexed repositories with filtering by name and status. Supports pagination.
+  </Card>
+  <Card title="get_repo_branches" icon="random">
+    Get branches and tags for a repository by ID.
+  </Card>
+  <Card title="get_file_tree" icon="list-format">
+    Browse directory contents in a repository at a specific path and ref.
+  </Card>
+  <Card title="get_file_content" icon="open-book">
+    Read file contents with automatic binary detection and language identification.
+  </Card>
+  <Card title="search_symbols" icon="seti:config">
+    Search for symbol definitions — functions, classes, methods, variables.
+  </Card>
+  <Card title="go_to_definition" icon="right-arrow">
+    Jump to a symbol's definition from a specific file location (line + column).
+  </Card>
+  <Card title="find_references" icon="magnifier">
+    Find all usages of a symbol across the repository.
+  </Card>
+</CardGrid>
+
+## Quick Start
+
+### 1. Build the MCP server
+
+```bash
+make build
+# Binary is at bin/mcp-server
+```
+
+### 2. Run it
+
+<Tabs>
+  <TabItem label="Stdio (default)">
+    ```bash
+    # Stdio mode — for Claude Desktop, Cursor, etc.
+    ./bin/mcp-server --api-url http://localhost:8080
+    ```
+  </TabItem>
+  <TabItem label="HTTP">
+    ```bash
+    # HTTP mode — for remote or browser-based clients
+    ./bin/mcp-server --api-url http://localhost:8080 \
+      --transport http \
+      --http-addr :9090
+    ```
+  </TabItem>
+</Tabs>
+
+Or use the Makefile shortcuts:
+
+```bash
+make dev-mcp       # Stdio mode
+make dev-mcp-http  # HTTP mode on :9090
+```
+
+## Configuration
+
+### Command-Line Flags
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--api-url` | `http://localhost:8080` | Code Search API server URL |
+| `--auth-token` | — | Authentication token for the API (env: `CODE_SEARCH_AUTH_TOKEN`) |
+| `--transport` | `stdio` | Transport type: `stdio` or `http` |
+| `--http-addr` | `:9090` | HTTP listen address (only for `http` transport) |
+
+### Environment Variables
+
+Environment variables override flags:
+
+| Variable | Overrides | Description |
+|----------|-----------|-------------|
+| `CODE_SEARCH_API_URL` | `--api-url` | API server URL |
+| `CODE_SEARCH_AUTH_TOKEN` | `--auth-token` | API authentication token |
+| `CODE_SEARCH_MCP_TRANSPORT` | `--transport` | Transport type |
+| `CODE_SEARCH_MCP_HTTP_ADDR` | `--http-addr` | HTTP listen address |
+
+### Enterprise Authentication
+
+Enterprise deployments with SSO/OIDC require an API token for MCP server access. Without a token, the API will reject requests with `401 Unauthorized`.
+
+**Creating an API token:**
+
+1. Log in to the Code Search web UI
+2. Go to your profile or the admin panel
+3. Create a new API token (tokens use the `cse_` prefix)
+4. Copy the token — it is only shown once
+
+**Passing the token:**
+
+Via command-line flag:
+```bash
+./bin/mcp-server --api-url http://localhost:8080 --auth-token cse_your_token_here
+```
+
+Via environment variable:
+```bash
+export CODE_SEARCH_AUTH_TOKEN=cse_your_token_here
+./bin/mcp-server --api-url http://localhost:8080
+```
+
+<Aside type="caution">
+  Never commit API tokens to source control. Use environment variables or a secrets manager to provide tokens in production.
+</Aside>
+
+## Client Setup
+
+### Claude Desktop
+
+Add to your `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "code-search": {
+      "command": "/path/to/bin/mcp-server",
+      "args": ["--api-url", "http://localhost:8080"],
+      "env": {
+        "CODE_SEARCH_AUTH_TOKEN": "cse_your_token_here"
+      }
+    }
+  }
+}
+```
+
+### Claude Code
+
+Add to your `.mcp.json` or project settings:
+
+```json
+{
+  "mcpServers": {
+    "code-search": {
+      "command": "/path/to/bin/mcp-server",
+      "args": ["--api-url", "http://localhost:8080"],
+      "env": {
+        "CODE_SEARCH_AUTH_TOKEN": "cse_your_token_here"
+      }
+    }
+  }
+}
+```
+
+### Cursor
+
+Add to Cursor's MCP settings:
+
+```json
+{
+  "mcpServers": {
+    "code-search": {
+      "command": "/path/to/bin/mcp-server",
+      "args": ["--api-url", "http://localhost:8080"],
+      "env": {
+        "CODE_SEARCH_AUTH_TOKEN": "cse_your_token_here"
+      }
+    }
+  }
+}
+```
+
+<Aside type="tip">
+  For non-enterprise deployments without authentication, omit the `env` block entirely. The MCP server works without a token when the API server has no auth configured.
+</Aside>
+
+### HTTP Transport (Remote)
+
+For remote setups where the AI client can't run local processes:
+
+```bash
+# Start MCP server in HTTP mode
+./bin/mcp-server --transport http --http-addr :9090 \
+  --api-url http://your-code-search:8080
+```
+
+Then configure your client to connect to `http://your-mcp-host:9090`.
+
+## Tool Reference
+
+### search_code
+
+Search across all indexed repositories.
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `query` | Yes | — | Search query (Zoekt syntax or regex) |
+| `repos` | No | all | Comma-separated repo filter |
+| `languages` | No | all | Comma-separated language filter |
+| `file_patterns` | No | all | File glob patterns |
+| `is_regex` | No | `false` | Treat query as regex |
+| `case_sensitive` | No | `false` | Case-sensitive matching |
+| `context_lines` | No | `2` | Lines of context around matches |
+| `limit` | No | `50` | Maximum results |
+
+### list_repos
+
+List indexed repositories.
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `search` | No | — | Filter by name |
+| `status` | No | — | Filter by status |
+| `limit` | No | `50` | Maximum results |
+| `offset` | No | `0` | Pagination offset |
+
+### get_file_tree
+
+Browse directory contents.
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `repo_id` | Yes | — | Repository ID |
+| `path` | No | root | Directory path |
+| `ref` | No | HEAD | Branch, tag, or commit |
+
+### get_file_content
+
+Read a file.
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `repo_id` | Yes | — | Repository ID |
+| `path` | Yes | — | File path |
+| `ref` | No | HEAD | Branch, tag, or commit |
+
+### search_symbols
+
+Search for symbol definitions (requires SCIP indexing).
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `repo_id` | Yes | — | Repository ID |
+| `query` | Yes | — | Symbol name pattern |
+| `limit` | No | `20` | Maximum results |
+
+### go_to_definition
+
+Jump to a symbol's definition.
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `repo_id` | Yes | — | Repository ID |
+| `file` | Yes | — | File path |
+| `line` | Yes | — | Line number (1-indexed) |
+| `column` | Yes | — | Column number (0-indexed) |
+
+### find_references
+
+Find all references to a symbol.
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `repo_id` | Yes | — | Repository ID |
+| `file` | Yes | — | File path |
+| `line` | Yes | — | Line number (1-indexed) |
+| `column` | Yes | — | Column number (0-indexed) |
+| `limit` | No | `50` | Maximum results |
+
+## Architecture
+
+```
+AI Assistant (Claude, Cursor, etc.)
+    │
+    │  MCP Protocol (stdio or HTTP)
+    │
+    ▼
+MCP Server (bin/mcp-server)
+    │
+    │  REST API (HTTP)
+    │
+    ▼
+Code Search API Server (:8080)
+    │
+    ├── PostgreSQL (metadata)
+    ├── Redis (job queue)
+    └── Zoekt (search index)
+```
+
+The MCP server is a stateless proxy — it translates MCP tool calls into Code Search API requests. It can run alongside the AI client (stdio) or as a shared service (HTTP).

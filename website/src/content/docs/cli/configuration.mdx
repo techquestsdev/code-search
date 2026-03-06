@@ -1,0 +1,217 @@
+---
+title: CLI Configuration
+description: Configure the Code Search CLI
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+Configure the CLI to connect to your Code Search server.
+
+## Quick Setup
+
+```bash
+# Initialize configuration file
+code-search config init
+
+# Set the API URL
+code-search config set api_url http://localhost:8080
+
+# Verify configuration
+code-search config show
+```
+
+## Configuration File
+
+The CLI reads configuration from `~/.code-search.yaml`:
+
+```yaml
+# ~/.code-search.yaml
+api_url: http://localhost:8080
+output: text
+
+search:
+  limit: 100
+  context_lines: 2
+
+replace:
+  dry_run: true
+  parallel: 5
+```
+
+## Configuration Commands
+
+### Initialize Configuration
+
+```bash
+# Create config in home directory
+code-search config init
+
+# Create config in current directory
+code-search config init --local
+
+# Overwrite existing config
+code-search config init --force
+```
+
+### View Configuration
+
+```bash
+# Show all configuration values
+code-search config show
+```
+
+Example output:
+
+```
+Current configuration:
+Config file: /Users/user/.code-search.yaml
+api_url: http://localhost:8080
+output: text
+search.limit: 100
+search.context_lines: 2
+replace.dry_run: true
+replace.parallel: 5
+```
+
+### Set Configuration
+
+```bash
+# Set API URL
+code-search config set api_url https://code-search.example.com
+
+# Set default output format
+code-search config set output json
+
+# Set search defaults
+code-search config set search.limit 50
+code-search config set search.context_lines 5
+```
+
+<Aside type="note">
+  You must run `code-search config init` first before using `code-search config set`.
+</Aside>
+
+## Environment Variables
+
+The CLI respects these environment variables (with `CODE_SEARCH_` prefix):
+
+| Variable               | Description                 | Config Key     |
+| ---------------------- | --------------------------- | -------------- |
+| `CODE_SEARCH_API_URL`  | API server URL              | `api_url`      |
+| `CODE_SEARCH_TOKEN`    | Authentication token        | `token`        |
+| `CODE_SEARCH_OUTPUT`   | Default output format       | `output`       |
+| `CODE_SEARCH_CONFIG`   | Path to config file         | -              |
+
+Environment variables take precedence over config file values.
+
+## Global Command Flags
+
+These flags can be used with any command to override configuration:
+
+| Flag         | Description                              |
+| ------------ | ---------------------------------------- |
+| `--config`   | Path to config file                      |
+| `--api-url`  | API server URL (default: localhost:8080) |
+| `--output`   | Output format: text, json, table         |
+
+## Configuration Reference
+
+### `api_url`
+
+URL of the Code Search API server.
+
+```yaml
+api_url: https://code-search.example.com
+```
+
+Default: `http://localhost:8080`
+
+### `token`
+
+Authentication token for API requests.
+
+```yaml
+token: ${CODE_SEARCH_TOKEN}
+```
+
+<Aside type="caution">
+  Never commit tokens to version control. Use environment variables for sensitive values.
+</Aside>
+
+### `output`
+
+Default output format for commands.
+
+| Value   | Description                    |
+| ------- | ------------------------------ |
+| `text`  | Plain text output (default)    |
+| `json`  | JSON output                    |
+| `table` | Formatted table output         |
+
+```yaml
+output: text
+```
+
+### `search` Settings
+
+```yaml
+search:
+  limit: 100          # Default result limit
+  context_lines: 2    # Lines of context around matches
+```
+
+### `replace` Settings
+
+```yaml
+replace:
+  dry_run: true       # Preview by default
+  parallel: 5         # Number of parallel workers
+```
+
+## Configuration Locations
+
+The CLI searches for configuration in this order:
+
+1. `--config` flag (highest priority)
+2. `$CODE_SEARCH_CONFIG` environment variable
+3. `.code-search.yaml` (current directory)
+4. `~/.code-search.yaml` (home directory)
+
+## Security Best Practices
+
+1. **Use environment variables for tokens**
+
+   ```bash
+   export CODE_SEARCH_TOKEN="your-token"
+   ```
+
+2. **Protect the config file**
+
+   ```bash
+   chmod 600 ~/.code-search.yaml
+   ```
+
+3. **Don't commit config files**
+   Add to `.gitignore`:
+   ```
+   .code-search.yaml
+   ```
+
+## CI/CD Configuration
+
+For CI/CD environments, use environment variables:
+
+```yaml
+# GitHub Actions
+- name: Search code
+  env:
+    CODE_SEARCH_API_URL: ${{ secrets.CODE_SEARCH_URL }}
+    CODE_SEARCH_TOKEN: ${{ secrets.CODE_SEARCH_TOKEN }}
+  run: |
+    code-search search "TODO"
+```
+
+## Next Steps
+
+- [Search Commands](/cli/search/) - Learn to search
+- [Replace Commands](/cli/replace/) - Bulk operations

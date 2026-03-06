@@ -1,0 +1,123 @@
+---
+title: Pricing
+description: Code Search pricing plans — from free community edition to enterprise.
+---
+
+Choose the plan that fits your team. All plans include the full Code Search platform — enterprise tiers add security, compliance, and support.
+
+<div class="pricing-grid not-content">
+  <div class="pricing-card">
+    <div class="pricing-header">
+      <h3>Community</h3>
+      <p class="pricing-users">Unlimited users</p>
+      <div class="pricing-price">Free</div>
+    </div>
+    <ul class="pricing-features">
+      <li>Full-text code search</li>
+      <li>Find & replace across repos</li>
+      <li>CLI & MCP server</li>
+      <li>SCIP code intelligence</li>
+      <li>GitHub, GitLab, Gitea, Bitbucket</li>
+      <li>Horizontal scaling (sharding)</li>
+      <li>Docker & Kubernetes deployment</li>
+      <li>Community support (GitHub Issues)</li>
+    </ul>
+    <a href="/getting-started/installation/" class="pricing-cta">Get Started</a>
+  </div>
+
+  <div class="pricing-card featured">
+    <div class="pricing-header">
+      <h3>Enterprise</h3>
+      <p class="pricing-users">All features included</p>
+      <div class="pricing-price">Contact Us</div>
+    </div>
+    <ul class="pricing-features">
+      <li>Everything in Community</li>
+      <li>SSO via OpenID Connect (OIDC)</li>
+      <li>Role-based access control (RBAC)</li>
+      <li>Audit logging with retention</li>
+      <li>License management (Ed25519)</li>
+      <li>Priority support</li>
+      <li>Custom user limits & SLA</li>
+    </ul>
+    <a href="/contact/" class="pricing-cta primary">Contact Us</a>
+  </div>
+
+  {/* TODO: Restore individual pricing tiers when ready
+  <div class="pricing-card featured">
+    <div class="pricing-header">
+      <h3>Team</h3>
+      <p class="pricing-users">Up to 25 users</p>
+      <div class="pricing-price">$49<span>/mo</span></div>
+    </div>
+    <ul class="pricing-features">
+      <li>Everything in Community</li>
+      <li>SSO via OpenID Connect (OIDC)</li>
+      <li>Role-based access control (RBAC)</li>
+      <li>Audit logging with retention</li>
+      <li>License management (Ed25519)</li>
+      <li>Email support</li>
+    </ul>
+    <a href="https://polar.sh/techquestsdev" data-polar-checkout class="pricing-cta primary">Buy Now</a>
+  </div>
+
+  <div class="pricing-card">
+    <div class="pricing-header">
+      <h3>Business</h3>
+      <p class="pricing-users">Up to 100 users</p>
+      <div class="pricing-price">$149<span>/mo</span></div>
+    </div>
+    <ul class="pricing-features">
+      <li>Everything in Team</li>
+      <li>Priority support</li>
+      <li>Faster response SLA</li>
+    </ul>
+    <a href="https://polar.sh/techquestsdev" data-polar-checkout class="pricing-cta primary">Buy Now</a>
+  </div>
+
+  <div class="pricing-card">
+    <div class="pricing-header">
+      <h3>Enterprise</h3>
+      <p class="pricing-users">Unlimited / Custom</p>
+      <div class="pricing-price">Custom</div>
+    </div>
+    <ul class="pricing-features">
+      <li>Everything in Business</li>
+      <li>Custom user limits</li>
+      <li>Dedicated support</li>
+      <li>Custom SLA</li>
+    </ul>
+    <a href="/contact/" class="pricing-cta">Contact Us</a>
+  </div>
+  */}
+</div>
+
+## Frequently Asked Questions
+
+### What's included in Community?
+
+The Community edition is the full open-source Code Search platform. You get lightning-fast code search powered by Zoekt, bulk find & replace with automatic MR/PR creation, CLI and MCP server for AI assistants, SCIP-powered code intelligence, and support for all major code hosts (GitHub, GitLab, Gitea, Bitbucket). There are no user limits or feature restrictions.
+
+### What do enterprise tiers add?
+
+Enterprise tiers add security and compliance features on top of the Community edition: SSO via any OpenID Connect provider (Okta, Azure AD, Google Workspace, etc.), role-based access control with glob-pattern repository permissions, audit logging of all searches and operations, and cryptographically signed license management.
+
+### How does licensing work?
+
+Enterprise licenses are cryptographically signed with Ed25519. Each license specifies the customer name, enabled features, user limits, and expiration date. The enterprise binary validates the license at startup — no phone-home or external license server required.
+
+### Can I upgrade between tiers?
+
+Yes. You can upgrade from Community to any enterprise tier at any time. Your existing configuration, database, and indexes are fully compatible — the enterprise binary is a drop-in replacement for the core API server.
+
+### How is the user limit counted?
+
+User limits apply to the number of unique authenticated users in the system. Users are counted based on OIDC identity. The Community edition has no user tracking since it doesn't include authentication.
+
+### Do you offer annual billing?
+
+Contact us for annual billing options and volume discounts.
+
+{/* TODO: Restore Polar.sh checkout script when pricing tiers are live
+<script defer data-auto-init src="https://cdn.jsdelivr.net/npm/@polar-sh/checkout@latest/dist/embed.global.js"></script>
+*/}

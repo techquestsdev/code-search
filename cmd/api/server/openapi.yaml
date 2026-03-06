@@ -1,0 +1,2915 @@
+openapi: 3.1.0
+info:
+  title: Code Search API
+  description: |
+    A self-hosted code search and replace platform with support for batch operations across repositories.
+
+    ## Features
+    - Fast indexed search across all repositories (powered by Zoekt)
+    - CLI for bulk operations (search & replace with MR creation)
+    - GitHub & GitLab integration (clone, sync, create PRs/MRs)
+
+    ## Authentication
+    API requests can be authenticated using a Bearer token in the Authorization header.
+  version: 1.0.0
+  contact:
+    name: Code Search Team
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+  - url: https://codesearch.example.com
+    description: Production server
+
+tags:
+  - name: Search
+    description: Code search operations
+  - name: Repositories
+    description: Repository management
+  - name: File Browsing
+    description: Browse repository files and directories (can be disabled via config)
+  - name: Connections
+    description: Code host connection management
+  - name: Replace
+    description: Search and replace operations
+  - name: Symbols
+    description: Symbol navigation (find definitions and references)
+  - name: SCIP
+    description: |
+      Precise code intelligence using SCIP (Source Code Intelligence Protocol).
+      Provides accurate go-to-definition and find-references powered by language-specific indexers.
+      Requires installing SCIP indexers (e.g., scip-go for Go, scip-typescript for TypeScript).
+  - name: Jobs
+    description: Background job management
+  - name: Scheduler
+    description: Sync scheduler management
+  - name: UI
+    description: UI configuration settings
+  - name: Health
+    description: Health check endpoints
+
+paths:
+  # Health Endpoints
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Liveness check
+      description: Returns OK if the server is running. Used for Kubernetes liveness probes.
+      operationId: health
+      responses:
+        "200":
+          description: Server is alive
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+  /ready:
+    get:
+      tags:
+        - Health
+      summary: Readiness check
+      description: Checks if all dependencies (database, Redis, Zoekt) are available.
+      operationId: ready
+      responses:
+        "200":
+          description: All dependencies are ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadyResponse"
+        "503":
+          description: One or more dependencies are not ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadyResponse"
+
+  # UI Settings Endpoint
+  /api/v1/ui/settings:
+    get:
+      tags:
+        - UI
+      summary: Get UI settings
+      description: Returns configuration settings for the web UI including feature visibility flags.
+      operationId: getUISettings
+      responses:
+        "200":
+          description: UI settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UISettingsResponse"
+
+  # Search Endpoints
+  /api/v1/search:
+    post:
+      tags:
+        - Search
+      summary: Search code
+      description: |
+        Search for code patterns across all indexed repositories.
+
+        Supports various query modifiers:
+        - `repo:name` - Filter by repository
+        - `lang:go` - Filter by language (full name, e.g., JavaScript, TypeScript, Go)
+        - `file:*.ts` - Filter by file pattern
+        - `case:yes` - Case-sensitive search
+        - `case:no` - Case-insensitive search (default)
+        - `sym:name` - Search for symbol definitions (requires ctags)
+        - `branch:main` - Filter by branch
+        - `-repo:name` - Exclude repository
+        - `-file:*.test.ts` - Exclude file pattern
+        - `-lang:go` - Exclude language
+      operationId: search
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SearchRequest"
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchResponse"
+        "400":
+          description: Invalid request
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Invalid request body"
+
+  /api/v1/search/stream:
+    post:
+      tags:
+        - Search
+      summary: Stream search results
+      description: Stream search results as Server-Sent Events for real-time updates.
+      operationId: searchStream
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SearchRequest"
+      responses:
+        "200":
+          description: Streaming search results
+          content:
+            text/event-stream:
+              schema:
+                type: string
+
+  /api/v1/search/suggestions:
+    get:
+      tags:
+        - Search
+      summary: Get search suggestions
+      description: Returns available repositories, languages, and filter keywords for autocomplete.
+      operationId: searchSuggestions
+      responses:
+        "200":
+          description: Search suggestions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchSuggestionsResponse"
+
+  # Repository Endpoints
+  /api/v1/repos:
+    get:
+      tags:
+        - Repositories
+      summary: List repositories
+      description: Returns all indexed repositories with pagination and filtering.
+      operationId: listRepos
+      parameters:
+        - name: connection_id
+          in: query
+          description: Filter by connection ID
+          schema:
+            type: integer
+            format: int64
+        - name: search
+          in: query
+          description: Search repositories by name (partial match)
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: Filter by repository status
+          schema:
+            type: string
+            enum: [pending, cloning, indexing, indexed, failed, excluded, deleted]
+        - name: limit
+          in: query
+          description: Maximum number of results (default 15, max 500)
+          schema:
+            type: integer
+            default: 15
+            minimum: 1
+            maximum: 500
+        - name: offset
+          in: query
+          description: Number of results to skip for pagination
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+      responses:
+        "200":
+          description: Paginated list of repositories
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListReposResponse"
+
+    post:
+      tags:
+        - Repositories
+      summary: Add repository
+      description: Add a new repository for indexing.
+      operationId: addRepo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddRepoRequest"
+      responses:
+        "201":
+          description: Repository created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Repository"
+        "400":
+          description: Invalid request
+
+  /api/v1/repos/stats:
+    get:
+      tags:
+        - Repositories
+      summary: Get repository statistics
+      description: Returns aggregated statistics about all repositories.
+      operationId: getRepoStats
+      responses:
+        "200":
+          description: Repository statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RepoStatsResponse"
+
+  /api/v1/repos/lookup:
+    get:
+      tags:
+        - Repositories
+      summary: Lookup repository by name
+      description: Find a repository by its Zoekt name (used for integrations).
+      operationId: lookupRepoByName
+      parameters:
+        - name: name
+          in: query
+          required: true
+          description: Repository name to lookup
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Repository found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Repository"
+        "404":
+          description: Repository not found
+
+  /api/v1/repos/by-id/{id}:
+    get:
+      tags:
+        - Repositories
+      summary: Get repository by ID
+      operationId: getRepoById
+      parameters:
+        - $ref: "#/components/parameters/RepoId"
+      responses:
+        "200":
+          description: Repository details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Repository"
+        "404":
+          description: Repository not found
+
+    delete:
+      tags:
+        - Repositories
+      summary: Delete repository
+      description: |
+        Soft-delete a repository. The repository remains in the database but is marked
+        as deleted and excluded from indexing. Deleted repositories can be restored
+        using the restore endpoint. Index shards are cleaned up from disk.
+      operationId: deleteRepo
+      parameters:
+        - $ref: "#/components/parameters/RepoId"
+      responses:
+        "204":
+          description: Repository deleted
+        "404":
+          description: Repository not found
+
+  /api/v1/repos/by-id/{id}/restore:
+    post:
+      tags:
+        - Repositories
+      summary: Restore deleted repository
+      description: |
+        Restore a previously deleted repository. This clears the deleted flag and
+        re-includes the repository for syncing and indexing. The repository will
+        be re-indexed on the next sync cycle.
+      operationId: restoreRepo
+      parameters:
+        - $ref: "#/components/parameters/RepoId"
+      responses:
+        "200":
+          description: Repository restored
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: restored
+                  message:
+                    type: string
+                    example: Repository restored and queued for re-indexing
+        "404":
+          description: Repository not found
+
+  /api/v1/repos/by-id/{id}/sync:
+    post:
+      tags:
+        - Repositories
+      summary: Sync repository
+      description: Trigger a re-index of the repository.
+      operationId: syncRepo
+      parameters:
+        - $ref: "#/components/parameters/RepoId"
+      responses:
+        "200":
+          description: Sync job queued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncResponse"
+        "404":
+          description: Repository not found
+        "409":
+          description: Sync already in progress
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: already_syncing
+                  message:
+                    type: string
+                    example: Repository sync already in progress
+
+  /api/v1/repos/by-id/{id}/branches:
+    put:
+      tags:
+        - Repositories
+      summary: Set repository branches
+      description: Configure which branches to index for a repository.
+      operationId: setRepoBranches
+      parameters:
+        - $ref: "#/components/parameters/RepoId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetBranchesRequest"
+      responses:
+        "200":
+          description: Branches updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SetBranchesResponse"
+        "400":
+          description: Invalid request
+        "404":
+          description: Repository not found
+
+  /api/v1/repos/by-id/{id}/exclude:
+    post:
+      tags:
+        - Repositories
+      summary: Exclude repository
+      description: |
+        Mark a repository as excluded. Excluded repositories are not synced or indexed,
+        and are cleaned up from the Zoekt index and disk.
+      operationId: excludeRepo
+      parameters:
+        - $ref: "#/components/parameters/RepoId"
+      responses:
+        "200":
+          description: Repository excluded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: excluded
+                  message:
+                    type: string
+                    example: Repository excluded
+        "404":
+          description: Repository not found
+
+  /api/v1/repos/by-id/{id}/include:
+    post:
+      tags:
+        - Repositories
+      summary: Include repository
+      description: Re-include a previously excluded repository for syncing and indexing.
+      operationId: includeRepo
+      parameters:
+        - $ref: "#/components/parameters/RepoId"
+      responses:
+        "200":
+          description: Repository included
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: included
+                  message:
+                    type: string
+                    example: Repository included
+        "404":
+          description: Repository not found
+
+  /api/v1/repos/by-id/{id}/tree:
+    get:
+      tags:
+        - File Browsing
+      summary: List directory contents
+      description: |
+        Returns the contents of a directory in a repository.
+        Can be disabled via `CS_UI_DISABLE_BROWSE_API`.
+      operationId: listTree
+      parameters:
+        - $ref: "#/components/parameters/RepoId"
+        - name: path
+          in: query
+          description: Path within the repository (empty for root)
+          schema:
+            type: string
+            default: ""
+        - name: ref
+          in: query
+          description: Git ref (branch, tag, or commit). Defaults to repository's default branch.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Directory listing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TreeResponse"
+        "404":
+          description: Repository or path not found
+        "503":
+          description: Repository not cloned locally (indexer unavailable in sharded mode)
+
+  /api/v1/repos/by-id/{id}/blob:
+    get:
+      tags:
+        - File Browsing
+      summary: Get file contents
+      description: |
+        Returns the contents of a file in a repository.
+        Can be disabled via `CS_UI_DISABLE_BROWSE_API`.
+      operationId: getBlob
+      parameters:
+        - $ref: "#/components/parameters/RepoId"
+        - name: path
+          in: query
+          required: true
+          description: Path to the file within the repository
+          schema:
+            type: string
+        - name: ref
+          in: query
+          description: Git ref (branch, tag, or commit). Defaults to repository's default branch.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: File contents
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BlobResponse"
+        "404":
+          description: Repository or file not found
+        "503":
+          description: Repository not cloned locally
+
+  /api/v1/repos/by-id/{id}/raw:
+    get:
+      tags:
+        - File Browsing
+      summary: Get raw file contents
+      description: |
+        Returns the raw contents of a file without JSON wrapping.
+        Useful for downloading files directly.
+        Can be disabled via `CS_UI_DISABLE_BROWSE_API`.
+      operationId: getRawBlob
+      parameters:
+        - $ref: "#/components/parameters/RepoId"
+        - name: path
+          in: query
+          required: true
+          description: Path to the file within the repository
+          schema:
+            type: string
+        - name: ref
+          in: query
+          description: Git ref (branch, tag, or commit). Defaults to repository's default branch.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Raw file contents
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+            text/plain:
+              schema:
+                type: string
+        "404":
+          description: Repository or file not found
+        "503":
+          description: Repository not cloned locally
+
+  /api/v1/repos/by-id/{id}/refs:
+    get:
+      tags:
+        - File Browsing
+      summary: List branches and tags
+      description: |
+        Returns all branches and tags for a repository.
+        Can be disabled via `CS_UI_DISABLE_BROWSE_API`.
+      operationId: getBranchesAndTags
+      parameters:
+        - $ref: "#/components/parameters/RepoId"
+      responses:
+        "200":
+          description: Branches and tags
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RefsResponse"
+        "404":
+          description: Repository not found or not cloned
+
+  /api/v1/repos/by-id/{id}/symbols:
+    get:
+      tags:
+        - File Browsing
+      summary: Get file symbols
+      description: |
+        Returns symbols (functions, classes, methods) in a specific file using Tree-sitter.
+        Can be disabled via `CS_UI_DISABLE_BROWSE_API`.
+      operationId: getFileSymbols
+      parameters:
+        - $ref: "#/components/parameters/RepoId"
+        - name: path
+          in: query
+          required: true
+          description: Path to the file within the repository
+          schema:
+            type: string
+        - name: ref
+          in: query
+          description: Git ref (branch, tag, or commit). Defaults to repository's default branch.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: File symbols
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileSymbolsResponse"
+        "404":
+          description: Repository or file not found
+
+  /api/v1/repos/status:
+    get:
+      tags:
+        - Repositories
+      summary: Get repos management status
+      description: |
+        Returns the current status of repository management.
+        When `readonly` is true, repositories are configured in read-only mode
+        and creating merge requests requires users to provide their own
+        personal access token.
+      operationId: getReposStatus
+      responses:
+        "200":
+          description: Repos management status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReposStatusResponse"
+
+  # Connection Endpoints
+  /api/v1/connections:
+    get:
+      tags:
+        - Connections
+      summary: List connections
+      description: Returns all configured code host connections.
+      operationId: listConnections
+      responses:
+        "200":
+          description: List of connections
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Connection"
+
+    post:
+      tags:
+        - Connections
+      summary: Create connection
+      description: Add a new code host connection (GitHub, GitLab, etc.).
+      operationId: createConnection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateConnectionRequest"
+      responses:
+        "201":
+          description: Connection created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Connection"
+        "400":
+          description: Invalid request
+
+  /api/v1/connections/status:
+    get:
+      tags:
+        - Connections
+      summary: Get all connections status
+      description: Returns status information for all connections including sync state and error counts.
+      operationId: getConnectionsStatus
+      responses:
+        "200":
+          description: Connections status
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ConnectionStatus"
+
+  /api/v1/connections/{id}:
+    get:
+      tags:
+        - Connections
+      summary: Get connection
+      operationId: getConnection
+      parameters:
+        - $ref: "#/components/parameters/ConnectionId"
+      responses:
+        "200":
+          description: Connection details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Connection"
+        "404":
+          description: Connection not found
+
+    put:
+      tags:
+        - Connections
+      summary: Update connection
+      operationId: updateConnection
+      parameters:
+        - $ref: "#/components/parameters/ConnectionId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateConnectionRequest"
+      responses:
+        "200":
+          description: Connection updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Connection"
+        "404":
+          description: Connection not found
+
+    delete:
+      tags:
+        - Connections
+      summary: Delete connection
+      operationId: deleteConnection
+      parameters:
+        - $ref: "#/components/parameters/ConnectionId"
+      responses:
+        "204":
+          description: Connection deleted
+        "404":
+          description: Connection not found
+
+  /api/v1/connections/{id}/test:
+    post:
+      tags:
+        - Connections
+      summary: Test connection
+      description: Validate credentials and connectivity to the code host.
+      operationId: testConnection
+      parameters:
+        - $ref: "#/components/parameters/ConnectionId"
+      responses:
+        "200":
+          description: Connection test result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestConnectionResponse"
+
+  /api/v1/connections/{id}/sync:
+    post:
+      tags:
+        - Connections
+      summary: Sync connection repositories
+      description: Fetch and sync all repositories from the code host.
+      operationId: syncConnection
+      parameters:
+        - $ref: "#/components/parameters/ConnectionId"
+      responses:
+        "200":
+          description: Sync completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncConnectionResponse"
+        "409":
+          description: Sync already in progress
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: already_syncing
+                  message:
+                    type: string
+                    example: Connection sync job already running
+
+  /api/v1/connections/{id}/repos:
+    get:
+      tags:
+        - Connections
+      summary: List connection repositories
+      description: List all repositories for a specific connection.
+      operationId: listConnectionRepos
+      parameters:
+        - $ref: "#/components/parameters/ConnectionId"
+      responses:
+        "200":
+          description: List of repositories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Repository"
+
+  /api/v1/connections/{id}/stats:
+    get:
+      tags:
+        - Connections
+      summary: Get connection statistics
+      description: Returns detailed statistics for a specific connection including repo counts and indexing status.
+      operationId: getConnectionStats
+      parameters:
+        - $ref: "#/components/parameters/ConnectionId"
+      responses:
+        "200":
+          description: Connection statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectionStats"
+        "404":
+          description: Connection not found
+
+  # Replace Endpoints
+  /api/v1/replace/preview:
+    post:
+      tags:
+        - Replace
+      summary: Preview replacements
+      description: |
+        Preview what would be replaced without making any changes.
+        Returns a list of matches with file locations.
+      operationId: replacePreview
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReplacePreviewRequest"
+      responses:
+        "200":
+          description: Preview results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReplacePreviewResponse"
+        "400":
+          description: Invalid request
+
+  /api/v1/replace/execute:
+    post:
+      tags:
+        - Replace
+      summary: Execute replacements
+      description: |
+        Execute search and replace across repositories.
+        Creates merge/pull requests with the changes.
+
+        **Read-only mode:** When repositories are configured in read-only mode
+        (check `/api/v1/repos/status`), users must provide their own personal
+        access token with write permissions to create merge requests.
+      operationId: replaceExecute
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReplaceExecuteRequest"
+      responses:
+        "202":
+          description: Replace job queued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReplaceExecuteResponse"
+        "400":
+          description: Invalid request
+
+  /api/v1/replace/jobs:
+    get:
+      tags:
+        - Replace
+      summary: List replace jobs
+      description: Returns all replace jobs.
+      operationId: listReplaceJobs
+      responses:
+        "200":
+          description: List of replace jobs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Job"
+
+  /api/v1/replace/jobs/{id}:
+    get:
+      tags:
+        - Replace
+      summary: Get replace job
+      operationId: getReplaceJob
+      parameters:
+        - $ref: "#/components/parameters/JobId"
+      responses:
+        "200":
+          description: Job details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+        "404":
+          description: Job not found
+
+  # Symbol Endpoints
+  /api/v1/symbols/find:
+    post:
+      tags:
+        - Symbols
+      summary: Find symbol definitions
+      description: Find where a symbol (function, class, variable) is defined.
+      operationId: findSymbols
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FindSymbolsRequest"
+      responses:
+        "200":
+          description: Symbol definitions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FindSymbolsResponse"
+
+  /api/v1/symbols/refs:
+    post:
+      tags:
+        - Symbols
+      summary: Find symbol references
+      description: Find all references to a symbol across the codebase.
+      operationId: findRefs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FindRefsRequest"
+      responses:
+        "200":
+          description: Symbol references
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FindRefsResponse"
+
+  # Jobs Endpoints
+  /api/v1/jobs:
+    get:
+      tags:
+        - Jobs
+      summary: List jobs
+      description: |
+        Returns background jobs with pagination and filtering.
+        Jobs are sorted by creation time (newest first).
+      operationId: listJobs
+      parameters:
+        - name: type
+          in: query
+          description: Filter by job type
+          schema:
+            type: string
+            enum: [index, replace, sync]
+        - name: status
+          in: query
+          description: Filter by job status
+          schema:
+            type: string
+            enum: [pending, running, completed, failed]
+        - name: exclude_status
+          in: query
+          description: Exclude jobs with this status (useful for hiding completed jobs)
+          schema:
+            type: string
+            enum: [pending, running, completed, failed]
+        - name: repo
+          in: query
+          description: Filter by repository name (partial match)
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Maximum number of results (default 50, max 500)
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 500
+        - name: offset
+          in: query
+          description: Number of results to skip for pagination
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+      responses:
+        "200":
+          description: Paginated list of jobs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobListResponse"
+    delete:
+      tags:
+        - Jobs
+      summary: Delete ALL jobs
+      description: |
+        **DANGEROUS**: Delete ALL jobs regardless of status.
+        Requires `confirm=true` query parameter for safety.
+        Use with extreme caution.
+      operationId: deleteAllJobs
+      parameters:
+        - name: confirm
+          in: query
+          required: true
+          description: Must be "true" to confirm deletion
+          schema:
+            type: string
+            enum: ["true"]
+      responses:
+        "200":
+          description: All jobs deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BulkActionResult"
+        "400":
+          description: Missing or invalid confirmation parameter
+
+  /api/v1/jobs/stats:
+    get:
+      tags:
+        - Jobs
+      summary: Get job queue statistics
+      description: Returns statistics about the job queue including counts by status and type.
+      operationId: getQueueStats
+      responses:
+        "200":
+          description: Queue statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueueStats"
+
+  /api/v1/jobs/{id}:
+    get:
+      tags:
+        - Jobs
+      summary: Get job
+      operationId: getJob
+      parameters:
+        - $ref: "#/components/parameters/JobId"
+      responses:
+        "200":
+          description: Job details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+        "404":
+          description: Job not found
+
+  /api/v1/jobs/{id}/cancel:
+    post:
+      tags:
+        - Jobs
+      summary: Cancel job
+      description: Cancel a pending job. Only pending jobs can be cancelled.
+      operationId: cancelJob
+      parameters:
+        - $ref: "#/components/parameters/JobId"
+      responses:
+        "200":
+          description: Job cancelled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: cancelled
+                  message:
+                    type: string
+                    example: Job cancelled
+        "400":
+          description: Job cannot be cancelled (not in pending state)
+        "404":
+          description: Job not found
+
+  /api/v1/jobs/cleanup:
+    post:
+      tags:
+        - Jobs
+      summary: Cleanup old jobs
+      description: |
+        Remove completed and failed jobs older than the specified age.
+        This helps prevent Redis from growing indefinitely.
+      operationId: cleanupJobs
+      parameters:
+        - name: max_age_hours
+          in: query
+          description: Maximum age in hours for jobs to keep (default 1)
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+      responses:
+        "200":
+          description: Cleanup completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  deleted_count:
+                    type: integer
+                    example: 42
+                  scanned_count:
+                    type: integer
+                    example: 150
+                  max_age_hours:
+                    type: integer
+                    example: 1
+                  message:
+                    type: string
+                    example: Cleanup completed
+
+  /api/v1/jobs/cancel-all:
+    post:
+      tags:
+        - Jobs
+      summary: Bulk cancel jobs
+      description: |
+        Cancel all pending and/or running jobs matching the given filters.
+        Only pending and running jobs can be cancelled. Cancelled jobs are marked as failed.
+      operationId: bulkCancelJobs
+      parameters:
+        - name: type
+          in: query
+          description: Filter by job type (index, sync, replace)
+          schema:
+            type: string
+            enum: [index, sync, replace]
+        - name: status
+          in: query
+          description: Filter by status (pending, running)
+          schema:
+            type: string
+            enum: [pending, running]
+      responses:
+        "200":
+          description: Bulk cancel completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BulkActionResult"
+
+  /api/v1/jobs/delete-all:
+    post:
+      tags:
+        - Jobs
+      summary: Bulk delete jobs
+      description: |
+        Delete all completed and/or failed jobs matching the given filters.
+        Only completed and failed jobs can be deleted.
+      operationId: bulkDeleteJobs
+      parameters:
+        - name: type
+          in: query
+          description: Filter by job type (index, sync, replace)
+          schema:
+            type: string
+            enum: [index, sync, replace]
+        - name: status
+          in: query
+          description: Filter by status (completed, failed)
+          schema:
+            type: string
+            enum: [completed, failed]
+      responses:
+        "200":
+          description: Bulk delete completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BulkActionResult"
+
+  # SCIP Code Intelligence Endpoints
+  /api/v1/scip/indexers:
+    get:
+      tags:
+        - SCIP
+      summary: List available SCIP indexers
+      description: |
+        Returns which SCIP indexers are available on the system and installation instructions.
+        SCIP indexers must be installed separately for each language you want to index.
+      operationId: getAvailableIndexers
+      responses:
+        "200":
+          description: Available indexers and instructions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SCIPIndexersResponse"
+
+  /api/v1/scip/repos/{id}/status:
+    get:
+      tags:
+        - SCIP
+      summary: Get SCIP index status
+      description: Returns whether a repository has a SCIP index and statistics about it.
+      operationId: getSCIPStatus
+      parameters:
+        - $ref: "#/components/parameters/RepoId"
+      responses:
+        "200":
+          description: SCIP index status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SCIPStatusResponse"
+        "404":
+          description: Repository not found
+
+  /api/v1/scip/repos/{id}/definition:
+    post:
+      tags:
+        - SCIP
+      summary: Go to definition
+      description: |
+        Find the definition of a symbol at a given position in a file.
+        Returns the location where the symbol is defined, along with documentation if available.
+        Requires a SCIP index for the repository.
+      operationId: goToDefinition
+      parameters:
+        - $ref: "#/components/parameters/RepoId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoToDefinitionRequest"
+      responses:
+        "200":
+          description: Definition location
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GoToDefinitionResponse"
+        "400":
+          description: Invalid request
+        "404":
+          description: Repository not found
+
+  /api/v1/scip/repos/{id}/references:
+    post:
+      tags:
+        - SCIP
+      summary: Find references
+      description: |
+        Find all references to a symbol at a given position in a file.
+        Returns all locations where the symbol is used, including the definition.
+        Requires a SCIP index for the repository.
+      operationId: findSCIPReferences
+      parameters:
+        - $ref: "#/components/parameters/RepoId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FindReferencesRequest"
+      responses:
+        "200":
+          description: References found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FindReferencesResponse"
+        "400":
+          description: Invalid request
+        "404":
+          description: Repository not found
+
+  /api/v1/scip/repos/{id}/index:
+    post:
+      tags:
+        - SCIP
+      summary: Index repository with SCIP
+      description: |
+        Run SCIP indexing on a repository. This creates a precise code intelligence index
+        that enables go-to-definition and find-references.
+
+        **Prerequisites:**
+        - The appropriate SCIP indexer must be installed (e.g., `scip-go` for Go)
+        - The repository must be cloned locally
+
+        **Supported languages:**
+        - Go (`scip-go`)
+        - TypeScript/JavaScript (`@sourcegraph/scip-typescript`)
+        - Java (`scip-java`)
+        - Rust (`rust-analyzer`)
+        - Python (`scip-python`)
+        - PHP (`scip-php` via Composer)
+      operationId: indexSCIP
+      parameters:
+        - $ref: "#/components/parameters/RepoId"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IndexSCIPRequest"
+      responses:
+        "200":
+          description: Indexing completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IndexSCIPResponse"
+        "400":
+          description: Invalid request or indexer not available
+        "404":
+          description: Repository not found
+        "500":
+          description: Indexing failed
+
+    delete:
+      tags:
+        - SCIP
+      summary: Clear SCIP index
+      description: Remove the SCIP index for a repository.
+      operationId: clearSCIPIndex
+      parameters:
+        - $ref: "#/components/parameters/RepoId"
+      responses:
+        "200":
+          description: Index cleared
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: SCIP index cleared
+        "404":
+          description: Repository not found
+
+  /api/v1/scip/repos/{id}/upload:
+    post:
+      tags:
+        - SCIP
+      summary: Upload SCIP index
+      description: |
+        Upload a pre-built SCIP index file. Use this when you want to build the index
+        externally (e.g., in CI) and upload it to the server.
+
+        The request body should be the raw binary SCIP index file (protobuf format).
+
+        **Example workflow:**
+        ```bash
+        # Build index locally
+        scip-go --output index.scip
+
+        # Upload to server
+        curl -X POST http://localhost:8080/api/v1/scip/repos/{id}/upload \
+          --data-binary @index.scip
+        ```
+      operationId: uploadSCIPIndex
+      parameters:
+        - $ref: "#/components/parameters/RepoId"
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+              description: Raw SCIP index file (protobuf)
+      responses:
+        "200":
+          description: Index uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: SCIP index uploaded successfully
+                  stats:
+                    type: object
+                    description: Statistics about the uploaded index
+        "400":
+          description: Invalid or empty request body
+        "404":
+          description: Repository not found
+        "500":
+          description: Failed to import index
+
+  /api/v1/scip/repos/{id}/symbols/search:
+    post:
+      tags:
+        - SCIP
+      summary: Search symbols in SCIP index
+      description: Search for symbols by name in a repository's SCIP index.
+      operationId: searchSCIPSymbols
+      parameters:
+        - $ref: "#/components/parameters/RepoId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SearchSymbolsRequest"
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchSymbolsResponse"
+        "400":
+          description: Invalid request
+        "404":
+          description: Repository not found
+
+  /api/v1/scip/repos/{id}/files:
+    get:
+      tags:
+        - SCIP
+      summary: List indexed files
+      description: List all files that are included in the SCIP index for a repository.
+      operationId: listSCIPFiles
+      parameters:
+        - $ref: "#/components/parameters/RepoId"
+        - name: limit
+          in: query
+          description: Maximum number of files to return
+          schema:
+            type: integer
+            default: 100
+            minimum: 1
+            maximum: 1000
+      responses:
+        "200":
+          description: List of indexed files
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListSCIPFilesResponse"
+        "404":
+          description: Repository not found
+
+  # Scheduler Endpoints
+  /api/v1/scheduler/stats:
+    get:
+      tags:
+        - Scheduler
+      summary: Get scheduler statistics
+      description: Returns statistics about the sync scheduler including repo counts by status.
+      operationId: getSchedulerStats
+      responses:
+        "200":
+          description: Scheduler statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SchedulerStats"
+
+  /api/v1/scheduler/sync-all:
+    post:
+      tags:
+        - Scheduler
+      summary: Trigger sync for all repositories
+      description: |
+        Trigger a sync for repositories. By default, only syncs stale repos
+        (those not indexed within the poll interval). Use force=true to sync all.
+      operationId: triggerSyncAll
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TriggerSyncAllRequest"
+      responses:
+        "200":
+          description: Sync triggered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TriggerSyncAllResponse"
+
+  /api/v1/scheduler/cleanup:
+    post:
+      tags:
+        - Scheduler
+      summary: Cleanup stale indexing jobs
+      description: |
+        Cleans up repositories that have been stuck in indexing state for too long.
+        This resets their status so they can be re-indexed.
+      operationId: cleanupStaleIndexing
+      responses:
+        "200":
+          description: Cleanup completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cleaned:
+                    type: integer
+                    description: Number of repositories cleaned up
+                  message:
+                    type: string
+
+  # Repository Poll Interval
+  /api/v1/repos/by-id/{id}/poll-interval:
+    put:
+      tags:
+        - Repositories
+      summary: Set repository poll interval
+      description: |
+        Set a custom polling interval for a repository. The scheduler will check
+        this repository for updates at this interval. Set to 0 to use the default.
+      operationId: setRepoPollInterval
+      parameters:
+        - $ref: "#/components/parameters/RepoId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetPollIntervalRequest"
+      responses:
+        "200":
+          description: Poll interval updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SetPollIntervalResponse"
+        "400":
+          description: Invalid interval value
+        "404":
+          description: Repository not found
+
+components:
+  responses:
+    RateLimited:
+      description: Rate limit exceeded
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+          description: Seconds until rate limit resets
+        X-Ratelimit-Limit:
+          schema:
+            type: integer
+          description: Maximum requests allowed
+        X-Ratelimit-Remaining:
+          schema:
+            type: integer
+          description: Remaining requests in current window
+      content:
+        text/plain:
+          schema:
+            type: string
+            example: "Rate limit exceeded"
+
+  parameters:
+    RepoId:
+      name: id
+      in: path
+      required: true
+      description: Repository ID
+      schema:
+        type: integer
+        format: int64
+
+    ConnectionId:
+      name: id
+      in: path
+      required: true
+      description: Connection ID
+      schema:
+        type: integer
+        format: int64
+
+    JobId:
+      name: id
+      in: path
+      required: true
+      description: Job ID
+      schema:
+        type: string
+
+  schemas:
+    # Health Schemas
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ok
+
+    ReadyResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ready, not_ready]
+        checks:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            database: ok
+            redis: ok
+            zoekt: ok
+
+    # Search Schemas
+    SearchRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          description: Search query (supports modifiers like repo:, lang:, file:)
+          example: "func main"
+        is_regex:
+          type: boolean
+          default: false
+          description: Treat query as regular expression
+        case_sensitive:
+          type: boolean
+          default: false
+        repos:
+          type: array
+          items:
+            type: string
+          description: Filter to specific repositories
+        languages:
+          type: array
+          items:
+            type: string
+          description: Filter by programming languages
+        file_patterns:
+          type: array
+          items:
+            type: string
+          description: Filter by file patterns (e.g., "*.go")
+        limit:
+          type: integer
+          default: 100
+          maximum: 1000
+        context_lines:
+          type: integer
+          default: 2
+          description: Number of context lines before/after match
+
+    SearchResult:
+      type: object
+      properties:
+        repo:
+          type: string
+          example: myorg/myrepo
+        file:
+          type: string
+          example: src/main.go
+        line:
+          type: integer
+          example: 42
+        column:
+          type: integer
+          example: 5
+        content:
+          type: string
+          example: "func main() {"
+        context:
+          type: object
+          properties:
+            before:
+              type: array
+              items:
+                type: string
+            after:
+              type: array
+              items:
+                type: string
+        language:
+          type: string
+          example: go
+        match_start:
+          type: integer
+        match_end:
+          type: integer
+
+    SearchResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/SearchResult"
+        total_count:
+          type: integer
+          example: 42
+        truncated:
+          type: boolean
+          example: false
+        duration:
+          type: string
+          example: "15ms"
+        stats:
+          type: object
+          properties:
+            files_searched:
+              type: integer
+            repos_searched:
+              type: integer
+
+    SearchSuggestionsResponse:
+      type: object
+      properties:
+        repos:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              display_name:
+                type: string
+              full_name:
+                type: string
+              status:
+                type: string
+        languages:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+        filters:
+          type: array
+          items:
+            type: object
+            properties:
+              keyword:
+                type: string
+              description:
+                type: string
+              example:
+                type: string
+
+    # Repository Schemas
+    Repository:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+          example: myorg/myrepo
+        clone_url:
+          type: string
+          format: uri
+          example: https://github.com/myorg/myrepo.git
+        branches:
+          type: array
+          items:
+            type: string
+          description: List of indexed branches for this repository
+          example: [main, develop]
+        default_branch:
+          type: string
+          description: The default branch of the repository (fallback if branches is empty)
+          example: main
+        status:
+          type: string
+          enum: [pending, indexing, indexed, error]
+        excluded:
+          type: boolean
+          description: Whether the repository is excluded from indexing
+          example: false
+        deleted:
+          type: boolean
+          description: |
+            Whether the repository has been soft-deleted. Deleted repositories
+            remain in the database but are excluded from indexing. They can be
+            restored using the restore endpoint.
+          example: false
+        archived:
+          type: boolean
+          description: Whether the repository is archived on the code host
+          example: false
+        last_indexed:
+          type: string
+          format: date-time
+
+    ListReposResponse:
+      type: object
+      properties:
+        repos:
+          type: array
+          items:
+            $ref: "#/components/schemas/Repository"
+        total_count:
+          type: integer
+
+    AddRepoRequest:
+      type: object
+      required:
+        - connection_id
+        - name
+        - clone_url
+      properties:
+        connection_id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        clone_url:
+          type: string
+          format: uri
+        default_branch:
+          type: string
+          default: main
+        branches:
+          type: array
+          items:
+            type: string
+
+    SyncResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: queued
+        job_id:
+          type: string
+        message:
+          type: string
+
+    ReposStatusResponse:
+      type: object
+      properties:
+        readonly:
+          type: boolean
+          description: |
+            When true, repositories are in read-only mode and users must
+            provide their own personal access token to create merge requests.
+          example: false
+
+    # File Browsing Schemas
+    TreeEntry:
+      type: object
+      properties:
+        name:
+          type: string
+          description: File or directory name
+          example: src
+        path:
+          type: string
+          description: Full path within the repository
+          example: src
+        type:
+          type: string
+          enum: [file, dir]
+          description: Entry type
+          example: dir
+        size:
+          type: integer
+          format: int64
+          description: File size in bytes (only for files)
+          example: 1234
+
+    TreeResponse:
+      type: object
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/TreeEntry"
+        path:
+          type: string
+          description: Current directory path
+          example: src
+        ref:
+          type: string
+          description: Git ref used
+          example: main
+
+    BlobResponse:
+      type: object
+      properties:
+        content:
+          type: string
+          description: File content (empty for binary files)
+        path:
+          type: string
+          description: File path
+          example: src/main.go
+        size:
+          type: integer
+          format: int64
+          description: File size in bytes
+          example: 1234
+        language:
+          type: string
+          description: Detected programming language
+          example: Go
+        language_mode:
+          type: string
+          description: CodeMirror syntax highlighting mode
+          example: go
+        binary:
+          type: boolean
+          description: Whether the file is binary
+          example: false
+        ref:
+          type: string
+          description: Git ref used
+          example: main
+
+    RefsResponse:
+      type: object
+      properties:
+        branches:
+          type: array
+          items:
+            type: string
+          example: [main, develop, feature/new-feature]
+        tags:
+          type: array
+          items:
+            type: string
+          example: [v1.0.0, v1.1.0]
+
+    FileSymbol:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Symbol name
+          example: HandleRequest
+        kind:
+          type: string
+          description: Symbol kind (function, class, method, variable, etc.)
+          example: function
+        line:
+          type: integer
+          description: Line number (1-based)
+          example: 42
+        column:
+          type: integer
+          description: Column number (0-based)
+          example: 5
+        signature:
+          type: string
+          description: Full signature (if available)
+          example: "func HandleRequest(w http.ResponseWriter, r *http.Request)"
+        parent:
+          type: string
+          description: Parent symbol name (for methods, nested types)
+          example: Server
+
+    FileSymbolsResponse:
+      type: object
+      properties:
+        symbols:
+          type: array
+          items:
+            $ref: "#/components/schemas/FileSymbol"
+        path:
+          type: string
+          description: File path
+          example: src/handler.go
+
+    # Connection Schemas
+    Connection:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+          example: GitHub Production
+        type:
+          type: string
+          enum: [github, github_enterprise, gitlab, gitea, bitbucket]
+        url:
+          type: string
+          format: uri
+          example: https://github.com
+        created_at:
+          type: string
+          format: date-time
+
+    CreateConnectionRequest:
+      type: object
+      required:
+        - name
+        - type
+        - url
+        - token
+      properties:
+        name:
+          type: string
+          example: GitHub Production
+        type:
+          type: string
+          enum: [github, github_enterprise, gitlab, gitea, bitbucket]
+        url:
+          type: string
+          format: uri
+        token:
+          type: string
+          description: API token or personal access token
+          format: password
+
+    UpdateConnectionRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: [github, github_enterprise, gitlab, gitea, bitbucket]
+        url:
+          type: string
+          format: uri
+        token:
+          type: string
+          format: password
+
+    TestConnectionResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success, error]
+        message:
+          type: string
+        error:
+          type: string
+
+    SyncConnectionResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        added:
+          type: integer
+          description: Number of new repositories added
+        skipped:
+          type: integer
+          description: Number of repositories skipped (already exist or archived)
+        total:
+          type: integer
+          description: Total repositories processed
+
+    # Replace Schemas
+    ReplacePreviewRequest:
+      type: object
+      required:
+        - search_pattern
+        - replace_with
+      properties:
+        search_pattern:
+          type: string
+          description: Pattern to search for
+          example: oldFunction
+        replace_with:
+          type: string
+          description: Replacement text
+          example: newFunction
+        is_regex:
+          type: boolean
+          default: false
+        case_sensitive:
+          type: boolean
+          default: false
+        file_patterns:
+          type: array
+          items:
+            type: string
+          example: ["*.go", "*.ts"]
+        repos:
+          type: array
+          items:
+            type: string
+          description: Limit to specific repositories
+
+    ReplacePreviewResponse:
+      type: object
+      properties:
+        matches:
+          type: array
+          items:
+            type: object
+            properties:
+              repository_id:
+                type: integer
+                format: int64
+                description: Database ID of the repository (for use in execute request)
+              repo:
+                type: string
+                description: Repository name
+              file:
+                type: string
+                description: File path
+              line:
+                type: integer
+                description: Line number
+              content:
+                type: string
+                description: Line content with match
+        total_count:
+          type: integer
+        duration:
+          type: string
+
+    ReplaceExecuteRequest:
+      type: object
+      required:
+        - search_pattern
+        - replace_with
+        - matches
+      properties:
+        search_pattern:
+          type: string
+          description: Pattern to search for
+          example: oldFunction
+        replace_with:
+          type: string
+          description: Replacement text
+          example: newFunction
+        is_regex:
+          type: boolean
+          default: false
+        case_sensitive:
+          type: boolean
+          default: false
+        file_patterns:
+          type: array
+          items:
+            type: string
+          example: ["*.go", "*.ts"]
+        branch_name:
+          type: string
+          description: Branch name for changes (auto-generated if not specified)
+        mr_title:
+          type: string
+          description: Title for the merge/pull request
+        mr_description:
+          type: string
+          description: Description for the merge/pull request
+        user_tokens:
+          type: object
+          additionalProperties:
+            type: string
+          description: |
+            Map of connection_name to personal access token.
+            Required when repositories are in read-only mode.
+        matches:
+          type: array
+          description: |
+            Matches from the preview endpoint. Required - you must call the preview
+            endpoint first to get matches, then pass them here. The replace job uses
+            these directly without re-searching. A merge request is always created -
+            changes are never committed directly to the main branch.
+          items:
+            $ref: "#/components/schemas/ReplaceMatch"
+
+    ReplaceMatch:
+      type: object
+      description: A file match for replacement from the preview response
+      required:
+        - repository_id
+        - repository_name
+        - file_path
+      properties:
+        repository_id:
+          type: integer
+          format: int64
+          description: Database ID of the repository
+        repository_name:
+          type: string
+          description: Name of the repository (as returned by preview)
+        file_path:
+          type: string
+          description: Path to the file within the repository
+
+    ReplaceExecuteResponse:
+      type: object
+      properties:
+        job_id:
+          type: string
+        status:
+          type: string
+          example: pending
+        message:
+          type: string
+          example: Replace job queued
+
+    # Symbol Schemas
+    FindSymbolsRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Symbol name to search for
+          example: MyClass
+        kind:
+          type: string
+          description: Symbol type (function, class, method, variable, etc.)
+        language:
+          type: string
+          description: Filter by language
+        repos:
+          type: array
+          items:
+            type: string
+          description: Filter by repositories
+        limit:
+          type: integer
+          default: 100
+          description: Maximum number of results
+
+    Symbol:
+      type: object
+      properties:
+        name:
+          type: string
+        kind:
+          type: string
+        repo:
+          type: string
+        file:
+          type: string
+        line:
+          type: integer
+        column:
+          type: integer
+        signature:
+          type: string
+        language:
+          type: string
+
+    FindSymbolsResponse:
+      type: array
+      items:
+        $ref: "#/components/schemas/Symbol"
+
+    FindRefsRequest:
+      type: object
+      required:
+        - symbol
+      properties:
+        symbol:
+          type: string
+          description: Symbol name to find references for
+        repos:
+          type: array
+          items:
+            type: string
+          description: Filter by repositories
+        language:
+          type: string
+          description: Filter by language
+        limit:
+          type: integer
+          default: 100
+
+    Reference:
+      type: object
+      properties:
+        repo:
+          type: string
+        file:
+          type: string
+        line:
+          type: integer
+        column:
+          type: integer
+        context:
+          type: string
+
+    FindRefsResponse:
+      type: array
+      items:
+        $ref: "#/components/schemas/Reference"
+
+    # Job Schemas
+    Job:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [index, replace, sync]
+        status:
+          type: string
+          enum: [pending, running, completed, failed]
+        payload:
+          type: object
+          description: Job-specific payload data
+        result:
+          type: object
+          description: Job result (when completed)
+        error:
+          type: string
+          description: Error message (when failed)
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # Job List Response (paginated)
+    JobListResponse:
+      type: object
+      properties:
+        jobs:
+          type: array
+          items:
+            $ref: "#/components/schemas/Job"
+        total_count:
+          type: integer
+          description: Total number of jobs matching the filters
+        limit:
+          type: integer
+          description: Maximum results per page
+        offset:
+          type: integer
+          description: Current offset
+        has_more:
+          type: boolean
+          description: Whether there are more results available
+
+    # Bulk Action Result
+    BulkActionResult:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ok
+        processed:
+          type: integer
+          description: Number of jobs that matched the criteria
+          example: 25
+        succeeded:
+          type: integer
+          description: Number of jobs successfully processed
+          example: 24
+        failed:
+          type: integer
+          description: Number of jobs that failed to process
+          example: 1
+        message:
+          type: string
+          description: Human-readable summary message
+          example: "Bulk operation completed"
+
+    # Scheduler Schemas
+    SchedulerStats:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+          description: Whether the scheduler is enabled
+        total_repos:
+          type: integer
+          description: Total number of repositories
+        indexed_repos:
+          type: integer
+          description: Number of indexed repositories
+        pending_repos:
+          type: integer
+          description: Number of repositories pending indexing
+        indexing_repos:
+          type: integer
+          description: Number of repositories currently being indexed
+        failed_repos:
+          type: integer
+          description: Number of repositories that failed to index
+        stale_repos:
+          type: integer
+          description: Number of repositories that need re-syncing
+        next_check_at:
+          type: string
+          format: date-time
+          description: When the scheduler will next check for stale repos
+        default_poll_interval:
+          type: string
+          description: Default polling interval (e.g., "6h")
+          example: "6h"
+        check_interval:
+          type: string
+          description: How often the scheduler checks for repos to sync
+          example: "5m"
+
+    TriggerSyncAllRequest:
+      type: object
+      properties:
+        force:
+          type: boolean
+          default: false
+          description: If true, sync all repos regardless of last_indexed
+
+    TriggerSyncAllResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: triggered
+        repos_queued:
+          type: integer
+          description: Number of repositories queued for sync
+        force:
+          type: boolean
+          description: Whether force mode was used
+
+    SetBranchesRequest:
+      type: object
+      properties:
+        branches:
+          type: array
+          items:
+            type: string
+          description: List of branch names to index. If empty, defaults to the repository's default branch.
+          example: ["main", "develop"]
+
+    SetBranchesResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: updated
+        repo_id:
+          type: integer
+          format: int64
+        branches:
+          type: array
+          items:
+            type: string
+          description: The branches that will be indexed
+
+    RepoStatsResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+          description: Total number of repositories
+        indexed:
+          type: integer
+          description: Number of successfully indexed repositories
+        pending:
+          type: integer
+          description: Number of repositories pending indexing
+        indexing:
+          type: integer
+          description: Number of repositories currently being indexed
+        failed:
+          type: integer
+          description: Number of repositories that failed to index
+        excluded:
+          type: integer
+          description: Number of excluded repositories
+
+    SetPollIntervalRequest:
+      type: object
+      required:
+        - interval_seconds
+      properties:
+        interval_seconds:
+          type: integer
+          minimum: 0
+          description: Polling interval in seconds. Use 0 to reset to default.
+          example: 3600
+
+    SetPollIntervalResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: updated
+        repo_id:
+          type: integer
+          format: int64
+        interval_seconds:
+          type: integer
+          description: The new polling interval
+
+    # SCIP Schemas
+    SCIPIndexersResponse:
+      type: object
+      properties:
+        available:
+          type: object
+          description: Map of language to availability status
+          additionalProperties:
+            type: boolean
+          example:
+            go: true
+            typescript: true
+            java: false
+            rust: false
+            python: false
+            php: false
+        supported:
+          type: array
+          items:
+            type: string
+          description: List of all supported languages
+          example: [go, typescript, javascript, java, rust, python, php]
+        instructions:
+          type: object
+          description: Installation instructions for each language
+          additionalProperties:
+            type: string
+          example:
+            go: "go install github.com/sourcegraph/scip-go@latest"
+            typescript: "npm install -g @sourcegraph/scip-typescript"
+
+    SCIPStatusResponse:
+      type: object
+      properties:
+        has_index:
+          type: boolean
+          description: Whether the repository has a SCIP index
+        available_indexers:
+          type: object
+          description: Map of language to availability status
+          additionalProperties:
+            type: boolean
+        stats:
+          type: object
+          description: Statistics about the index (only present if has_index is true)
+          properties:
+            total_files:
+              type: integer
+            total_symbols:
+              type: integer
+            total_occurrences:
+              type: integer
+
+    GoToDefinitionRequest:
+      type: object
+      required:
+        - filePath
+        - line
+        - column
+      properties:
+        filePath:
+          type: string
+          description: Path to the file within the repository
+          example: internal/search/search.go
+        line:
+          type: integer
+          description: Line number (1-indexed, matching editor display)
+          example: 42
+        column:
+          type: integer
+          description: Column number (0-indexed)
+          example: 10
+
+    GoToDefinitionResponse:
+      type: object
+      properties:
+        found:
+          type: boolean
+          description: Whether a definition was found
+        symbol:
+          type: string
+          description: The SCIP symbol identifier
+        definition:
+          $ref: "#/components/schemas/SCIPOccurrence"
+        info:
+          $ref: "#/components/schemas/SCIPSymbolInfo"
+        external:
+          type: boolean
+          description: Whether the definition is in an external package
+
+    FindReferencesRequest:
+      type: object
+      required:
+        - filePath
+        - line
+        - column
+      properties:
+        filePath:
+          type: string
+          description: Path to the file within the repository
+          example: internal/search/search.go
+        line:
+          type: integer
+          description: Line number (1-indexed, matching editor display)
+          example: 42
+        column:
+          type: integer
+          description: Column number (0-indexed)
+          example: 10
+        limit:
+          type: integer
+          description: Maximum number of references to return
+          default: 100
+
+    FindReferencesResponse:
+      type: object
+      properties:
+        found:
+          type: boolean
+          description: Whether any references were found
+        symbol:
+          type: string
+          description: The SCIP symbol identifier
+        definition:
+          $ref: "#/components/schemas/SCIPOccurrence"
+        references:
+          type: array
+          items:
+            $ref: "#/components/schemas/SCIPOccurrence"
+        totalCount:
+          type: integer
+          description: Total number of references found
+
+    SCIPOccurrence:
+      type: object
+      description: A symbol occurrence (definition or reference) in the code
+      properties:
+        symbol:
+          type: string
+          description: The SCIP symbol identifier
+        filePath:
+          type: string
+          description: Path to the file
+        startLine:
+          type: integer
+          description: Start line (0-indexed)
+        startCol:
+          type: integer
+          description: Start column (0-indexed)
+        endLine:
+          type: integer
+          description: End line (0-indexed)
+        endCol:
+          type: integer
+          description: End column (0-indexed)
+        role:
+          type: integer
+          description: "Role bitmask: 1=Definition, 2=Import, 4=WriteAccess, 8=ReadAccess"
+        syntaxKind:
+          type: integer
+          description: SCIP syntax kind
+        context:
+          type: string
+          description: The source line content
+
+    SCIPSymbolInfo:
+      type: object
+      description: Metadata about a symbol
+      properties:
+        symbol:
+          type: string
+        documentation:
+          type: string
+        kind:
+          type: integer
+        displayName:
+          type: string
+        enclosingSymbol:
+          type: string
+        relationships:
+          type: array
+          items:
+            type: string
+
+    IndexSCIPRequest:
+      type: object
+      properties:
+        language:
+          type: string
+          description: Programming language (auto-detected if not specified)
+          enum: [go, typescript, javascript, java, rust, python, php]
+
+    IndexSCIPResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        language:
+          type: string
+          description: The language that was indexed
+        duration:
+          type: string
+          description: Time taken to index
+          example: "2.5s"
+        files:
+          type: integer
+          description: Number of files indexed
+        symbols:
+          type: integer
+          description: Number of symbols found
+        occurrences:
+          type: integer
+          description: Number of symbol occurrences
+        error:
+          type: string
+          description: Error message if indexing failed
+        output:
+          type: string
+          description: Raw output from the indexer
+
+    SearchSymbolsRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          description: Symbol name pattern to search for
+          example: HandleRequest
+        limit:
+          type: integer
+          description: Maximum number of results
+          default: 100
+
+    SearchSymbolsResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            type: object
+            properties:
+              symbol:
+                type: string
+              name:
+                type: string
+              kind:
+                type: string
+              filePath:
+                type: string
+              line:
+                type: integer
+        count:
+          type: integer
+
+    ListSCIPFilesResponse:
+      type: object
+      properties:
+        files:
+          type: array
+          items:
+            type: string
+          description: List of file paths in the SCIP index
+        count:
+          type: integer
+          description: Number of files returned
+
+    # UI Settings Schema
+    UISettingsResponse:
+      type: object
+      properties:
+        hide_readonly_banner:
+          type: boolean
+          description: Hide the read-only mode banner
+        hide_file_navigator:
+          type: boolean
+          description: Hide the file navigator in code view
+        disable_browse_api:
+          type: boolean
+          description: Disable the file browse API
+        connections_readonly:
+          type: boolean
+          description: Connections are read-only
+        repos_readonly:
+          type: boolean
+          description: Repositories are read-only
+        enable_streaming:
+          type: boolean
+          description: Enable streaming search results
+        hide_repos_page:
+          type: boolean
+          description: Hide the repositories page
+        hide_connections_page:
+          type: boolean
+          description: Hide the connections page
+        hide_jobs_page:
+          type: boolean
+          description: Hide the jobs page
+        hide_replace_page:
+          type: boolean
+          description: Hide the search and replace page
+        auth_enabled:
+          type: boolean
+          description: Whether authentication is enabled
+
+    # Connection Status Schema
+    ConnectionStatus:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        type:
+          type: string
+        status:
+          type: string
+          enum: [ok, error, syncing]
+        last_sync:
+          type: string
+          format: date-time
+        repo_count:
+          type: integer
+        error:
+          type: string
+
+    # Connection Stats Schema
+    ConnectionStats:
+      type: object
+      properties:
+        total_repos:
+          type: integer
+        indexed_repos:
+          type: integer
+        pending_repos:
+          type: integer
+        failed_repos:
+          type: integer
+        last_sync:
+          type: string
+          format: date-time
+
+    # Queue Stats Schema
+    QueueStats:
+      type: object
+      properties:
+        pending:
+          type: integer
+        running:
+          type: integer
+        completed:
+          type: integer
+        failed:
+          type: integer
+        total:
+          type: integer
+        by_type:
+          type: object
+          additionalProperties:
+            type: integer
+
