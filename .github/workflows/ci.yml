@@ -132,6 +132,8 @@ jobs:
             image: code-search-website
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: ${{ matrix.image == 'code-search-website' }}
       - uses: docker/setup-buildx-action@v3
       - name: Build ${{ matrix.image }}
         uses: docker/build-push-action@v6

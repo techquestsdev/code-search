@@ -1,0 +1,44 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "labels": ["dependencies"],
+  "schedule": ["before 8am on Monday"],
+  "timezone": "Europe/London",
+  "packageRules": [
+    {
+      "description": "Group Go dependencies",
+      "matchManagers": ["gomod"],
+      "groupName": "go dependencies",
+      "groupSlug": "go-deps"
+    },
+    {
+      "description": "Group web frontend dependencies",
+      "matchPaths": ["web/**"],
+      "groupName": "web dependencies",
+      "groupSlug": "web-deps"
+    },
+    {
+      "description": "Group website dependencies",
+      "matchPaths": ["website/**"],
+      "groupName": "website dependencies",
+      "groupSlug": "website-deps"
+    },
+    {
+      "description": "Group Docker base image updates",
+      "matchManagers": ["dockerfile"],
+      "groupName": "docker base images",
+      "groupSlug": "docker-images"
+    },
+    {
+      "description": "Group GitHub Actions updates",
+      "matchManagers": ["github-actions"],
+      "groupName": "github actions",
+      "groupSlug": "gh-actions"
+    },
+    {
+      "description": "Automerge patch updates",
+      "matchUpdateTypes": ["patch"],
+      "automerge": true
+    }
+  ]
+}
