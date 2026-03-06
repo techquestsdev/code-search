@@ -1,5 +1,5 @@
 # Build stage
-FROM golang:1.24-alpine AS builder
+FROM golang:1.26-alpine AS builder
 
 WORKDIR /app
 
@@ -20,7 +20,7 @@ RUN CGO_ENABLED=1 go build -o /bin/api-server ./cmd/api
 RUN CGO_ENABLED=0 go build -o /bin/migrate ./cmd/migrate
 
 # Runtime stage
-FROM alpine:3.19
+FROM alpine:3.23
 
 RUN apk add --no-cache ca-certificates tzdata
 

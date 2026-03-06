@@ -1,6 +1,6 @@
 # Lightweight sidecar for triggering zoekt index reloads on network filesystems
 # (CephFS, NFS, EFS) that don't propagate inotify events reliably.
-FROM golang:1.24-alpine AS builder
+FROM golang:1.26-alpine AS builder
 
 WORKDIR /app
 
@@ -16,7 +16,7 @@ COPY internal/log/ ./internal/log/
 RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o /bin/zoekt-refresh ./cmd/zoekt-refresh
 
 # Runtime stage - minimal image
-FROM alpine:3.19
+FROM alpine:3.23
 
 # Install ca-certificates for any HTTPS needs
 RUN apk add --no-cache ca-certificates tzdata

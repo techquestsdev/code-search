@@ -1,5 +1,5 @@
 # Build zoekt-git-index
-FROM golang:1.24-alpine AS zoekt-builder
+FROM golang:1.26-alpine AS zoekt-builder
 
 WORKDIR /zoekt
 
@@ -9,7 +9,7 @@ RUN git clone --depth 1 https://github.com/sourcegraph/zoekt.git .
 RUN go build -o /bin/zoekt-git-index ./cmd/zoekt-git-index
 
 # Build indexer
-FROM golang:1.24-alpine AS builder
+FROM golang:1.26-alpine AS builder
 
 WORKDIR /app
 
@@ -27,7 +27,7 @@ COPY . .
 RUN CGO_ENABLED=0 go build -o /bin/indexer ./cmd/indexer
 
 # Build ctags in a separate stage (cleaner)
-FROM alpine:3.19 AS ctags-builder
+FROM alpine:3.23 AS ctags-builder
 
 WORKDIR /tmp
 
@@ -39,13 +39,13 @@ RUN chmod +x /tmp/install-ctags-alpine.sh
 RUN /tmp/install-ctags-alpine.sh
 
 # Build scip-go binary
-FROM golang:1.24-alpine AS scip-go-builder
+FROM golang:1.26-alpine AS scip-go-builder
 
 RUN apk add --no-cache git
 RUN go install github.com/sourcegraph/scip-go/cmd/scip-go@latest
 
 # Runtime stage
-FROM alpine:3.19
+FROM alpine:3.23
 
 # Install runtime dependencies
 # - git, ca-certificates, tzdata, jansson: base indexer requirements
