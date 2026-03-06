@@ -1,6 +1,6 @@
 .PHONY: all build clean test lint help \
 	release-api release-indexer release-web release-zoekt release-website \
-	release-helm release-helm-website
+	release-helm release-helm-website release-cli
 
 # Configuration
 GOCMD := go
@@ -204,6 +204,12 @@ release-helm-website: ## Release website Helm chart (usage: make release-helm-we
 	git tag "helm-website/$(version)"
 	git push origin "helm-website/$(version)"
 	@echo "✅ Tagged helm-website/$(version) — Helm chart release will run in CI."
+
+release-cli: ## Release CLI via GoReleaser (usage: make release-cli version=x.y.z)
+	@if [ -z "$(version)" ]; then echo "Error: version is required. Usage: make release-cli version=1.0.0"; exit 1; fi
+	git tag "v$(version)"
+	git push origin "v$(version)"
+	@echo "✅ Tagged v$(version) — GoReleaser will build and publish the CLI."
 
 # =============================================================================
 # Cleanup

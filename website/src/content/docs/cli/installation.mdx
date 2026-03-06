@@ -18,92 +18,54 @@ The Code Search CLI provides powerful command-line access to search, replace, an
   <TabItem label="macOS" icon="apple">
     ### Homebrew (Recommended)
 
-    ```
-    bash brew install techquestsdev/tap/code-search
+    ```bash
+    brew install techquestsdev/tap/code-search
     ```
 
     ### Direct Download
 
-    ```
-    bash # Apple Silicon (M1/M2/M3) curl -L
-    https://github.com/techquestsdev/code-search/releases/latest/download/code-search-darwin-arm64
-    -o code-search # Intel curl -L
-    https://github.com/techquestsdev/code-search/releases/latest/download/code-search-darwin-amd64
-    -o code-search chmod +x code-search sudo mv code-search /usr/local/bin/
+    ```bash
+    # Apple Silicon (M1/M2/M3)
+    curl -L https://github.com/techquestsdev/code-search/releases/latest/download/code-search_Darwin_arm64.tar.gz | tar xz
+    sudo mv code-search /usr/local/bin/
+
+    # Intel
+    curl -L https://github.com/techquestsdev/code-search/releases/latest/download/code-search_Darwin_x86_64.tar.gz | tar xz
+    sudo mv code-search /usr/local/bin/
     ```
   </TabItem>
 
-{" "}
   <TabItem label="Linux" icon="linux">
     ### Direct Download
 
-    ```
-    bash # x86_64 curl -L
-    https://github.com/techquestsdev/code-search/releases/latest/download/code-search-linux-amd64
-    -o code-search # ARM64 curl -L
-    https://github.com/techquestsdev/code-search/releases/latest/download/code-search-linux-arm64
-    -o code-search chmod +x code-search sudo mv code-search /usr/local/bin/
-    ```
+    ```bash
+    # x86_64
+    curl -L https://github.com/techquestsdev/code-search/releases/latest/download/code-search_Linux_x86_64.tar.gz | tar xz
+    sudo mv code-search /usr/local/bin/
 
-    ### Install Script
-
-    ```
-    bash curl -sSL https://code-search.techquests.dev/install.sh | bash
+    # ARM64
+    curl -L https://github.com/techquestsdev/code-search/releases/latest/download/code-search_Linux_arm64.tar.gz | tar xz
+    sudo mv code-search /usr/local/bin/
     ```
   </TabItem>
 
-{" "}
   <TabItem label="Windows" icon="seti:windows">
+    ### PowerShell
 
-  ### PowerShell
-
-    ```powershell # Download Invoke-WebRequest -Uri
-
-    "<https://github.com/techquestsdev/code-search/releases/latest/download/code-search-windows-amd64.exe>"
-    -OutFile "code-search.exe" # Move to PATH Move-Item code-search.exe
-    C:\Windows\System32\
-    ```
-
-    ### Scoop
-
-    ```powershell scoop bucket add code-search
-    <https://github.com/techquestsdev/scoop-bucket> scoop install code-search
-    ```
+    Download the latest `.zip` from the [releases page](https://github.com/techquestsdev/code-search/releases/latest) and extract `code-search.exe` to a directory in your `PATH`.
   </TabItem>
 
-{" "}
-<TabItem label="Docker" icon="seti:docker">
-
-### Run from Docker
-
-  ```bash
-  docker run --rm -it
-
-  ghcr.io/techquestsdev/code-search-cli:latest --help
-  ```
-
-  ### Create an alias
-
-  ```bash alias code-search='docker run --rm -it -v
-  ~/.code-search:/root/.code-search ghcr.io/techquestsdev/code-search-cli:latest'
-  ```
-
-</TabItem>
-
-  <TabItem label="Golang" icon="seti:go">
+  <TabItem label="Go" icon="seti:go">
     ### From Source
 
     ```bash
     go install github.com/techquestsdev/code-search/cmd/cli@latest
     ```
 
-    This installs to
-
-    `$GOPATH/bin/cli`. You may want to rename it:
+    This installs to `$GOPATH/bin/cli`. You may want to rename it:
 
     ```bash
-    mv $GOPATH/bin/cli
-    $GOPATH/bin/code-search
+    mv $GOPATH/bin/cli $GOPATH/bin/code-search
     ```
   </TabItem>
 </Tabs>

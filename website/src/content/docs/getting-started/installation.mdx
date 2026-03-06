@@ -122,22 +122,14 @@ For development or building from source:
 
     <Steps>
 
-    1. Add the Helm repository:
+    1. Install the chart from OCI registry:
        ```bash
-       helm repo add code-search https://techquestsdev.github.io/code-search
-       helm repo update
-       ```
-
-    2. Install the chart:
-       ```bash
-       helm install code-search code-search/code-search \
+       helm install code-search oci://ghcr.io/techquestsdev/charts/code-search \
          --namespace code-search \
-         --create-namespace \
-         --set config.database.url="postgres://user:pass@postgres:5432/codesearch" \
-         --set config.redis.url="redis://redis:6379"
+         --create-namespace
        ```
 
-    3. Port-forward to access locally:
+    2. Port-forward to access locally:
        ```bash
        kubectl port-forward svc/code-search-web 3000:3000 -n code-search
        ```
@@ -156,12 +148,11 @@ The CLI can be installed separately for interacting with a Code Search server.
 <Tabs>
   <TabItem label="macOS" icon="apple">
     ```bash
-    # Using Homebrew
+    # Using Homebrew (recommended)
     brew install techquestsdev/tap/code-search
 
     # Or download binary
-    curl -L https://github.com/techquestsdev/code-search/releases/latest/download/code-search-darwin-arm64 -o code-search
-    chmod +x code-search
+    curl -L https://github.com/techquestsdev/code-search/releases/latest/download/code-search_Darwin_arm64.tar.gz | tar xz
     sudo mv code-search /usr/local/bin/
     ```
 
@@ -170,8 +161,7 @@ The CLI can be installed separately for interacting with a Code Search server.
   <TabItem label="Linux" icon="linux">
     ```bash
     # Download binary
-    curl -L https://github.com/techquestsdev/code-search/releases/latest/download/code-search-linux-amd64 -o code-search
-    chmod +x code-search
+    curl -L https://github.com/techquestsdev/code-search/releases/latest/download/code-search_Linux_x86_64.tar.gz | tar xz
     sudo mv code-search /usr/local/bin/
 
     # Or use Go install
@@ -181,24 +171,7 @@ The CLI can be installed separately for interacting with a Code Search server.
   </TabItem>
 
   <TabItem label="Windows" icon="seti:windows">
-    ```powershell
-    # Download binary
-    Invoke-WebRequest -Uri "https://github.com/techquestsdev/code-search/releases/latest/download/code-search-windows-amd64.exe" -OutFile "code-search.exe"
-
-    # Move to PATH
-    Move-Item code-search.exe C:\Windows\System32\
-    ```
-
-  </TabItem>
-
-  <TabItem label="Docker" icon="seti:docker">
-    ```bash
-    # Run CLI from Docker
-    docker run --rm -it ghcr.io/techquestsdev/code-search-cli:latest search "foo"
-    
-    # Create an alias for convenience
-    alias code-search='docker run --rm -it -v ~/.code-search:/root/.code-search ghcr.io/techquestsdev/code-search-cli:latest'
-    ```
+    Download the latest `.zip` from the [releases page](https://github.com/techquestsdev/code-search/releases/latest) and extract `code-search.exe` to a directory in your `PATH`.
   </TabItem>
 </Tabs>
 
