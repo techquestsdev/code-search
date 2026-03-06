@@ -1,4 +1,6 @@
-.PHONY: all build clean test lint help
+.PHONY: all build clean test lint help \
+	release-api release-indexer release-web release-zoekt release-website \
+	release-helm release-helm-website
 
 # Configuration
 GOCMD := go
@@ -155,6 +157,53 @@ docker-push: ## Push Docker images to GitHub Container Registry
 	@$(DOCKER) push ghcr.io/techquestsdev/code-search-zoekt:latest
 	@$(DOCKER) push ghcr.io/techquestsdev/code-search-zoekt-refresh:latest
 	@echo "✅ Docker images pushed to GitHub Container Registry."
+
+# =============================================================================
+# Release (creates git tags that trigger CI workflows)
+# =============================================================================
+# Usage: make release-api version=1.0.0
+
+release-api: ## Release API server (usage: make release-api version=x.y.z)
+	@if [ -z "$(version)" ]; then echo "Error: version is required. Usage: make release-api version=1.0.0"; exit 1; fi
+	git tag "oss-api/$(version)"
+	git push origin "oss-api/$(version)"
+	@echo "✅ Tagged oss-api/$(version) — Docker build will run in CI."
+
+release-indexer: ## Release indexer (usage: make release-indexer version=x.y.z)
+	@if [ -z "$(version)" ]; then echo "Error: version is required. Usage: make release-indexer version=1.0.0"; exit 1; fi
+	git tag "oss-indexer/$(version)"
+	git push origin "oss-indexer/$(version)"
+	@echo "✅ Tagged oss-indexer/$(version) — Docker build will run in CI."
+
+release-web: ## Release web frontend (usage: make release-web version=x.y.z)
+	@if [ -z "$(version)" ]; then echo "Error: version is required. Usage: make release-web version=1.0.0"; exit 1; fi
+	git tag "oss-web/$(version)"
+	git push origin "oss-web/$(version)"
+	@echo "✅ Tagged oss-web/$(version) — Docker build will run in CI."
+
+release-zoekt: ## Release zoekt (usage: make release-zoekt version=x.y.z)
+	@if [ -z "$(version)" ]; then echo "Error: version is required. Usage: make release-zoekt version=1.0.0"; exit 1; fi
+	git tag "oss-zoekt/$(version)"
+	git push origin "oss-zoekt/$(version)"
+	@echo "✅ Tagged oss-zoekt/$(version) — Docker build will run in CI."
+
+release-website: ## Release website (usage: make release-website version=x.y.z)
+	@if [ -z "$(version)" ]; then echo "Error: version is required. Usage: make release-website version=1.0.0"; exit 1; fi
+	git tag "website/$(version)"
+	git push origin "website/$(version)"
+	@echo "✅ Tagged website/$(version) — Docker build will run in CI."
+
+release-helm: ## Release code-search Helm chart (usage: make release-helm version=x.y.z)
+	@if [ -z "$(version)" ]; then echo "Error: version is required. Usage: make release-helm version=1.0.0"; exit 1; fi
+	git tag "helm-code-search/$(version)"
+	git push origin "helm-code-search/$(version)"
+	@echo "✅ Tagged helm-code-search/$(version) — Helm chart release will run in CI."
+
+release-helm-website: ## Release website Helm chart (usage: make release-helm-website version=x.y.z)
+	@if [ -z "$(version)" ]; then echo "Error: version is required. Usage: make release-helm-website version=1.0.0"; exit 1; fi
+	git tag "helm-website/$(version)"
+	git push origin "helm-website/$(version)"
+	@echo "✅ Tagged helm-website/$(version) — Helm chart release will run in CI."
 
 # =============================================================================
 # Cleanup
