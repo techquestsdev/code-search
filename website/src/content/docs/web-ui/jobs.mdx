@@ -1,0 +1,232 @@
+---
+title: Jobs
+description: Monitoring background jobs in the web UI
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+The Jobs page shows all background processing tasks.
+
+## Accessing Jobs
+
+Navigate to the Jobs page:
+
+```
+http://localhost:3000/jobs
+```
+
+## Job Types
+
+| Type      | Description                    |
+| --------- | ------------------------------ |
+| `sync`    | Repository discovery and clone |
+| `index`   | Building search index          |
+| `delete`  | Removing repository data       |
+| `cleanup` | Maintenance tasks              |
+
+## Job List
+
+The main view displays all jobs:
+
+| Column     | Description                  |
+| ---------- | ---------------------------- |
+| ID         | Unique job identifier        |
+| Type       | Job type (sync, index, etc.) |
+| Repository | Associated repository        |
+| Status     | Current state                |
+| Created    | When job was queued          |
+| Duration   | How long job ran             |
+
+### Filtering
+
+Filter jobs by:
+
+- **Status**: Running, completed, failed, pending
+- **Type**: Sync, index, delete, cleanup
+- **Repository**: Specific repository
+- **Time Range**: Last hour, day, week
+
+### Status Colors
+
+| Status    | Icon | Color  | Description           |
+| --------- | ---- | ------ | --------------------- |
+| Pending   | 🕐   | Yellow | Waiting in queue      |
+| Running   | ⏳   | Blue   | Currently executing   |
+| Completed | ✓    | Green  | Finished successfully |
+| Failed    | ⚠    | Red    | Error occurred        |
+
+## Job Details
+
+Click on a job to view details:
+
+### Info Tab
+
+- **Job ID**: Unique identifier
+- **Type**: Job type
+- **Repository**: Associated repo (if any)
+- **Status**: Current state
+- **Created**: Queue time
+- **Started**: Execution start
+- **Finished**: Completion time
+- **Duration**: Total runtime
+
+### Progress Tab
+
+For running jobs:
+
+```
+Cloning repository...     ✓
+Analyzing files...        ✓
+Building index...         [████████░░░░] 67%
+```
+
+### Logs Tab
+
+Detailed execution logs:
+
+```
+[10:30:15] Starting index job for myorg/api
+[10:30:16] Analyzing 1,234 files
+[10:30:45] Indexing Go files: 856 files
+[10:31:12] Indexing YAML files: 234 files
+[10:31:30] Building trigram index
+[10:32:00] Index completed successfully
+```
+
+### Error Tab
+
+For failed jobs:
+
+```
+Error: Failed to clone repository
+
+Details:
+  fatal: could not read Username for 'https://github.com':
+  terminal prompts disabled
+
+Suggestion:
+  Check that your token has repository access permissions
+```
+
+## Actions
+
+### Cancel Job
+
+Cancel a running or pending job:
+
+1. Click on the job
+2. Click **Cancel Job**
+3. Confirm
+
+<Aside>
+  Cancelling may leave the repository in an inconsistent state. Consider
+  re-running after cancellation.
+</Aside>
+
+### Retry Job
+
+Retry a failed job:
+
+1. Click on the failed job
+2. Click **Retry**
+3. A new job is queued
+
+### Clear Completed
+
+Remove old completed jobs:
+
+1. Click **Clear Completed** button
+2. Select time range (older than 1 day, 1 week, etc.)
+3. Confirm
+
+## Queue Status
+
+The header shows queue statistics:
+
+| Metric    | Description          |
+| --------- | -------------------- |
+| Pending   | Jobs waiting to run  |
+| Running   | Currently executing  |
+| Completed | Finished in last 24h |
+| Failed    | Errors in last 24h   |
+
+## Monitoring
+
+### Auto-Refresh
+
+The jobs list refreshes automatically every 5 seconds.
+
+Toggle auto-refresh with the refresh button.
+
+### Notifications
+
+Enable notifications to get alerts:
+
+- Job completed
+- Job failed
+- Queue backup (many pending)
+
+## Troubleshooting
+
+### Job Stuck in Pending
+
+Possible causes:
+
+1. **Worker not running**: Check that the indexer process is running
+2. **Queue full**: Too many jobs waiting
+3. **Resource limits**: Server under load
+
+### Job Failing Repeatedly
+
+Check common issues:
+
+1. **Token expired**: Regenerate access token
+2. **Network issues**: Check connectivity
+3. **Disk space**: Ensure sufficient space
+4. **Memory**: Large repos may need more memory
+
+### Finding Failed Jobs
+
+Quick filters:
+
+```
+Status: Failed
+Time: Last 24 hours
+```
+
+Or use the search:
+
+```
+status:failed repo:myorg/api
+```
+
+## Job History
+
+### Retention
+
+By default, job history is kept for:
+
+- Completed jobs: 7 days
+- Failed jobs: 30 days
+
+Configure in settings:
+
+```yaml
+jobs:
+  retention:
+    completed: 168h # 7 days
+    failed: 720h # 30 days
+```
+
+### Export
+
+Export job history for analysis:
+
+1. Click **Export** button
+2. Select format (CSV, JSON)
+3. Choose time range
+
+## Next Steps
+
+- [Repositories](/web-ui/repositories/) - View repository status
+- [Connections](/web-ui/connections/) - Manage code hosts

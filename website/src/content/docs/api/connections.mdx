@@ -1,0 +1,453 @@
+---
+title: Connections API
+description: Connection management API endpoints
+---
+
+import { Tabs, TabItem, Aside } from "@astrojs/starlight/components";
+
+The Connections API allows you to manage code host connections.
+
+<Aside>
+  When `connections_readonly` is enabled in the config, connections are managed via the config file and create/update/delete operations will return a `403 Forbidden` response.
+</Aside>
+
+## Connections Status
+
+Check if connections management is in read-only mode.
+
+```http
+GET /api/v1/connections/status
+```
+
+### Response
+
+```json
+{
+  "readonly": true,
+  "message": "Connections are managed via configuration file. Changes through the UI are disabled."
+}
+```
+
+When not read-only:
+
+```json
+{
+  "readonly": false
+}
+```
+
+## List Connections
+
+Get all configured connections.
+
+```http
+GET /api/v1/connections
+```
+
+### Response
+
+```json
+[
+  {
+    "id": 1,
+    "name": "github-work",
+    "type": "github",
+    "url": "https://api.github.com",
+    "exclude_archived": true,
+    "created_at": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": 2,
+    "name": "gitlab-internal",
+    "type": "gitlab",
+    "url": "https://gitlab.example.com",
+    "exclude_archived": false,
+    "created_at": "2024-01-05T00:00:00Z"
+  }
+]
+```
+
+## Get Connection
+
+Get a specific connection by ID.
+
+```http
+GET /api/v1/connections/{id}
+```
+
+### Response
+
+```json
+{
+  "id": 1,
+  "name": "github-work",
+  "type": "github",
+  "url": "https://api.github.com",
+  "exclude_archived": true,
+  "created_at": "2024-01-01T00:00:00Z"
+}
+```
+
+## Create Connection
+
+Create a new code host connection.
+
+```http
+POST /api/v1/connections
+```
+
+### Request Body
+
+<Tabs>
+  <TabItem label="GitHub">
+    ```json
+    {
+      "name": "github-work",
+      "type": "github",
+      "url": "https://api.github.com",
+      "token": "ghp_xxxxxxxxxxxx",
+      "exclude_archived": true
+    }
+    ```
+  </TabItem>
+  <TabItem label="GitLab">
+    ```json
+    {
+      "name": "gitlab-internal",
+      "type": "gitlab",
+      "url": "https://gitlab.example.com",
+      "token": "glpat-xxxxxxxxxxxx",
+      "exclude_archived": true
+    }
+    ```
+  </TabItem>
+  <TabItem label="Gitea">
+    ```json
+    {
+      "name": "gitea-self",
+      "type": "gitea",
+      "url": "https://gitea.example.com",
+      "token": "xxxxxxxxxx",
+      "exclude_archived": false
+    }
+    ```
+  </TabItem>
+  <TabItem label="Bitbucket">
+    ```json
+    {
+      "name": "bitbucket-cloud",
+      "type": "bitbucket",
+      "url": "https://api.bitbucket.org/2.0",
+      "token": "xxxxxxxxxx",
+      "exclude_archived": true
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+### Response (201 Created)
+
+```json
+{
+  "id": 3,
+  "name": "github-work",
+  "type": "github",
+  "url": "https://api.github.com",
+  "exclude_archived": true,
+  "created_at": "2024-01-15T12:00:00Z"
+}
+```
+
+## Update Connection
+
+Update an existing connection. Requires all fields (name, type, url). Token is optional - if empty, the existing token is preserved.
+
+```http
+PUT /api/v1/connections/{id}
+```
+
+### Request Body
+
+```json
+{
+  "name": "github-work-updated",
+  "type": "github",
+  "url": "https://api.github.com",
+  "token": "",
+  "exclude_archived": true
+}
+```
+
+<Aside>Name, type, and URL are required. Token is optional - leave empty to keep the existing token.</Aside>
+
+### Response
+
+```json
+{
+  "id": 1,
+  "name": "github-work-updated",
+  "type": "github",
+  "url": "https://api.github.com",
+  "exclude_archived": true,
+  "created_at": "2024-01-01T00:00:00Z"
+}
+```
+
+## Delete Connection
+
+Delete a connection. Associated repositories are also removed.
+
+```http
+DELETE /api/v1/connections/{id}
+```
+
+### Response
+
+Returns `204 No Content` on success.
+
+<Aside type="danger">
+  Deleting a connection removes all associated repositories and indexed data.
+</Aside>
+
+## Test Connection
+
+Test if a connection's credentials are valid.
+
+```http
+POST /api/v1/connections/{id}/test
+```
+
+### Response (success)
+
+```json
+{
+  "status": "ok",
+  "message": "Connection validated successfully"
+}
+```
+
+### Response (failure)
+
+```json
+{
+  "status": "error",
+  "error": "Invalid token or insufficient permissions"
+}
+```
+
+## Sync Connection
+
+Queue a job to fetch repositories from a connection. The actual fetching happens asynchronously.
+
+```http
+POST /api/v1/connections/{id}/sync
+```
+
+### Response
+
+```json
+{
+  "status": "queued",
+  "job_id": 789,
+  "message": "Sync job queued - repositories will be fetched in the background"
+}
+```
+
+### Conflict Response (409)
+
+If a sync is already in progress:
+
+```json
+{
+  "status": "already_syncing",
+  "message": "Connection sync job already running"
+}
+```
+
+<Aside type="note">
+  The API prevents duplicate syncs. If a connection already has a pending or running sync job,
+  the request returns `409 Conflict`.
+</Aside>
+
+## List Connection Repositories
+
+List all repositories that belong to a specific connection.
+
+```http
+GET /api/v1/connections/{id}/repos
+```
+
+### Response
+
+```json
+[
+  {
+    "id": 1,
+    "name": "org/repo-one",
+    "clone_url": "https://github.com/org/repo-one.git",
+    "default_branch": "main",
+    "branches": ["main", "develop"],
+    "status": "indexed",
+    "last_indexed": "2024-01-15T10:00:00Z"
+  },
+  {
+    "id": 2,
+    "name": "org/repo-two",
+    "clone_url": "https://github.com/org/repo-two.git",
+    "default_branch": "main",
+    "branches": ["main"],
+    "status": "pending"
+  }
+]
+```
+
+## Examples
+
+<Tabs>
+  <TabItem label="cURL">
+    ```bash
+    # Check if connections are read-only
+    curl "http://localhost:8080/api/v1/connections/status"
+
+    # List connections
+    curl "http://localhost:8080/api/v1/connections"
+
+    # Get a specific connection
+    curl "http://localhost:8080/api/v1/connections/1"
+
+    # Create connection
+    curl -X POST "http://localhost:8080/api/v1/connections" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "name": "github-work",
+        "type": "github",
+        "url": "https://api.github.com",
+        "token": "ghp_xxxx",
+        "exclude_archived": true
+      }'
+
+    # Update connection
+    curl -X PUT "http://localhost:8080/api/v1/connections/1" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "name": "github-work-updated",
+        "type": "github",
+        "url": "https://api.github.com",
+        "exclude_archived": true
+      }'
+
+    # Test connection credentials
+    curl -X POST "http://localhost:8080/api/v1/connections/1/test"
+
+    # Trigger sync
+    curl -X POST "http://localhost:8080/api/v1/connections/1/sync"
+
+    # List repos for a connection
+    curl "http://localhost:8080/api/v1/connections/1/repos"
+
+    # Delete connection
+    curl -X DELETE "http://localhost:8080/api/v1/connections/1"
+    ```
+  </TabItem>
+  <TabItem label="JavaScript">
+    ```javascript
+    const API = 'http://localhost:8080/api/v1';
+
+    // Check if connections are read-only
+    const status = await fetch(`${API}/connections/status`).then(r => r.json());
+    console.log('Read-only:', status.readonly);
+
+    // List connections
+    const connections = await fetch(`${API}/connections`).then(r => r.json());
+
+    // Get a specific connection
+    const connection = await fetch(`${API}/connections/1`).then(r => r.json());
+
+    // Create connection
+    const newConn = await fetch(`${API}/connections`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'github-work',
+        type: 'github',
+        url: 'https://api.github.com',
+        token: 'ghp_xxxx',
+        exclude_archived: true
+      })
+    }).then(r => r.json());
+
+    // Test connection
+    const test = await fetch(`${API}/connections/1/test`, {
+      method: 'POST'
+    }).then(r => r.json());
+
+    // Trigger sync
+    const sync = await fetch(`${API}/connections/1/sync`, {
+      method: 'POST'
+    }).then(r => r.json());
+
+    // List repos for a connection
+    const repos = await fetch(`${API}/connections/1/repos`).then(r => r.json());
+    ```
+  </TabItem>
+  <TabItem label="Python">
+    ```python
+    import requests
+
+    API = "http://localhost:8080/api/v1"
+
+    # Check if connections are read-only
+    status = requests.get(f"{API}/connections/status").json()
+    print(f"Read-only: {status['readonly']}")
+
+    # List connections
+    connections = requests.get(f"{API}/connections").json()
+
+    # Get a specific connection
+    connection = requests.get(f"{API}/connections/1").json()
+
+    # Create connection
+    new_conn = requests.post(
+        f"{API}/connections",
+        json={
+            "name": "github-work",
+            "type": "github",
+            "url": "https://api.github.com",
+            "token": "ghp_xxxx",
+            "exclude_archived": True
+        }
+    ).json()
+
+    # Test connection
+    test = requests.post(f"{API}/connections/1/test").json()
+
+    # Trigger sync
+    sync = requests.post(f"{API}/connections/1/sync").json()
+
+    # List repos for a connection
+    repos = requests.get(f"{API}/connections/1/repos").json()
+    ```
+  </TabItem>
+</Tabs>
+
+## Connection Types
+
+| Type        | Description                           |
+| ----------- | ------------------------------------- |
+| `github`    | GitHub.com or GitHub Enterprise       |
+| `gitlab`    | GitLab.com or self-hosted GitLab      |
+| `gitea`     | Gitea instances                       |
+| `bitbucket` | Bitbucket Cloud or Bitbucket Server   |
+
+## Repository Status Values
+
+| Status    | Description                        |
+| --------- | ---------------------------------- |
+| `pending` | Waiting to be indexed              |
+| `indexed` | Successfully indexed               |
+| `error`   | Indexing failed                    |
+
+## Next Steps
+
+- [Jobs API](/api/jobs/) - Monitor sync and indexing jobs
+- [Repositories API](/api/repositories/) - Repository management

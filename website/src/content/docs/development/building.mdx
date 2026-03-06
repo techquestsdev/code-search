@@ -1,0 +1,275 @@
+---
+title: Building
+description: Build process and artifacts
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+This guide covers building Code Search from source.
+
+## Prerequisites
+
+- Go 1.21+
+- Node.js 18+
+- pnpm
+- Docker (for container builds)
+- Make
+
+## Building from Source
+
+### All Components
+
+```bash
+make build
+```
+
+This builds:
+
+- API server binary
+- Indexer binary
+- CLI binary
+- Web UI static files
+
+### Individual Components
+
+**API Server:**
+
+```bash
+go build -o bin/api ./cmd/api
+```
+
+**Indexer:**
+
+```bash
+go build -o bin/indexer ./cmd/indexer
+```
+
+**CLI:**
+
+```bash
+go build -o bin/code-search ./cmd/cli
+```
+
+**Web UI:**
+
+```bash
+cd web
+pnpm install
+pnpm build
+```
+
+## Build Configuration
+
+### Go Build Flags
+
+```bash
+# Production build with optimizations
+CGO_ENABLED=0 go build \
+  -ldflags="-s -w -X main.version=$(git describe --tags)" \
+  -o bin/api ./cmd/api
+
+# Debug build
+go build -gcflags="all=-N -l" -o bin/api ./cmd/api
+```
+
+### Build Variables
+
+| Variable     | Description     |
+| ------------ | --------------- |
+| `VERSION`    | Version string  |
+| `COMMIT`     | Git commit hash |
+| `BUILD_DATE` | Build timestamp |
+
+Set via ldflags:
+
+```bash
+go build -ldflags="-X main.version=1.0.0 -X main.commit=abc123" ...
+```
+
+## Docker Builds
+
+### Build All Images
+
+```bash
+make docker-build
+```
+
+### Individual Images
+
+```bash
+# API server
+docker build -f docker/api.Dockerfile -t code-search-api .
+
+# Indexer
+docker build -f docker/indexer.Dockerfile -t code-search-indexer .
+
+# Web UI
+docker build -f docker/web.Dockerfile -t code-search-web .
+```
+
+### Multi-Architecture
+
+Build for multiple platforms:
+
+```bash
+docker buildx build \
+  --platform linux/amd64,linux/arm64 \
+  -f docker/api.Dockerfile \
+  -t code-search-api:latest \
+  --push .
+```
+
+## Artifacts
+
+### Binary Output
+
+```
+bin/
+├── api           # API server
+├── indexer       # Indexer service
+└── code-search   # CLI tool
+```
+
+### Web UI Output
+
+```
+web/.next/
+├── static/       # Static assets
+└── standalone/   # Standalone build
+```
+
+### Docker Images
+
+| Image                 | Description      |
+| --------------------- | ---------------- |
+| `code-search-api`     | API server       |
+| `code-search-indexer` | Indexer service  |
+| `code-search-web`     | Web UI           |
+| `code-search`         | All-in-one image |
+
+## Cross Compilation
+
+Build for different platforms:
+
+**Linux:**
+
+```bash
+GOOS=linux GOARCH=amd64 go build -o bin/api-linux-amd64 ./cmd/api
+GOOS=linux GOARCH=arm64 go build -o bin/api-linux-arm64 ./cmd/api
+```
+
+**macOS:**
+
+```bash
+GOOS=darwin GOARCH=amd64 go build -o bin/api-darwin-amd64 ./cmd/api
+GOOS=darwin GOARCH=arm64 go build -o bin/api-darwin-arm64 ./cmd/api
+```
+
+**Windows:**
+
+```bash
+GOOS=windows GOARCH=amd64 go build -o bin/api-windows-amd64.exe ./cmd/api
+```
+
+## Release Process
+
+### Version Tagging
+
+```bash
+git tag -a v1.0.0 -m "Release v1.0.0"
+git push origin v1.0.0
+```
+
+### Release Builds
+
+The CI pipeline automatically builds:
+
+- Multi-platform binaries
+- Docker images
+- Helm chart package
+
+### Checksums
+
+Generate checksums for release:
+
+```bash
+cd bin
+sha256sum * > SHA256SUMS
+```
+
+## CI/CD
+
+### GitHub Actions
+
+The project uses GitHub Actions for:
+
+- Building on every push
+- Running tests
+- Publishing releases
+
+### Workflow Files
+
+```
+.github/workflows/
+├── build.yml       # Build and test
+├── release.yml     # Release automation
+└── docker.yml      # Docker builds
+```
+
+## Verification
+
+### Check Binary
+
+```bash
+./bin/api version
+# Output: code-search v1.0.0 (commit: abc123, built: 2024-01-15)
+```
+
+### Check Docker Image
+
+```bash
+docker run code-search-api version
+```
+
+### Run Tests
+
+```bash
+make test
+```
+
+## Troubleshooting
+
+### CGO Issues
+
+If you encounter CGO-related errors:
+
+```bash
+# Disable CGO
+CGO_ENABLED=0 go build ...
+```
+
+### Node.js Memory
+
+For large web builds:
+
+```bash
+export NODE_OPTIONS="--max-old-space-size=4096"
+pnpm build
+```
+
+### Docker Build Cache
+
+Clear Docker build cache:
+
+```bash
+docker builder prune
+```
+
+<Aside>
+  For reproducible builds, use the same Go and Node.js versions as CI.
+</Aside>
+
+## Next Steps
+
+- [Development Setup](/development/setup/) - Set up your environment
+- [Contributing](/development/contributing/) - Contribution guidelines

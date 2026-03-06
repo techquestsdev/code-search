@@ -1,0 +1,184 @@
+---
+title: Search Interface
+description: Using the web search interface
+---
+
+import { Tabs, TabItem, Aside, Steps } from "@astrojs/starlight/components";
+
+The search interface provides a powerful way to explore your codebase using Zoekt query syntax.
+
+## Search Bar
+
+### Basic Search
+
+Enter your query in the search bar and press Enter or click Search.
+
+```
+function handleRequest
+```
+
+Results appear instantly with matching code highlighted.
+
+### Query Syntax
+
+Code Search uses [Zoekt query syntax](/web-ui/query-syntax/) for powerful searching. Here are the most common patterns:
+
+#### Search in Files or Paths
+
+| Pattern | Description |
+| ------- | ----------- |
+| `foo bar` | Both "foo" and "bar" (implicit AND) |
+| `foo or bar` | Either "foo" or "bar" |
+| `"exit boot"` | Exact phrase match |
+| `FOO case:yes` | Case-sensitive search |
+| `/open(File\|Dir)/` | Regular expression |
+
+#### Filter Results
+
+| Modifier | Example | Description |
+| -------- | ------- | ----------- |
+| `file:` | `file:README setup` | Filter by filename |
+| `repo:` | `repo:torvalds/linux test` | Filter by repository |
+| `lang:` | `lang:typescript` | Filter by language |
+| `branch:` | `branch:main` | Filter by branch |
+| `case:yes` | `FOO case:yes` | Case-sensitive search |
+| `case:no` | `foo case:no` | Case-insensitive (default) |
+| `-lang:` | `foo -lang:c` | Negate filter |
+| `-file:` | `foo -file:test` | Exclude files |
+| `-repo:` | `foo -repo:deprecated` | Exclude repository |
+
+<Aside type="note">
+  By default, searches return results from the **HEAD** (default) branch only. Use `branch:` to search other branches if they are indexed.
+</Aside>
+
+#### Advanced
+
+| Pattern | Description |
+| ------- | ----------- |
+| `file:\.py$` | Files ending in ".py" |
+| `sym:main` | Symbol definitions |
+| `content:README` | Search content only (not filenames) |
+
+<Aside type="tip">
+  For the complete query syntax reference, see [Query Syntax](/web-ui/query-syntax/).
+</Aside>
+
+### Combined Queries
+
+```
+repo:myorg/api lang:go func.*Handler -file:test
+```
+
+This searches for:
+
+- Pattern matching `func.*Handler` (regex)
+- In Go files
+- In the `myorg/api` repo
+- Excluding files with "test" in the path
+
+## Search Results
+
+### Results List
+
+Each result shows:
+
+- **Repository name** - The source repository
+- **File path** - Path to the matching file
+- **Matching lines** - Code with syntax highlighting
+- **Line numbers** - For easy reference
+
+### Code Preview
+
+Click on any result to expand and see more context around the match.
+
+## Advanced Features
+
+### Regular Expressions
+
+Use `/pattern/` syntax for regex matching:
+
+```
+/func\s+\w+Handler\(/
+```
+
+Matches function declarations ending in `Handler`.
+
+### Symbol Search
+
+Search for symbol definitions:
+
+```
+sym:CreateUser
+```
+
+Finds definitions (functions, classes, types) named `CreateUser`.
+
+## Search Examples
+
+<Tabs>
+  <TabItem label="Find Functions">
+    ```
+    lang:go sym:auth
+    ```
+    Find Go symbol definitions related to authentication.
+  </TabItem>
+  <TabItem label="Find Imports">
+    ```
+    import "github.com/pkg/errors"
+    ```
+    Find files importing a specific package.
+  </TabItem>
+  <TabItem label="Find FOOs">
+    ```
+    FOO or BAR or BAZ
+    ```
+    Find all FOO comments.
+  </TabItem>
+  <TabItem label="Security Audit">
+    ```
+    password or secret or apikey -file:test
+    ```
+    Find potential secrets (excluding tests).
+  </TabItem>
+</Tabs>
+
+## Keyboard Shortcuts
+
+| Shortcut | Action                       |
+| -------- | ---------------------------- |
+| `/`      | Focus search bar             |
+| `Escape` | Clear search / close preview |
+| `↑ / ↓`  | Navigate results             |
+| `Enter`  | Open result                  |
+
+## URL Sharing
+
+The search query is encoded in the URL - share it with teammates:
+
+```
+http://localhost:3000?q=repo:api+lang:go+handler
+```
+
+## Tips
+
+<Aside type="tip">
+  Start broad and narrow down. Add filters as needed to find what you're looking
+  for.
+</Aside>
+
+<Aside type="tip">
+  Use `file:` to search within specific directories: `file:src/api/`
+</Aside>
+
+<Aside type="tip">
+  Exclude tests and generated code: `-file:test -file:generated -file:mock`
+</Aside>
+
+<Aside type="tip">
+  View the full Zoekt query syntax documentation at: https://github.com/sourcegraph/zoekt/blob/main/doc/query_syntax.md
+</Aside>
+
+## Next Steps
+
+- [Connections](/web-ui/connections/) - Managing code host connections
+- [Repositories](/web-ui/repositories/) - Repository management

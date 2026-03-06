@@ -1,0 +1,186 @@
+---
+title: CLI Find
+description: Find files, symbols, and references
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+The `code-search find` command helps you locate files, symbols, and references across your codebase.
+
+## Subcommands
+
+| Command        | Description                 |
+| -------------- | --------------------------- |
+| `find files`   | Find files by path pattern  |
+| `find symbols` | Find symbol definitions     |
+| `find refs`    | Find references to a symbol |
+
+## Find Files
+
+Locate files by path pattern.
+
+```bash
+# Find all Proto files
+code-search find files "*.proto"
+
+# Find in a specific repo
+code-search find files "*.proto" --repos "myorg/api"
+
+# Regex pattern search
+code-search find files "test.*\.go$" --regex
+```
+
+### Command Syntax
+
+```bash
+code-search find files <pattern> [flags]
+```
+
+### Options
+
+| Option    | Short | Description                       |
+| --------- | ----- | --------------------------------- |
+| `--repos` | `-R`  | Filter to specific repository     |
+| `--regex` | `-r`  | Treat pattern as regex            |
+| `--limit` | `-n`  | Maximum results                   |
+
+<Aside type="note">
+  For `find files`, only the first repository specified with `--repos` is used.
+</Aside>
+
+### Examples
+
+```bash
+# List all Dockerfiles
+code-search find files "Dockerfile*"
+
+# Find configuration files
+code-search find files "*.config.js" --repos "myorg/frontend"
+
+# Find with regex
+code-search find files ".*_test\.go$" --regex --limit 50
+```
+
+## Find Symbols
+
+Find where symbols (functions, classes, interfaces, etc.) are defined.
+
+```bash
+# Find a function
+code-search find symbols "CreateUser"
+
+# Filter by type
+code-search find symbols "User" --type class
+
+# Filter by language
+code-search find symbols "handleRequest" --lang go
+
+# Filter by repositories
+code-search find symbols "Handler" --repos myorg/api,myorg/backend
+```
+
+### Command Syntax
+
+```bash
+code-search find symbols <name> [flags]
+```
+
+### Options
+
+| Option    | Short | Description                                            |
+| --------- | ----- | ------------------------------------------------------ |
+| `--type`  | `-t`  | Symbol type (function, class, method, interface, etc.) |
+| `--lang`  | `-l`  | Filter by language                                     |
+| `--repos` | `-R`  | Filter by repositories (comma-separated)               |
+| `--limit` | `-n`  | Maximum results                                        |
+
+### Symbol Types
+
+| Type        | Description                  |
+| ----------- | ---------------------------- |
+| `function`  | Functions and procedures     |
+| `class`     | Class definitions            |
+| `method`    | Methods on classes           |
+| `interface` | Interface definitions        |
+| `struct`    | Struct definitions           |
+| `type`      | Type aliases and definitions |
+| `variable`  | Variable declarations        |
+| `constant`  | Constant values              |
+
+### Examples
+
+```bash
+# Find all classes named Service
+code-search find symbols "Service" --type class
+
+# Find interfaces in Go
+code-search find symbols "Handler" --type interface --lang go
+
+# Find with limit
+code-search find symbols "Create" --lang go --limit 50
+```
+
+## Find References
+
+Find all references to a symbol across the codebase.
+
+```bash
+# Find all usages of a function
+code-search find refs "ValidateToken"
+
+# Filter by repository
+code-search find refs "CreateUser" --repos myorg/api
+
+# Limit results
+code-search find refs "Config" --limit 50
+```
+
+### Command Syntax
+
+```bash
+code-search find refs <symbol> [flags]
+```
+
+### Options
+
+| Option    | Short | Description                       |
+| --------- | ----- | --------------------------------- |
+| `--repos` | `-R`  | Filter by repositories (comma-separated) |
+| `--lang`  | `-l`  | Filter by language                |
+| `--limit` | `-n`  | Maximum results                   |
+
+### Examples
+
+```bash
+# Find where an API is called
+code-search find refs "api.CreateUser"
+
+# Find usages of a type
+code-search find refs "UserModel" --lang python
+
+# Find with limit
+code-search find refs "deprecated_func" --limit 100
+```
+
+## Use Cases
+
+### Impact Analysis
+
+Before changing a function, find all callers:
+
+```bash
+code-search find refs "processPayment"
+```
+
+### Dependency Mapping
+
+Find all imports of a package:
+
+```bash
+code-search find refs "github.com/pkg/errors" --lang go
+```
+
+## Next Steps
+
+- [Repository Management](/cli/repo-management/) - Manage repos
+- [Search](/cli/search/) - Text search

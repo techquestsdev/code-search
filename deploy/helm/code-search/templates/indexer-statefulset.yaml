@@ -1,0 +1,208 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "code-search.fullname" . }}-indexer
+  labels:
+    {{- include "code-search.labels" . | nindent 4 }}
+    app.kubernetes.io/component: indexer
+spec:
+  # When sharding, use headless service for pod DNS; otherwise use regular service
+  {{- if .Values.sharding.enabled }}
+  serviceName: {{ include "code-search.fullname" . }}-zoekt-headless
+  {{- else }}
+  serviceName: {{ include "code-search.fullname" . }}-indexer
+  {{- end }}
+  replicas: {{ include "code-search.indexer.replicas" . }}
+  selector:
+    matchLabels:
+      {{- include "code-search.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: indexer
+  template:
+    metadata:
+      labels:
+        {{- include "code-search.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: indexer
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "code-search.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- if .Values.zoekt.refresh.enabled }}
+      # Native sidecar container (Kubernetes 1.28+)
+      # Runs alongside main containers with proper lifecycle management
+      initContainers:
+        # Zoekt refresh sidecar - triggers index reloads for network filesystems
+        # (CephFS, NFS, EFS) that don't propagate inotify events reliably
+        - name: zoekt-refresh
+          restartPolicy: Always
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: {{ include "code-search.image" (dict "global" .Values.global "image" .Values.zoekt.refresh.image "appVersion" .Chart.AppVersion) }}
+          imagePullPolicy: {{ .Values.zoekt.refresh.image.pullPolicy | default "Always" }}
+          env:
+            - name: INDEX_PATH
+              value: /data/index
+            - name: REFRESH_INTERVAL
+              value: {{ .Values.zoekt.refresh.interval | default "30s" | quote }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          resources:
+            {{- toYaml .Values.zoekt.refresh.resources | nindent 12 }}
+      {{- end }}
+      containers:
+        # Indexer - processes index jobs from the queue
+        - name: indexer
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: {{ include "code-search.image" (dict "global" .Values.global "image" .Values.indexer.image "appVersion" .Chart.AppVersion) }}
+          imagePullPolicy: {{ .Values.indexer.image.pullPolicy }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "code-search.fullname" . }}-env
+          env:
+            # Override Zoekt URL to use localhost since zoekt runs as a sidecar
+            - name: CS_ZOEKT_URL
+              value: "http://localhost:6070"
+            - name: CS_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgresql.existingSecret }}
+                  key: {{ .Values.postgresql.existingSecretKey }}
+            - name: CS_REDIS_ADDR
+              value: {{ include "code-search.redisUrl" . }}
+            - name: CS_REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.redis.existingSecret }}
+                  key: {{ .Values.redis.existingSecretKey }}
+            - name: CS_REPOS_BASE_PATH
+              value: /data/repos
+            - name: CS_INDEXER_INDEX_PATH
+              value: /data/index
+            - name: CS_INDEXER_REPOS_PATH
+              value: /data/repos
+            - name: CS_INDEXER_CTAGS_BIN
+              value: universal-ctags
+            - name: CS_INDEXER_REQUIRE_CTAGS
+              value: "true"
+            {{- if or .Values.config.existingConfigMap .Values.config.inline }}
+            - name: CS_CONFIG_FILE
+              value: /etc/code-search/config.yaml
+            {{- end }}
+            {{- range $name, $codehost := .Values.codehosts }}
+            - name: {{ $codehost.envVar }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $codehost.existingSecret }}
+                  key: {{ $codehost.existingSecretKey }}
+            {{- end }}
+            {{- if .Values.sharding.enabled }}
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: TOTAL_SHARDS
+              value: {{ .Values.sharding.replicas | quote }}
+            {{- if .Values.sharding.federatedAccess.enabled }}
+            - name: CS_SHARDING_ENABLED
+              value: "true"
+            - name: CS_SHARDING_FEDERATED_ACCESS
+              value: "true"
+            - name: CS_SHARDING_INDEXER_API_PORT
+              value: {{ .Values.sharding.federatedAccess.indexerAPIPort | quote }}
+            - name: CS_SHARDING_INDEXER_SERVICE
+              value: {{ include "code-search.fullname" . }}-indexer-headless
+            - name: SHARD_INDEX
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.annotations['shard-index']
+            {{- end }}
+            {{- end }}
+            {{- range $key, $value := .Values.indexer.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          {{- if and .Values.sharding.enabled .Values.sharding.federatedAccess.enabled }}
+          ports:
+            - name: api
+              containerPort: {{ .Values.sharding.federatedAccess.indexerAPIPort }}
+              protocol: TCP
+          {{- end }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            {{- if or .Values.config.existingConfigMap .Values.config.inline }}
+            - name: config
+              mountPath: /etc/code-search
+              readOnly: true
+            {{- end }}
+          resources:
+            {{- toYaml .Values.indexer.resources | nindent 12 }}
+        # Zoekt webserver - serves search queries (sidecar, shares volume with indexer)
+        - name: zoekt
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: {{ include "code-search.image" (dict "global" .Values.global "image" .Values.zoekt.image "appVersion" .Chart.AppVersion) }}
+          imagePullPolicy: {{ .Values.zoekt.image.pullPolicy }}
+          args:
+            - -index
+            - /data/index
+            - -listen
+            - :6070
+            - -rpc
+          ports:
+            - name: http
+              containerPort: 6070
+              protocol: TCP
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.zoekt.resources | nindent 12 }}
+      {{- if or .Values.config.existingConfigMap .Values.config.inline }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ .Values.config.existingConfigMap | default (printf "%s-config" (include "code-search.fullname" .)) }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+  volumeClaimTemplates:
+    {{- if .Values.indexer.persistence.enabled }}
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["{{ .Values.indexer.persistence.accessMode | default "ReadWriteOnce" }}"]
+        {{- if .Values.indexer.persistence.storageClass }}
+        storageClassName: {{ .Values.indexer.persistence.storageClass }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.indexer.persistence.size }}
+    {{- end }}

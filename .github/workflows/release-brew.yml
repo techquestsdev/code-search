@@ -1,0 +1,51 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "oss-cli/*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        env:
+          GIT_LFS_SKIP_SMUDGE: 1
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Mark LFS files as unchanged
+        run: git update-index --assume-unchanged website/public/demo.mp4
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          TAG="${GITHUB_REF#refs/tags/oss-cli/}"
+          # Ensure semver v prefix
+          [[ "$TAG" == v* ]] || TAG="v${TAG}"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          git tag "$TAG" 2>/dev/null || true
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Run tests
+        run: go test -v -race ./...
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v7
+        with:
+          distribution: goreleaser
+          version: v2
+          args: release --clean
+        env:
+          GORELEASER_CURRENT_TAG: ${{ steps.version.outputs.tag }}
+          HOMEBREW_TOKEN: ${{ secrets.HOMEBREW_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

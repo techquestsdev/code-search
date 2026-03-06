@@ -1,0 +1,66 @@
+# Zoekt service - points to the zoekt sidecar in the indexer pod
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "code-search.fullname" . }}-zoekt
+  labels:
+    {{- include "code-search.labels" . | nindent 4 }}
+    app.kubernetes.io/component: zoekt
+spec:
+  type: {{ .Values.zoekt.service.type }}
+  ports:
+    - port: {{ .Values.zoekt.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "code-search.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: indexer
+{{- if .Values.sharding.enabled }}
+---
+# Headless service for direct pod DNS resolution in sharded deployments
+# Enables addressing individual zoekt instances: <indexer-pod>.<headless-svc>:<port>
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "code-search.fullname" . }}-zoekt-headless
+  labels:
+    {{- include "code-search.labels" . | nindent 4 }}
+    app.kubernetes.io/component: zoekt
+spec:
+  type: ClusterIP
+  clusterIP: None  # Headless service
+  publishNotReadyAddresses: true
+  ports:
+    - port: {{ .Values.zoekt.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "code-search.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: indexer
+{{- end }}
+{{- if and .Values.sharding.enabled .Values.sharding.federatedAccess.enabled }}
+---
+# Headless service for indexer API (federated file browsing and replace)
+# Enables addressing individual indexers: <indexer-pod>.<headless-svc>:<port>
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "code-search.fullname" . }}-indexer-headless
+  labels:
+    {{- include "code-search.labels" . | nindent 4 }}
+    app.kubernetes.io/component: indexer
+spec:
+  type: ClusterIP
+  clusterIP: None  # Headless service
+  publishNotReadyAddresses: true
+  ports:
+    - port: {{ .Values.sharding.federatedAccess.indexerAPIPort }}
+      targetPort: api
+      protocol: TCP
+      name: api
+  selector:
+    {{- include "code-search.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: indexer
+{{- end }}

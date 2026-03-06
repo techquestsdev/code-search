@@ -1,0 +1,241 @@
+---
+title: Contributing
+description: Guidelines for contributing to Code Search
+---
+
+import { Aside, Steps } from "@astrojs/starlight/components";
+
+Thank you for your interest in contributing to Code Search! This guide will help you get started.
+
+## Ways to Contribute
+
+- **Bug Reports**: Report issues you encounter
+- **Feature Requests**: Suggest new features
+- **Documentation**: Improve or add documentation
+- **Code**: Fix bugs or implement features
+- **Testing**: Add or improve tests
+
+## Getting Started
+
+<Steps>
+
+  1. Fork the repository on GitHub
+
+  2. Clone your fork locally
+
+  3. Set up the development environment
+
+  4. Create a feature branch
+
+  5. Make your changes
+
+  6. Submit a pull request
+
+</Steps>
+
+## Development Workflow
+
+### 1. Find an Issue
+
+Browse open issues or create a new one:
+
+- Look for `good first issue` labels for beginner-friendly tasks
+- Check `help wanted` for tasks needing contributors
+- Discuss in the issue before starting large changes
+
+### 2. Create a Branch
+
+```bash
+git checkout -b feature/my-new-feature
+# or
+git checkout -b fix/issue-123
+```
+
+Branch naming conventions:
+
+- `feature/` - New features
+- `fix/` - Bug fixes
+- `docs/` - Documentation
+- `refactor/` - Code refactoring
+- `test/` - Test additions
+
+### 3. Make Changes
+
+Follow the coding guidelines:
+
+- Write clear, commented code
+- Add tests for new functionality
+- Update documentation as needed
+- Keep commits focused and atomic
+
+### 4. Test Your Changes
+
+```bash
+# Run all tests
+make test
+
+# Run linter
+make lint
+
+# Run specific tests
+go test ./internal/search/...
+```
+
+### 5. Commit Your Changes
+
+Follow conventional commits:
+
+```
+feat: add search filter for file type
+fix: handle nil pointer in connection sync
+docs: add API authentication guide
+refactor: simplify indexer worker logic
+test: add unit tests for search parser
+chore: update dependencies
+```
+
+### 6. Submit a Pull Request
+
+- Push your branch to your fork
+- Open a PR against `main`
+- Fill out the PR template
+- Link related issues
+
+## Code Guidelines
+
+### Go Code
+
+```go
+// Good: Clear function names, error handling
+func (s *Service) CreateConnection(ctx context.Context, req CreateConnectionRequest) (*Connection, error) {
+    if err := req.Validate(); err != nil {
+        return nil, fmt.Errorf("validate request: %w", err)
+    }
+
+    conn, err := s.repo.Create(ctx, req.ToModel())
+    if err != nil {
+        return nil, fmt.Errorf("create connection: %w", err)
+    }
+
+    return conn, nil
+}
+```
+
+Guidelines:
+
+- Use `context.Context` as first parameter
+- Wrap errors with context using `fmt.Errorf`
+- Use interfaces for dependencies
+- Write table-driven tests
+
+### TypeScript Code
+
+```typescript
+// Good: Typed, clear, documented
+interface SearchResult {
+  repository: string;
+  file: string;
+  matches: Match[];
+}
+
+export async function search(query: string): Promise<SearchResult[]> {
+  const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+
+  if (!response.ok) {
+    throw new Error(`Search failed: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+```
+
+Guidelines:
+
+- Use TypeScript strict mode
+- Define interfaces for data structures
+- Handle errors explicitly
+- Use async/await
+
+### Documentation
+
+- Use clear, concise language
+- Include code examples
+- Keep examples up to date
+- Link to related docs
+
+## Pull Request Process
+
+### PR Requirements
+
+- [ ] All tests pass
+- [ ] Linter passes
+- [ ] Documentation updated
+- [ ] Changelog entry added
+- [ ] Commits are clean and focused
+
+### Review Process
+
+1. Automated checks run
+2. Maintainer reviews code
+3. Address feedback
+4. Approval and merge
+
+### After Merge
+
+Your contribution will be included in the next release!
+
+## Issue Guidelines
+
+### Bug Reports
+
+Include:
+
+- Code Search version
+- Steps to reproduce
+- Expected vs actual behavior
+- Logs or error messages
+- Environment details
+
+### Feature Requests
+
+Include:
+
+- Use case description
+- Proposed solution
+- Alternatives considered
+- Impact on existing features
+
+## Community
+
+### Communication
+
+- **GitHub Issues**: Bug reports and features
+- **GitHub Discussions**: Questions and ideas
+- **Discord**: Real-time chat (if available)
+
+### Code of Conduct
+
+- Be respectful and inclusive
+- Welcome newcomers
+- Provide constructive feedback
+- Focus on the code, not the person
+
+<Aside type="tip">
+  Not sure where to start? Look for issues labeled `good first issue` or ask in
+  discussions!
+</Aside>
+
+## Recognition
+
+Contributors are recognized in:
+
+- CONTRIBUTORS file
+- Release notes
+- Project documentation
+
+Thank you for contributing!
+
+## Next Steps
+
+- [Development Setup](/development/setup/) - Set up your environment
+- [Building](/development/building/) - Build process details

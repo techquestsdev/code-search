@@ -1,0 +1,8 @@
+# Robots.txt for Code Search Documentation
+# https://code-search.techquests.dev
+
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://code-search.techquests.dev/sitemap-index.xml

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="140" height="28" viewBox="0 0 160 32" fill="none">
+  <!-- Icon -->
+  <g class="logo-icon">
+    <path d="m12 10-5 6 5 6" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="m20 10 5 6-5 6" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="m18 8-4 16" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+  <!-- Text -->
+  <text x="38" y="22" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="600" fill="#111827">Code Search</text>
+</svg>

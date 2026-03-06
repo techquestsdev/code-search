@@ -1,0 +1,195 @@
+---
+title: Connections Management
+description: Managing code host connections in the web UI
+---
+
+import { Steps, Aside, Tabs, TabItem } from "@astrojs/starlight/components";
+
+The Connections page allows you to manage your code host integrations.
+
+## Accessing Connections
+
+Navigate to the Connections page:
+
+```
+http://localhost:3000/connections
+```
+
+## Read-Only Mode
+
+When `connections_readonly` is enabled in the configuration, connections are managed via the config file. The UI will show a warning banner and disable create/update/delete operations.
+
+<Aside>
+  In read-only mode, you can still test connections and trigger syncs.
+</Aside>
+
+## Connection List
+
+The main view shows all configured connections:
+
+| Column    | Description                           |
+| --------- | ------------------------------------- |
+| Name      | Connection identifier                 |
+| Type      | Code host type (GitHub, GitLab, etc.) |
+| URL       | API endpoint                          |
+| Status    | Exclude archived setting              |
+
+### Available Actions
+
+- **Test** - Verify connection credentials
+- **Repos** - Expand to view synced repositories
+- **Menu (⋮)** - Sync, Edit, Delete
+
+## Adding a Connection
+
+<Steps>
+
+
+  1. Click **Add Connection** button (not available in read-only mode)
+
+  2. Fill in the connection name
+
+  3. Select the code host type
+
+  4. Enter the URL (defaults are provided)
+
+  5. Enter your access token
+
+  6. Choose whether to exclude archived repos
+
+  7. Click **Create Connection**
+
+</Steps>
+
+### Connection Form Fields
+
+| Field | Description |
+| ----- | ----------- |
+| Name | Unique identifier for the connection |
+| Type | GitHub, GitHub Enterprise, GitLab, Gitea, or Bitbucket |
+| URL | API endpoint (defaults provided for cloud services) |
+| Access Token | Personal access token with repo read permissions |
+| Exclude Archived | Skip archived repositories during sync |
+
+### Supported Code Hosts
+
+<Tabs>
+  <TabItem label="GitHub">
+    - URL: `https://github.com` (default) or your Enterprise URL
+    - Token: Personal access token with `repo` and `read:org` scopes
+  </TabItem>
+  <TabItem label="GitLab">
+    - URL: `https://gitlab.com` or your self-hosted URL
+    - Token: Personal access token with `read_api` and `read_repository` scopes
+  </TabItem>
+  <TabItem label="Gitea">
+    - URL: Your Gitea instance URL
+    - Token: Access token with `read:repository` and `read:organization` scopes
+  </TabItem>
+  <TabItem label="Bitbucket">
+    - URL: `https://bitbucket.org` or your Server URL
+    - Token: App password with repository read permissions
+  </TabItem>
+</Tabs>
+
+## Testing Connections
+
+Click the **Test** button to verify connection credentials:
+
+- **Success**: "Connection validated successfully"
+- **Failure**: Error message with details
+
+## Syncing Repositories
+
+Click the menu (⋮) and select **Sync Repos** to:
+
+1. Fetch repositories from the code host
+2. Queue indexing jobs for each repository
+3. Track progress in the indexing status bar
+
+### Sync Progress
+
+During sync, you'll see:
+
+- Progress bar showing indexing status
+- Count of running and completed jobs
+- Any failed job notifications
+
+## Viewing Repositories
+
+Click the **Repos** button to expand the repository list:
+
+| Field | Description |
+| ----- | ----------- |
+| Name | Repository path (org/repo) |
+| Status | `indexed`, `indexing`, `pending`, `failed`, or `excluded` |
+
+### Repository Status Indicators
+
+| Status    | Indicator | Description                    |
+| --------- | --------- | ------------------------------ |
+| indexed   | ●         | Ready for search               |
+| indexing  | ◐         | Currently being indexed        |
+| pending   | ○         | Waiting in queue               |
+| failed    | ✗         | Indexing failed                |
+| excluded  | —         | Excluded from indexing         |
+
+## Editing Connections
+
+1. Click the menu (⋮) on a connection
+2. Select **Edit**
+3. Modify the configuration
+4. Leave token empty to keep existing
+5. Click **Update Connection**
+
+<Aside>
+  Not available in read-only mode.
+</Aside>
+
+## Deleting Connections
+
+1. Click the menu (⋮) on a connection
+2. Select **Delete**
+3. Confirm deletion
+
+<Aside type="danger">
+  Deleting a connection removes all associated repositories and indexed data.
+</Aside>
+
+## Troubleshooting
+
+### Connection Errors
+
+| Error            | Cause                    | Solution                    |
+| ---------------- | ------------------------ | --------------------------- |
+| 401 Unauthorized | Invalid token            | Regenerate and update token |
+| 403 Forbidden    | Insufficient permissions | Check token scopes          |
+| 404 Not Found    | Wrong URL/org name       | Verify configuration        |
+| Timeout          | Network issues           | Check connectivity          |
+
+### Token Permissions
+
+Ensure your tokens have the required scopes:
+
+<Tabs>
+  <TabItem label="GitHub">
+    Required scopes:
+    - `repo` (for private repos)
+    - `read:org` (for organization repos)
+  </TabItem>
+  <TabItem label="GitLab">
+    Required scopes:
+    - `read_api`
+    - `read_repository`
+  </TabItem>
+  <TabItem label="Gitea">
+    Required scopes:
+    - `read:repository`
+    - `read:organization`
+  </TabItem>
+</Tabs>
+
+## Next Steps
+
+- [Repositories](/web-ui/repositories/) - Managing repositories
+- [Jobs](/web-ui/jobs/) - Monitoring background jobs

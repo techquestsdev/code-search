@@ -1,0 +1,256 @@
+---
+title: GitLab Self-Hosted
+description: Connect Code Search to self-hosted GitLab
+---
+
+import { Aside, Steps } from "@astrojs/starlight/components";
+
+Connect Code Search to your self-hosted GitLab instance.
+
+## Prerequisites
+
+- GitLab CE/EE 14.0 or later
+- A user account with access to repositories
+- A Personal Access Token
+
+## Creating a Personal Access Token
+
+<Steps>
+
+1. Go to your GitLab instance
+
+2. Navigate to **User Settings → Access Tokens**
+
+3. Create a new token:
+   - **Name**: `Code Search`
+   - **Expiration date**: Set according to your security policy
+   - **Scopes**: Select `read_api` and `read_repository`
+
+4. Click **Create personal access token**
+
+5. Copy the token immediately
+
+</Steps>
+
+## Adding the Connection
+
+### Via Web UI
+
+1. Go to **Connections** → **Add Connection**
+2. Fill in:
+   - **Name**: `GitLab Self-Hosted`
+   - **Type**: `GitLab`
+   - **URL**: `https://gitlab.yourcompany.com`
+   - **Token**: Your Personal Access Token
+3. Click **Test Connection**
+4. Click **Create**
+
+### Via API
+
+```bash
+curl -X POST "http://localhost:8080/api/v1/connections" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "GitLab Self-Hosted",
+    "type": "gitlab",
+    "url": "https://gitlab.yourcompany.com",
+    "token": "glpat-xxxxxxxxxxxx"
+  }'
+```
+
+### Via Configuration File
+
+Add code hosts to your `config.yaml`:
+
+```yaml
+codehosts:
+  # The key is the connection name
+  gitlab-internal:
+    type: gitlab
+    url: "https://gitlab.yourcompany.com"
+    token: "$CS_GITLAB_INTERNAL_TOKEN"  # Environment variable reference
+    exclude_archived: true
+```
+
+## URL Configuration
+
+Use your GitLab instance's base URL:
+
+| Setup                | URL                                   |
+| -------------------- | ------------------------------------- |
+| Standard install     | `https://gitlab.yourcompany.com`      |
+| Subdirectory install | `https://yourcompany.com/gitlab`      |
+| Custom port          | `https://gitlab.yourcompany.com:8443` |
+
+## SSL/TLS Configuration
+
+### Self-Signed Certificates
+
+If your GitLab uses a self-signed certificate:
+
+```yaml
+codehosts:
+  - name: "GitLab Self-Hosted"
+    type: "gitlab"
+    url: "https://gitlab.yourcompany.com"
+    tls:
+      ca_cert_path: "/path/to/ca-cert.pem"
+```
+
+**Docker Compose:**
+
+```yaml
+services:
+  api:
+    volumes:
+      - ./gitlab-ca.pem:/etc/ssl/certs/gitlab-ca.pem:ro
+    environment:
+      CS_TLS_CA_CERT: /etc/ssl/certs/gitlab-ca.pem
+```
+
+### Private CA
+
+1. Export your CA certificate from GitLab
+2. Add it to the Code Search container
+3. Configure the path in environment or config
+
+## Enterprise Features
+
+### LDAP/SAML/SSO
+
+Code Search uses Personal Access Tokens which work with any GitLab authentication method.
+
+<Aside type="note">
+  If your GitLab enforces SSO, you may need to authorize the token. Go to **User
+  Settings → Access Tokens** and authorize for SSO.
+</Aside>
+
+### Geo (GitLab Premium)
+
+For GitLab Geo setups:
+
+- Connect to your primary instance
+- Code Search will clone from the configured URL
+
+### Project Templates
+
+If using project templates:
+
+- Template projects are indexed like any other project
+- Ensure the token has access to template projects
+
+## Group/Project Access
+
+### Personal Projects
+
+Projects under your namespace:
+
+```
+username/project
+```
+
+### Group Projects
+
+Including subgroups:
+
+```
+group/project
+group/subgroup/project
+group/subgroup/nested/project
+```
+
+### Shared Projects
+
+Projects shared with you or your groups are also discovered.
+
+## Token Types
+
+### Personal Access Token (Recommended)
+
+- Tied to a user account
+- Simple to set up
+- Works with any authentication method
+
+### Project Access Token (GitLab Premium)
+
+For specific projects only:
+
+1. Go to **Project Settings → Access Tokens**
+2. Create a project access token
+3. Use with the project-specific URL
+
+### Group Access Token (GitLab Premium)
+
+For group-wide access:
+
+1. Go to **Group Settings → Access Tokens**
+2. Create a group access token
+3. Use with the group URL
+
+## Troubleshooting
+
+### Connection refused
+
+```
+connection refused
+```
+
+- Verify the URL is correct
+- Check network connectivity to GitLab
+- Ensure GitLab is running and accessible
+
+### Certificate errors
+
+```
+x509: certificate signed by unknown authority
+```
+
+Solutions:
+
+1. Add your CA certificate to trusted certs
+2. Use the correct CA cert path in configuration
+
+### 403 Forbidden
+
+```
+403 Forbidden
+```
+
+Causes:
+
+- Token doesn't have required scopes
+- IP restrictions blocking access
+- Project visibility restrictions
+
+### LDAP sync issues
+
+If projects aren't discovered after LDAP sync:
+
+- Wait for LDAP sync to complete
+- Check group membership in GitLab
+- Verify token owner is synced correctly
+
+### Subgroup access
+
+For deeply nested subgroups:
+
+- Ensure token owner has explicit access
+- Check inherited permissions in GitLab
+
+## Performance Tuning
+
+For large GitLab instances with many projects:
+
+```yaml
+indexer:
+  concurrency: 4 # More concurrent indexing
+  clone_timeout: "30m" # Longer timeout for large repos
+
+scheduler:
+  poll_interval: "12h" # Less frequent polling
+```
+
+## Next Steps
+
+- [Gitea](/code-hosts/gitea/) - Connect to Gitea
+- [Configuration](/configuration/overview/) - Connection settings

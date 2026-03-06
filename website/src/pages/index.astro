@@ -1,0 +1,1779 @@
+---
+// Custom landing page — shadows Starlight's generated index
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Code Search - Self-hosted code search across repositories</title>
+    <meta
+      name="description"
+      content="Self-hosted code search and bulk operations across all your repositories. Search, find, and replace code at scale with CLI and web UI."
+    />
+    <meta
+      name="keywords"
+      content="code search, self-hosted, source code, repository search, bulk replace, CLI, code indexing, developer tools, DevOps"
+    />
+    <meta name="author" content="Code Search" />
+    <meta name="robots" content="index, follow" />
+
+    <!-- OpenGraph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://code-search.techquests.dev/" />
+    <meta
+      property="og:title"
+      content="Code Search - Self-hosted code search across repositories"
+    />
+    <meta
+      property="og:description"
+      content="Self-hosted code search and bulk operations across all your repositories. Search, find, and replace code at scale."
+    />
+    <meta
+      property="og:image"
+      content="https://code-search.techquests.dev/og-image.png"
+    />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:site_name" content="Code Search" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://code-search.techquests.dev/" />
+    <meta
+      name="twitter:title"
+      content="Code Search - Self-hosted code search across repositories"
+    />
+    <meta
+      name="twitter:description"
+      content="Self-hosted code search and bulk operations across all your repositories. Search, find, and replace code at scale."
+    />
+    <meta
+      name="twitter:image"
+      content="https://code-search.techquests.dev/og-image.png"
+    />
+
+    <meta name="theme-color" content="#1e293b" />
+    <link rel="canonical" href="https://code-search.techquests.dev/" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.svg" />
+
+    <!-- JSON-LD -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Code Search",
+        "description": "Self-hosted code search and bulk operations across all your repositories",
+        "url": "https://code-search.techquests.dev",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Linux, macOS, Windows",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "author": { "@type": "Organization", "name": "Code Search" }
+      }
+    </script>
+
+    <!-- Theme init — prevent FOUC -->
+    <script is:inline>
+      (function () {
+        const theme = localStorage.getItem("starlight-theme") || "auto";
+        const isDark =
+          theme === "dark" ||
+          (theme === "auto" &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
+      })();
+    </script>
+  </head>
+
+  <body>
+    <!-- ===== Header ===== -->
+    <header class="site-header">
+      <div class="header-inner">
+        <a href="/" class="logo-link" aria-label="Code Search home">
+          <!-- Dark logo -->
+          <svg
+            class="logo logo-dark"
+            xmlns="http://www.w3.org/2000/svg"
+            width="140"
+            height="28"
+            viewBox="0 0 160 32"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="m12 10-5 6 5 6"
+              stroke="#3b82f6"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"></path>
+            <path
+              d="m20 10 5 6-5 6"
+              stroke="#3b82f6"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"></path>
+            <path
+              d="m18 8-4 16"
+              stroke="#3b82f6"
+              stroke-width="2.5"
+              stroke-linecap="round"></path>
+            <text
+              x="38"
+              y="22"
+              font-family="system-ui, -apple-system, sans-serif"
+              font-size="16"
+              font-weight="600"
+              fill="#f9fafb">Code Search</text
+            >
+          </svg>
+          <!-- Light logo -->
+          <svg
+            class="logo logo-light"
+            xmlns="http://www.w3.org/2000/svg"
+            width="140"
+            height="28"
+            viewBox="0 0 160 32"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="m12 10-5 6 5 6"
+              stroke="#2563eb"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"></path>
+            <path
+              d="m20 10 5 6-5 6"
+              stroke="#2563eb"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"></path>
+            <path
+              d="m18 8-4 16"
+              stroke="#2563eb"
+              stroke-width="2.5"
+              stroke-linecap="round"></path>
+            <text
+              x="38"
+              y="22"
+              font-family="system-ui, -apple-system, sans-serif"
+              font-size="16"
+              font-weight="600"
+              fill="#111827">Code Search</text
+            >
+          </svg>
+        </a>
+
+        <nav class="nav-links" id="nav-links">
+          <a href="/getting-started/introduction/">Docs</a>
+          <a href="/pricing/">Pricing</a>
+          <a href="/contact/">Contact</a>
+          <a
+            href="https://github.com/techquestsdev/code-search"
+            class="nav-icon-link"
+            aria-label="GitHub"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <svg
+              viewBox="0 0 16 16"
+              width="20"
+              height="20"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"
+              ></path>
+            </svg>
+          </a>
+        </nav>
+
+        <div class="header-actions">
+          <div class="theme-select-container">
+            <label class="theme-select-label">
+              <span class="sr-only">Select theme</span>
+              <!-- Sun icon -->
+              <svg
+                class="icon-label icon-sun"
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line>
+                <line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+              </svg>
+              <!-- Moon icon -->
+              <svg
+                class="icon-label icon-moon"
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+              </svg>
+              <!-- Monitor icon (Auto) — matches Starlight docs -->
+              <svg
+                class="icon-label icon-auto"
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path d="M21 14h-1V7a3 3 0 0 0-3-3H7a3 3 0 0 0-3 3v7H3a1 1 0 0 0-1 1v2a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3v-2a1 1 0 0 0-1-1ZM6 7a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v7H6V7Zm14 10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-1h16v1Z"></path>
+              </svg>
+
+              <select id="theme-select">
+                <option value="dark">Dark</option>
+                <option value="light">Light</option>
+                <option value="auto" selected>Auto</option>
+              </select>
+
+              <svg
+                class="icon-caret"
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </label>
+          </div>
+
+          <button
+            class="hamburger"
+            id="hamburger"
+            aria-label="Toggle menu"
+            aria-expanded="false"
+          >
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- ===== Mobile menu ===== -->
+    <div class="mobile-menu" id="mobile-menu">
+      <a href="/getting-started/introduction/">Docs</a>
+      <a href="/pricing/">Pricing</a>
+      <a href="/contact/">Contact</a>
+      <a
+        href="https://github.com/techquestsdev/code-search"
+        target="_blank"
+        rel="noopener noreferrer">GitHub</a
+      >
+    </div>
+
+    <main>
+      <!-- ===== Hero ===== -->
+      <section class="hero">
+        <div class="container">
+          <h1>
+            <svg
+              class="hero-icon"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 32 32"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="m12 10-5 6 5 6"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"></path>
+              <path
+                d="m20 10 5 6-5 6"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"></path>
+              <path
+                d="m18 8-4 16"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"></path>
+            </svg>
+             Code Search
+          </h1>
+          <p class="tagline">
+            Search, find, and replace code across all your repositories in
+            milliseconds. Self-hosted and built for teams.
+          </p>
+          <div class="hero-actions">
+            <a href="/getting-started/introduction/" class="btn btn-primary"
+              >Get Started
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                ><line x1="5" y1="12" x2="19" y2="12"></line><polyline
+                  points="12 5 19 12 12 19"></polyline></svg
+              >
+            </a>
+            <a
+              href="https://github.com/techquestsdev/code-search"
+              class="btn btn-secondary"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <svg
+                viewBox="0 0 16 16"
+                width="16"
+                height="16"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"
+                ></path>
+              </svg>
+               View on GitHub
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== Demo Video ===== -->
+      <section class="demo-section">
+        <div class="container">
+          <div class="demo-video-wrap">
+            <video autoplay loop muted playsinline poster="/demo-poster.png">
+              <source src="/demo.mp4" type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== Why Code Search? ===== -->
+      <section class="section fade-in-section">
+        <div class="container">
+          <h2>Why Code Search?</h2>
+          <div class="card-grid cols-3">
+            <div class="card">
+              <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+              <h3>Lightning Fast</h3>
+              <p>
+                Powered by Zoekt, the same search engine Google uses internally.
+                Search millions of lines of code in milliseconds.
+              </p>
+            </div>
+            <div class="card">
+              <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></div>
+              <h3>Bulk Operations</h3>
+              <p>
+                Find and replace across hundreds of repositories at once.
+                Automatically create merge requests with your changes.
+              </p>
+            </div>
+            <div class="card">
+              <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
+              <h3>Code Intelligence</h3>
+              <p>
+                SCIP-powered go-to-definition, find-references, and symbol
+                search. Navigate code like an IDE across all your repos.
+              </p>
+            </div>
+            <div class="card">
+              <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg></div>
+              <h3>AI-Ready</h3>
+              <p>
+                Built-in MCP server lets AI assistants like Claude and Cursor
+                search your code, browse files, and navigate symbols.
+              </p>
+            </div>
+            <div class="card">
+              <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+              <h3>Privacy First</h3>
+              <p>
+                Self-hosted on your infrastructure. Your code never leaves your
+                servers. Full control over your data.
+              </p>
+            </div>
+            <div class="card">
+              <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="2" width="8" height="8" rx="1"/><rect x="2" y="14" width="8" height="8" rx="1"/><rect x="14" y="14" width="8" height="8" rx="1"/></svg></div>
+              <h3>Scales Horizontally</h3>
+              <p>
+                Run multiple indexers and API servers. Consistent-hash sharding,
+                federated file access, and automatic leader election.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== Quick Start ===== -->
+      <section class="section section-alt fade-in-section">
+        <div class="container">
+          <h2>Quick Start</h2>
+          <p class="section-subtitle">
+            Get up and running with Docker in a few commands.
+          </p>
+          <div class="code-block">
+            <div class="code-header">
+              <span class="code-dot red"></span>
+              <span class="code-dot yellow"></span>
+              <span class="code-dot green"></span>
+            </div>
+            <pre><code><span class="code-comment"># Download and start all services</span>
+<span class="code-prompt">$</span> curl -O https://raw.githubusercontent.com/techquestsdev/code-search/main/docker-compose.yml
+<span class="code-prompt">$</span> docker compose up -d
+
+<span class="code-comment"># Open the web UI</span>
+<span class="code-prompt">$</span> open http://localhost:3000</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== Connect All Your Code ===== -->
+      <section class="section fade-in-section">
+        <div class="container">
+          <h2>Connect All Your Code</h2>
+          <div class="card-grid cols-2">
+            <div class="card">
+              <div class="card-icon">
+                <svg
+                  viewBox="0 0 16 16"
+                  width="24"
+                  height="24"
+                  fill="currentColor"
+                >
+                  <path
+                    d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"
+                  ></path>
+                </svg>
+              </div>
+              <h3>GitHub</h3>
+              <p>
+                GitHub.com and GitHub Enterprise Server. Public and private
+                repositories.
+              </p>
+            </div>
+            <div class="card">
+              <div class="card-icon">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+                  <path
+                    d="M22.65 14.39L12 22.13 1.35 14.39a.84.84 0 0 1-.3-.94l1.22-3.78 2.44-7.51A.42.42 0 0 1 4.82 2a.43.43 0 0 1 .58 0 .42.42 0 0 1 .11.18l2.44 7.49h8.1l2.44-7.51A.42.42 0 0 1 18.6 2a.43.43 0 0 1 .58 0 .42.42 0 0 1 .11.18l2.44 7.51L23 13.45a.84.84 0 0 1-.35.94z"
+                  ></path>
+                </svg>
+              </div>
+              <h3>GitLab</h3>
+              <p>
+                GitLab.com and self-hosted GitLab instances. Full API
+                integration.
+              </p>
+            </div>
+            <div class="card">
+              <div class="card-icon">
+                <svg viewBox="0 0 32 32" width="24" height="24" fill="currentColor">
+                  <path d="M5.583 7.229C3.119 7.224-.172 8.786.01 12.708c.281 6.125 6.557 6.693 9.068 6.745.271 1.146 3.224 5.109 5.411 5.318h9.573c5.74-.38 10.036-17.365 6.854-17.427-5.271.25-8.396.375-11.073.396v5.297l-.839-.365-.005-4.932c-3.073 0-5.781-.141-10.917-.396-.646-.005-1.542-.115-2.5-.115zm.344 2.167h.297c.349 3.141.917 4.974 2.068 7.781-2.938-.349-5.432-1.198-5.891-4.38-.24-1.646.563-3.365 3.526-3.401m11.412 3.083c.198.005.406.042.594.13l1 .432-.714 1.302a1 1 0 0 0-.323.052c-.464.151-.708.604-.542 1.021a.8.8 0 0 0 .151.229l-1.234 2.25a.8.8 0 0 0-.297.052c-.464.146-.708.604-.542 1.016.172.417.682.63 1.151.479.464-.146.703-.604.536-1.021a.8.8 0 0 0-.208-.292l1.203-2.188c.13.01.26 0 .391-.042a.8.8 0 0 0 .281-.151c.464.198.844.354 1.12.49.406.203.552.339.599.49.042.146-.005.427-.24.922-.172.37-.458.896-.797 1.51-.115 0-.229.016-.333.052-.469.151-.708.604-.542 1.021.167.411.682.625 1.146.479.469-.151.708-.604.542-1.021a.9.9 0 0 0-.182-.271c.333-.609.62-1.135.807-1.526.25-.536.38-.938.266-1.323s-.469-.635-.932-.865c-.307-.151-.693-.313-1.146-.505q.01-.163-.052-.318c-.062-.155-.109-.198-.193-.281l.703-1.281 3.901 1.682c.703.307.995 1.057.651 1.682l-2.682 4.906c-.339.625-1.182.885-1.885.578l-5.516-2.38c-.703-.307-.995-1.057-.656-1.682l2.682-4.906c.234-.432.708-.688 1.208-.708h.083z"/>
+                </svg>
+              </div>
+              <h3>Gitea</h3>
+              <p>
+                Connect to your Gitea instances for lightweight Git hosting.
+              </p>
+            </div>
+            <div class="card">
+              <div class="card-icon">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+                  <path
+                    d="M.778 1.213a.768.768 0 0 0-.768.892l3.263 19.81c.084.5.515.868 1.022.873H19.95a.772.772 0 0 0 .77-.646l3.27-20.03a.768.768 0 0 0-.768-.891H.778zM14.52 15.53H9.522L8.17 8.466h7.561l-1.211 7.064z"
+                  ></path>
+                </svg>
+              </div>
+              <h3>Bitbucket</h3>
+              <p>Atlassian Bitbucket Cloud and Server support.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== Enterprise Features ===== -->
+      <section class="section section-alt fade-in-section">
+        <div class="container">
+          <h2>Enterprise Features</h2>
+          <p class="section-subtitle">
+            Need SSO, access control, and audit logging? Code Search Enterprise
+            adds the security and compliance features teams need.
+          </p>
+          <div class="card-grid cols-2">
+            <div class="card">
+              <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 7-6.5 6.5a1.5 1.5 0 0 0 3 3L18 10"/><path d="M9.5 16.5 3 23"/><path d="M21 2l-9.5 9.5"/><path d="M14 4l4.5 4.5"/><path d="M2.5 21.5 8 16"/></svg></div>
+              <h3>Single Sign-On (OIDC)</h3>
+              <p>
+                Authenticate users via your identity provider &mdash; Okta,
+                Azure AD, Google Workspace, or any OpenID Connect provider.
+              </p>
+            </div>
+            <div class="card">
+              <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/></svg></div>
+              <h3>Role-Based Access Control</h3>
+              <p>
+                Control who can see which repositories. Define roles with
+                glob-pattern permissions. Deny overrides allow.
+              </p>
+            </div>
+            <div class="card">
+              <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg></div>
+              <h3>Audit Logging</h3>
+              <p>
+                Every search, file access, and replace operation is logged.
+                Query by user, time range, or repository for compliance.
+              </p>
+            </div>
+            <div class="card">
+              <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/><circle cx="12" cy="16" r="1"/></svg></div>
+              <h3>License Management</h3>
+              <p>
+                Cryptographically signed licenses with ed25519. Per-customer
+                feature flags and user limits.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== Pricing ===== -->
+      <section class="section fade-in-section">
+        <div class="container container-wide">
+          <h2>Pricing</h2>
+          <div class="pricing-grid">
+            <div class="pricing-card">
+              <div class="pricing-header">
+                <h3>Community</h3>
+                <p class="pricing-users">Unlimited users</p>
+                <div class="pricing-price">Free</div>
+              </div>
+              <ul class="pricing-features">
+                <li>Full-text code search</li>
+                <li>Find & replace across repos</li>
+                <li>CLI & MCP server</li>
+                <li>SCIP code intelligence</li>
+                <li>All code hosts supported</li>
+                <li>Horizontal scaling</li>
+              </ul>
+              <a href="/getting-started/installation/" class="pricing-cta"
+                >Get Started</a
+              >
+            </div>
+            <div class="pricing-card featured">
+              <div class="pricing-header">
+                <h3>Enterprise</h3>
+                <p class="pricing-users">All features included</p>
+                <div class="pricing-price">Contact Us</div>
+              </div>
+              <ul class="pricing-features">
+                <li>Everything in Community</li>
+                <li>SSO (OIDC)</li>
+                <li>Role-based access control</li>
+                <li>Audit logging</li>
+                <li>Priority support</li>
+                <li>Custom user limits & SLA</li>
+              </ul>
+              <a href="/contact/" class="pricing-cta primary">Contact Us</a>
+            </div>
+            <!-- TODO: Restore individual pricing tiers when ready
+            <div class="pricing-card featured">
+              <div class="pricing-header">
+                <h3>Team</h3>
+                <p class="pricing-users">Up to 25 users</p>
+                <div class="pricing-price">$49<span>/mo</span></div>
+              </div>
+              <ul class="pricing-features">
+                <li>Everything in Community</li>
+                <li>SSO (OIDC)</li>
+                <li>Role-based access control</li>
+                <li>Audit logging</li>
+                <li>License management</li>
+                <li>Email support</li>
+              </ul>
+              <a
+                href="https://polar.sh/techquestsdev"
+                data-polar-checkout
+                class="pricing-cta primary">Buy Now</a
+              >
+            </div>
+            <div class="pricing-card">
+              <div class="pricing-header">
+                <h3>Business</h3>
+                <p class="pricing-users">Up to 100 users</p>
+                <div class="pricing-price">$149<span>/mo</span></div>
+              </div>
+              <ul class="pricing-features">
+                <li>Everything in Team</li>
+                <li>Priority support</li>
+                <li>Faster response SLA</li>
+              </ul>
+              <a
+                href="https://polar.sh/techquestsdev"
+                data-polar-checkout
+                class="pricing-cta primary">Buy Now</a
+              >
+            </div>
+            <div class="pricing-card">
+              <div class="pricing-header">
+                <h3>Enterprise</h3>
+                <p class="pricing-users">Unlimited / Custom</p>
+                <div class="pricing-price">Custom</div>
+              </div>
+              <ul class="pricing-features">
+                <li>Everything in Business</li>
+                <li>Custom user limits</li>
+                <li>Dedicated support</li>
+                <li>Custom SLA</li>
+              </ul>
+              <a href="/contact/" class="pricing-cta">Contact Us</a>
+            </div>
+            -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== Built For Teams ===== -->
+      <section class="section section-alt fade-in-section">
+        <div class="container">
+          <h2>Built For Teams</h2>
+          <div class="card-grid cols-2">
+            <div class="card">
+              <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="7.5 4.21 12 6.81 16.5 4.21"/><polyline points="7.5 19.79 7.5 14.6 3 12"/><polyline points="21 12 16.5 14.6 16.5 19.79"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>
+              <h3>Refactoring at Scale</h3>
+              <p>
+                Rename functions, update API calls, or refactor patterns across
+                hundreds of microservices. Create MRs automatically.
+              </p>
+            </div>
+            <div class="card">
+              <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+              <h3>Security Patching</h3>
+              <p>
+                Find vulnerable code patterns across your entire codebase. Patch
+                security issues everywhere at once.
+              </p>
+            </div>
+            <div class="card">
+              <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg></div>
+              <h3>Dependency Management</h3>
+              <p>
+                Upgrade packages across all repositories. Generate changelogs
+                and create MRs for each affected repo.
+              </p>
+            </div>
+            <div class="card">
+              <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+              <h3>Code Discovery</h3>
+              <p>
+                Help teams understand how code is used across projects. Find
+                examples, patterns, and best practices.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== Get in Touch ===== -->
+      <section class="section fade-in-section">
+        <div class="container" style="text-align:center;">
+          <h2>Get in Touch</h2>
+          <p class="section-subtitle">
+            Have questions about self-hosting, enterprise features, or custom
+            integrations? We're here to help.
+          </p>
+          <a href="/contact/" class="btn btn-primary"
+            >Contact Our Team
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              ><line x1="5" y1="12" x2="19" y2="12"></line><polyline
+                points="12 5 19 12 12 19"></polyline></svg
+            >
+          </a>
+        </div>
+      </section>
+
+      <!-- ===== Get Started ===== -->
+      <section class="section section-alt fade-in-section">
+        <div class="container">
+          <h2>Get Started</h2>
+          <div class="card-grid cols-3">
+            <a href="/getting-started/installation/" class="card card-link">
+              <h3>Installation Guide</h3>
+              <p>Docker, Kubernetes, Helm, or build from source</p>
+            </a>
+            <a href="/getting-started/quick-start/" class="card card-link">
+              <h3>Quick Start Tutorial</h3>
+              <p>Get searching in 5 minutes</p>
+            </a>
+            <a href="/configuration/overview/" class="card card-link">
+              <h3>Configuration Reference</h3>
+              <p>All options explained</p>
+            </a>
+            <a href="/cli/installation/" class="card card-link">
+              <h3>CLI Documentation</h3>
+              <p>Master the command line</p>
+            </a>
+            <a href="/api/mcp/" class="card card-link">
+              <h3>MCP Server</h3>
+              <p>Connect AI assistants to your code</p>
+            </a>
+            <a href="/contact/" class="card card-link">
+              <h3>Contact Us</h3>
+              <p>Get in touch for support or enterprise</p>
+            </a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ===== Footer ===== -->
+    <footer class="site-footer">
+      <div class="container footer-inner">
+        <p>&copy; 2025–2026 Code Search. Apache License 2.0.</p>
+        <div class="footer-links">
+          <a href="/getting-started/introduction/">Docs</a>
+          <a href="/pricing/">Pricing</a>
+          <a href="/contact/">Contact</a>
+          <a href="/privacy/">Privacy</a>
+          <a
+            href="https://github.com/techquestsdev/code-search"
+            target="_blank"
+            rel="noopener noreferrer">GitHub</a
+          >
+        </div>
+        <p class="footer-built">Built with <a href="https://astro.build" target="_blank" rel="noopener noreferrer">Astro</a></p>
+      </div>
+    </footer>
+
+    <!-- TODO: Restore Polar checkout script when pricing tiers are live
+    <script
+      defer
+      data-auto-init
+      src="https://cdn.jsdelivr.net/npm/@polar-sh/checkout@latest/dist/embed.global.js"
+    ></script>
+    -->
+  </body>
+</html>
+
+<style>
+  /* ============================================
+     CSS Custom Properties
+     ============================================ */
+  :root {
+    --lp-font: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+      Roboto, "Helvetica Neue", Arial, sans-serif;
+    --lp-font-mono: "SF Mono", "Menlo", "Monaco", "Consolas", monospace;
+  }
+
+  /* Dark theme (default) */
+  :root,
+  [data-theme="dark"] {
+    --lp-accent: #3b82f6;
+    --lp-accent-high: #60a5fa;
+    --lp-bg: #030712;
+    --lp-bg-alt: #111827;
+    --lp-card-bg: #1f2937;
+    --lp-card-border: #374151;
+    --lp-text: #ffffff;
+    --lp-text-secondary: #d1d5db;
+    --lp-text-muted: #9ca3af;
+    --lp-border: #374151;
+    --lp-header-bg: #111827;
+    --lp-code-bg: #111827;
+    --lp-code-border: #374151;
+  }
+
+  /* Light theme */
+  [data-theme="light"] {
+    --lp-accent: #2563eb;
+    --lp-accent-high: #1d4ed8;
+    --lp-bg: #ffffff;
+    --lp-bg-alt: #f9fafb;
+    --lp-card-bg: #f3f4f6;
+    --lp-card-border: #d1d5db;
+    --lp-text: #111827;
+    --lp-text-secondary: #4b5563;
+    --lp-text-muted: #6b7280;
+    --lp-border: #d1d5db;
+    --lp-header-bg: #f9fafb;
+    --lp-code-bg: #f6f8fa;
+    --lp-code-border: #d1d9e0;
+  }
+
+  /* ============================================
+     Reset & Base
+     ============================================ */
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: var(--lp-font);
+    background: var(--lp-bg);
+    color: var(--lp-text);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  img,
+  video {
+    max-width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+
+  .container-wide {
+    max-width: 1280px;
+  }
+
+  /* ============================================
+     Header
+     ============================================ */
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--lp-header-bg);
+    border-bottom: 1px solid var(--lp-border);
+    backdrop-filter: blur(12px);
+  }
+
+  .header-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+    height: 3.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .logo-link {
+    display: flex;
+    align-items: center;
+  }
+
+  .logo {
+    display: none;
+  }
+
+  [data-theme="dark"] .logo-dark {
+    display: block;
+  }
+
+  [data-theme="light"] .logo-light {
+    display: block;
+  }
+
+  /* If no data-theme yet, default to dark */
+  :root:not([data-theme]) .logo-dark {
+    display: block;
+  }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .nav-links a {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--lp-text-secondary);
+    transition: color 0.15s ease;
+  }
+
+  .nav-links a:hover {
+    color: var(--lp-text);
+  }
+
+  .nav-icon-link {
+    display: flex;
+    align-items: center;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  /* Theme Select Component */
+  .theme-select-container {
+    display: flex;
+    align-items: center;
+  }
+
+  .theme-select-label {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: var(--lp-text-secondary);
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    transition: color 0.15s ease, background-color 0.15s ease;
+  }
+
+  .theme-select-label:hover {
+    color: var(--lp-text);
+    background-color: var(--lp-card-bg);
+  }
+
+  .theme-select-label select {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    appearance: none;
+  }
+
+  .icon-label {
+    display: none;
+    flex-shrink: 0;
+  }
+
+  .icon-caret {
+    flex-shrink: 0;
+    width: 12px;
+    height: 12px;
+    opacity: 0.5;
+  }
+
+  /* Show icon based on actual theme state or select value?
+     Starlight shows the icon matching the CURRENT theme.
+  */
+  [data-theme="dark"] .icon-sun,
+  /* Show icon matching the selected theme */
+  /* If we want to perfectly match Starlight, we should use JS to toggle these classes based on select value */
+
+  .theme-select-label .icon-label { display: none; }
+
+  /* These will be toggled via JS based on the select value */
+  .theme-select-label[data-chosen="light"] .icon-sun { display: block; }
+  .theme-select-label[data-chosen="dark"] .icon-moon { display: block; }
+  .theme-select-label[data-chosen="auto"] .icon-auto { display: block; }
+
+  /* Fallback if no data-chosen yet */
+  .theme-select-label:not([data-chosen]) .icon-auto { display: block; }
+
+  @media (max-width: 640px) {
+    .theme-select-label {
+      padding: 0.25rem;
+    }
+    .icon-caret {
+      display: none;
+    }
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  /* Hamburger */
+  .hamburger {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem;
+  }
+
+  .hamburger span {
+    display: block;
+    width: 18px;
+    height: 2px;
+    background: var(--lp-text-secondary);
+    border-radius: 1px;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+  }
+
+  .hamburger[aria-expanded="true"] span:nth-child(1) {
+    transform: translateY(6px) rotate(45deg);
+  }
+  .hamburger[aria-expanded="true"] span:nth-child(2) {
+    opacity: 0;
+  }
+  .hamburger[aria-expanded="true"] span:nth-child(3) {
+    transform: translateY(-6px) rotate(-45deg);
+  }
+
+  /* Mobile menu */
+  .mobile-menu {
+    display: none;
+    flex-direction: column;
+    background: var(--lp-header-bg);
+    border-bottom: 1px solid var(--lp-border);
+    padding: 0.75rem 1.5rem 1rem;
+  }
+
+  .mobile-menu.open {
+    display: flex;
+  }
+
+  .mobile-menu a {
+    padding: 0.625rem 0;
+    font-size: 0.9375rem;
+    color: var(--lp-text-secondary);
+    border-bottom: 1px solid var(--lp-border);
+  }
+
+  .mobile-menu a:last-child {
+    border-bottom: none;
+  }
+
+  .mobile-menu a:hover {
+    color: var(--lp-text);
+  }
+
+  @media (max-width: 640px) {
+    .nav-links {
+      display: none;
+    }
+
+    .hamburger {
+      display: flex;
+    }
+  }
+
+  /* ============================================
+     Hero
+     ============================================ */
+  .hero {
+    text-align: center;
+    padding: 5rem 1rem 3rem;
+    background: radial-gradient(
+      ellipse 80% 60% at 50% 40%,
+      rgba(59, 130, 246, 0.08) 0%,
+      transparent 70%
+    );
+  }
+
+  [data-theme="light"] .hero {
+    background: radial-gradient(
+      ellipse 80% 60% at 50% 40%,
+      rgba(37, 99, 235, 0.06) 0%,
+      transparent 70%
+    );
+  }
+
+  .hero h1 {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    font-size: 2.5rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+    margin-bottom: 1.25rem;
+  }
+
+  .hero-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    flex-shrink: 0;
+    color: var(--lp-accent);
+  }
+
+  .tagline {
+    font-size: 1.2rem;
+    line-height: 1.6;
+    color: var(--lp-text-secondary);
+    max-width: 700px;
+    margin: 0 auto 2rem;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  @media (min-width: 50rem) {
+    .hero h1 {
+      font-size: 3.5rem;
+    }
+
+    .hero-icon {
+      width: 5.5rem;
+      height: 5.5rem;
+    }
+  }
+
+  /* ============================================
+     Buttons
+     ============================================ */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    transition: all 0.15s ease;
+    border: none;
+    cursor: pointer;
+  }
+
+  .btn-primary {
+    background: var(--lp-accent);
+    color: #fff;
+  }
+
+  .btn-primary:hover {
+    background: var(--lp-accent-high);
+    box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);
+    transform: translateY(-1px);
+  }
+
+  [data-theme="light"] .btn-primary:hover {
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+  }
+
+  .btn-secondary {
+    background: var(--lp-card-bg);
+    color: var(--lp-text);
+    border: 1px solid var(--lp-card-border);
+  }
+
+  .btn-secondary:hover {
+    background: var(--lp-border);
+  }
+
+  /* ============================================
+     Demo Video
+     ============================================ */
+  .demo-section {
+    padding: 0 1rem 3rem;
+  }
+
+  .demo-video-wrap {
+    margin: 0 auto;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.5),
+      0 0 40px -15px rgba(59, 130, 246, 0.15);
+    border: 1px solid var(--lp-card-border);
+  }
+
+  [data-theme="light"] .demo-video-wrap {
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+  }
+
+  .demo-video-wrap video {
+    width: 100%;
+    display: block;
+    border-radius: 0.75rem;
+  }
+
+  @media (max-width: 768px) {
+    .demo-section {
+      display: none;
+    }
+  }
+
+  /* ============================================
+     Sections
+     ============================================ */
+  .section {
+    padding: 4rem 0;
+  }
+
+  .section h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 0.75rem;
+    position: relative;
+    padding-bottom: 1.25rem;
+  }
+
+  .section h2::after {
+    content: "";
+    display: block;
+    width: 4rem;
+    height: 2px;
+    background: linear-gradient(90deg, var(--lp-accent), transparent);
+    margin: 0.75rem auto 0;
+    border-radius: 1px;
+  }
+
+  .section-subtitle {
+    text-align: center;
+    color: var(--lp-text-muted);
+    max-width: 600px;
+    margin: 0 auto 2rem;
+  }
+
+  .section-alt {
+    background: var(--lp-bg-alt);
+    border-top: 1px solid var(--lp-border);
+    border-bottom: 1px solid var(--lp-border);
+  }
+
+  .section-alt .card {
+    background: var(--lp-bg);
+  }
+
+  /* ============================================
+     Card Grid
+     ============================================ */
+  .card-grid {
+    display: grid;
+    gap: 1.25rem;
+    margin-top: 2rem;
+  }
+
+  .card-grid.cols-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .card-grid.cols-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  @media (max-width: 768px) {
+    .card-grid.cols-3 {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 560px) {
+    .card-grid.cols-2,
+    .card-grid.cols-3 {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* ============================================
+     Cards
+     ============================================ */
+  .card {
+    background: var(--lp-card-bg);
+    border: 1px solid var(--lp-card-border);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease,
+      transform 0.15s ease;
+  }
+
+  .card:hover {
+    border-color: var(--lp-text-muted);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+  }
+
+  [data-theme="dark"] .card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), 0 1px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .card-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+  }
+
+  .card-icon {
+    margin-bottom: 0.75rem;
+    color: var(--lp-accent);
+    display: flex;
+    align-items: center;
+  }
+
+  .card-icon svg {
+    color: var(--lp-accent);
+    width: 24px;
+    height: 24px;
+  }
+
+  .card h3 {
+    font-size: 1.0625rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  .card p {
+    color: var(--lp-text-secondary);
+    font-size: 0.875rem;
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  /* ============================================
+     Code Block
+     ============================================ */
+  .code-block {
+    max-width: 900px;
+    margin: 2rem auto 0;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    background: var(--lp-code-bg);
+    border: 1px solid var(--lp-code-border);
+  }
+
+  .code-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: var(--lp-card-bg);
+    border-bottom: 1px solid var(--lp-code-border);
+  }
+
+  .code-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+  }
+
+  .code-dot.red {
+    background: #ff5f56;
+  }
+  .code-dot.yellow {
+    background: #ffbd2e;
+  }
+  .code-dot.green {
+    background: #27c93f;
+  }
+
+  .code-title {
+    flex: 1;
+    text-align: center;
+    color: var(--lp-text-muted);
+    font-size: 0.8rem;
+  }
+
+  .code-block pre {
+    padding: 1rem 1.5rem;
+    overflow-x: auto;
+    margin: 0;
+  }
+
+  .code-block code {
+    font-family: var(--lp-font-mono);
+    font-size: 0.875rem;
+    line-height: 1.7;
+    color: var(--lp-text);
+  }
+
+  .code-prompt {
+    color: #27c93f;
+  }
+
+  .code-comment {
+    color: var(--lp-text-muted);
+  }
+
+  /* ============================================
+     Pricing
+     ============================================ */
+  .pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.25rem;
+    margin-top: 2rem;
+    max-width: 1100px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .pricing-card {
+    background: var(--lp-card-bg);
+    border: 1px solid var(--lp-card-border);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease,
+      transform 0.15s ease;
+  }
+
+  .pricing-card:hover {
+    border-color: var(--lp-text-muted);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-3px);
+  }
+
+  .pricing-card.featured {
+    border-color: var(--lp-accent);
+    position: relative;
+    overflow: visible;
+  }
+
+  [data-theme="dark"] .pricing-card.featured {
+    background: #1e3a5f;
+  }
+
+  [data-theme="light"] .pricing-card.featured {
+    background: #dbeafe;
+  }
+
+  .pricing-card.featured::before {
+    content: "Most Popular";
+    position: absolute;
+    top: -0.75rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--lp-accent);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.2rem 0.875rem;
+    border-radius: 9999px;
+    white-space: nowrap;
+  }
+
+  .pricing-card.featured:hover {
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.25);
+    transform: translateY(-4px);
+  }
+
+  .pricing-header {
+    text-align: center;
+    margin-bottom: 1.25rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--lp-card-border);
+  }
+
+  .pricing-card.featured .pricing-header {
+    border-bottom-color: var(--lp-accent);
+  }
+
+  .pricing-header h3 {
+    margin: 0 0 0.25rem;
+    font-size: 1.25rem;
+  }
+
+  .pricing-users {
+    margin: 0 0 0.75rem;
+    font-size: 0.85rem;
+    color: var(--lp-text-muted);
+  }
+
+  .pricing-price {
+    font-size: 2.25rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .pricing-price span {
+    font-size: 0.875rem;
+    font-weight: 400;
+    color: var(--lp-text-muted);
+  }
+
+  .pricing-features {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1.5rem;
+    flex: 1;
+  }
+
+  .pricing-features li {
+    position: relative;
+    padding: 0.375rem 0 0.375rem 1.5rem;
+    font-size: 0.875rem;
+    color: var(--lp-text-secondary);
+    line-height: 1.5;
+  }
+
+  .pricing-features li::before {
+    content: "\2713";
+    position: absolute;
+    left: 0;
+    color: var(--lp-accent);
+    font-weight: 700;
+  }
+
+  .pricing-cta {
+    display: block;
+    text-align: center;
+    padding: 0.625rem 1.25rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    transition: all 0.15s ease;
+    background: var(--lp-border);
+    color: var(--lp-text);
+    border: 1px solid var(--lp-card-border);
+    margin-top: auto;
+  }
+
+  .pricing-cta:hover {
+    transform: translateY(-1px);
+  }
+
+  .pricing-cta.primary {
+    background: var(--lp-accent);
+    color: #fff;
+    border-color: var(--lp-accent);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
+  }
+
+  .pricing-cta.primary:hover {
+    background: var(--lp-accent-high);
+    border-color: var(--lp-accent-high);
+    box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
+    transform: translateY(-1px);
+  }
+
+  @media (max-width: 560px) {
+    .pricing-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* ============================================
+     Footer
+     ============================================ */
+  .site-footer {
+    border-top: 1px solid var(--lp-border);
+    padding: 2rem 0;
+    color: var(--lp-text-muted);
+    font-size: 0.8125rem;
+  }
+
+  .footer-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .footer-links {
+    display: flex;
+    gap: 1.5rem;
+  }
+
+  .footer-links a {
+    color: var(--lp-text-secondary);
+    transition: color 0.15s ease;
+  }
+
+  .footer-links a:hover {
+    color: var(--lp-text);
+  }
+
+  .footer-built a {
+    color: var(--lp-accent);
+  }
+
+  @media (max-width: 640px) {
+    .footer-inner {
+      flex-direction: column;
+      text-align: center;
+    }
+  }
+
+  /* ============================================
+     Scroll Fade-In Animations
+     ============================================ */
+  .fade-in-section {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+  }
+
+  .fade-in-section.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Stagger cards */
+  .fade-in-section .card-grid > *,
+  .fade-in-section .pricing-grid > * {
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+  }
+
+  .fade-in-section.is-visible .card-grid > *,
+  .fade-in-section.is-visible .pricing-grid > * {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .fade-in-section.is-visible .card-grid > *:nth-child(1),
+  .fade-in-section.is-visible .pricing-grid > *:nth-child(1) {
+    transition-delay: 0s;
+  }
+  .fade-in-section.is-visible .card-grid > *:nth-child(2),
+  .fade-in-section.is-visible .pricing-grid > *:nth-child(2) {
+    transition-delay: 0.05s;
+  }
+  .fade-in-section.is-visible .card-grid > *:nth-child(3),
+  .fade-in-section.is-visible .pricing-grid > *:nth-child(3) {
+    transition-delay: 0.1s;
+  }
+  .fade-in-section.is-visible .card-grid > *:nth-child(4),
+  .fade-in-section.is-visible .pricing-grid > *:nth-child(4) {
+    transition-delay: 0.15s;
+  }
+  .fade-in-section.is-visible .card-grid > *:nth-child(5) {
+    transition-delay: 0.2s;
+  }
+  .fade-in-section.is-visible .card-grid > *:nth-child(6) {
+    transition-delay: 0.25s;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fade-in-section {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+
+    .fade-in-section .card-grid > *,
+    .fade-in-section .pricing-grid > * {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  // Theme toggle
+  const themeSelect = document.getElementById("theme-select");
+  const themeLabel = themeSelect?.parentElement;
+
+  function setTheme(theme) {
+    const isDark =
+      theme === "dark" ||
+      (theme === "auto" &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches);
+    document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
+    if (themeLabel) themeLabel.setAttribute("data-chosen", theme);
+    localStorage.setItem("starlight-theme", theme);
+    if (themeSelect) themeSelect.value = theme;
+  }
+
+  if (themeSelect) {
+    const initialTheme = localStorage.getItem("starlight-theme") || "auto";
+    setTheme(initialTheme);
+    themeSelect.addEventListener("change", (e) => {
+      setTheme(e.target.value);
+    });
+  }
+
+  // Listen for system changes if 'auto' is selected
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+    const theme = localStorage.getItem("starlight-theme") || "auto";
+    if (theme === "auto") {
+      setTheme("auto");
+    }
+  });
+
+  // Mobile hamburger
+  const hamburger = document.getElementById("hamburger");
+  const mobileMenu = document.getElementById("mobile-menu");
+  if (hamburger && mobileMenu) {
+    hamburger.addEventListener("click", () => {
+      const expanded = hamburger.getAttribute("aria-expanded") === "true";
+      hamburger.setAttribute("aria-expanded", String(!expanded));
+      mobileMenu.classList.toggle("open");
+    });
+  }
+
+  // Scroll fade-in
+  const sections = document.querySelectorAll(".fade-in-section");
+  if (sections.length) {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      sections.forEach((s) => s.classList.add("is-visible"));
+    } else {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("is-visible");
+              observer.unobserve(entry.target);
+            }
+          });
+        },
+        { threshold: 0.1 },
+      );
+      sections.forEach((s) => observer.observe(s));
+    }
+  }
+</script>

@@ -1,0 +1,442 @@
+---
+title: Query Syntax
+description: Complete guide to the search query language
+---
+
+import { Tabs, TabItem, Aside } from "@astrojs/starlight/components";
+
+Code Search supports a rich query language for searching code. This guide covers everything from basic searches to advanced query techniques.
+
+## Basics
+
+### Plain Text Search
+
+By default, search queries match as exact substrings. Type what you're looking for and it will match literally.
+
+```
+func main()
+```
+Matches the exact string `func main()` in your code.
+
+```
+fmt.Println
+```
+Matches the exact string `fmt.Println`.
+
+<Aside type="tip">
+Plain text search is the default. Special characters like `.`, `(`, `)`, `*` are matched literally — no escaping needed.
+</Aside>
+
+### Query Operators
+
+When you use query operators (like `repo:`, `lang:`, `file:`, etc.), the query is parsed using Zoekt's query language. In this mode, search terms are treated as regular expressions using [Go's regexp syntax](https://pkg.go.dev/regexp/syntax#hdr-Syntax).
+
+```
+lang:go func\s+main\(
+```
+Uses regex to match `func` followed by whitespace and `main(` in Go files.
+
+<Aside type="caution">
+When using query operators, special regex characters like `.`, `*`, `+`, `?`, `(`, `)`, `[`, `]`, `{`, `}`, `|`, `^`, `$`, and `\` have regex meaning. Escape them with `\` to match literally.
+</Aside>
+
+### Expressions
+
+A query with operators consists of one or more **expressions** separated by spaces. Each expression is treated as a pattern to match.
+
+| Query | Meaning |
+|-------|---------|
+| `foo` | Match the exact substring `foo` |
+| `lang:go foo bar` | Match both `/foo/` AND `/bar/` in Go files (regex mode) |
+| `"foo bar"` | Match the literal string `foo bar` (space included) |
+
+<Aside type="note">
+Single quotes have no special meaning. `'foo bar'` is two expressions: `/'foo/` and `/bar'/`.
+</Aside>
+
+## Boolean Logic
+
+### Implicit AND
+
+By default, multiple expressions are combined with AND logic. A file must contain matches for **all** expressions to appear in results.
+
+```
+repo:myorg foo bar baz
+```
+Returns files containing ALL of: `/foo/`, `/bar/`, and `/baz/` in the `myorg` repository.
+
+### OR Operator
+
+Use `or` to combine expressions disjunctively:
+
+```
+repo:myorg foo or bar
+```
+Returns files containing `/foo/` OR `/bar/` (or both).
+
+<Aside type="tip">
+To search for the literal word "or", wrap it in quotes: `foo "or" bar` searches for three terms.
+</Aside>
+
+### Grouping with Parentheses
+
+Group expressions to create complex logic:
+
+```
+repo:myorg foo (bar or baz)
+```
+Returns files with `/foo/` AND (either `/bar/` OR `/baz/`).
+
+Groupings can be nested:
+
+```
+repo:myorg (foo or bar) (baz or qux)
+```
+
+### Negation
+
+Prefix an expression with `-` to exclude matches:
+
+```
+foo -bar
+```
+Returns files with `/foo/` that do NOT contain `/bar/`.
+
+Negation works with groups:
+
+```
+foo -(bar or baz)
+```
+Excludes files with either `/bar/` or `/baz/`.
+
+```
+foo -(bar baz)
+```
+Excludes files with BOTH `/bar/` and `/baz/`.
+
+## Field Expressions
+
+Field prefixes restrict where a pattern matches. Without a field prefix, patterns match both file names and content.
+
+<Aside type="note">
+Adding any field prefix switches the query to Zoekt's regex-based parser. Search terms in this mode are treated as regular expressions.
+</Aside>
+
+### Search Fields
+
+| Field | Description | Example |
+|-------|-------------|---------|
+| `file:` | Match file names only | `file:README` |
+| `content:` | Match file contents only | `content:TODO` |
+| `repo:` | Filter by repository name | `repo:linux` |
+| `branch:` | Filter by branch name | `branch:main` |
+| `lang:` | Filter by programming language | `lang:go` |
+| `sym:` | Match symbol definitions (ctags) | `sym:main` |
+
+### Examples
+
+```
+file:README
+```
+Matches files with "README" in their name.
+
+```
+content:TODO
+```
+Matches "TODO" only in file contents (not file names).
+
+```
+repo:myorg/api lang:go func.*Handler
+```
+Search for `func.*Handler` in Go files within the `myorg/api` repository.
+
+```
+-file:test assert
+```
+Match `/assert/` but exclude files with "test" in their name.
+
+### Case Sensitivity
+
+The `case:` modifier controls case matching:
+
+| Value | Behavior |
+|-------|----------|
+| `case:auto` | Case-sensitive if pattern has uppercase (default) |
+| `case:yes` | Always case-sensitive |
+| `case:no` | Always case-insensitive |
+
+```
+FOO case:yes
+```
+Matches only `FOO`, not `foo` or `Foo`.
+
+```
+TEST case:no
+```
+Matches `TEST`, `test`, `Test`, etc.
+
+<Aside type="note">
+In `auto` mode, `MyFunction` is case-sensitive (has uppercase), while `myfunction` is case-insensitive.
+</Aside>
+
+### Result Type
+
+Control what kind of results are returned:
+
+| Value | Description |
+|-------|-------------|
+| `type:filematch` | File content matches (default) |
+| `type:filename` | Only matching filenames |
+| `type:repo` | Only repository names |
+
+```
+type:repo config
+```
+Returns repository names matching "config" instead of file matches.
+
+### Inline Regex
+
+The `regex:` operator treats the following pattern as a regular expression, even without other query operators:
+
+```
+regex:func\s+main\(
+```
+Matches `func` followed by whitespace and `main(` using regex.
+
+## Text Values
+
+Field values can be plain text, quoted strings, or regex:
+
+### Plain Text
+
+```
+repo:myproject
+lang:typescript
+```
+
+### Quoted Strings
+
+Use double quotes for values with spaces or special characters:
+
+```
+file:"my file.txt"
+content:"foo bar"
+repo:"my org/my project"
+```
+
+### Regular Expressions
+
+Use forward slashes for regex patterns:
+
+```
+content:/func\s+\w+\(/
+file:/.*\.test\.ts$/
+repo:/github\.com\/myorg\/.*/
+```
+
+### Escape Characters
+
+Escape special characters with backslash:
+
+```
+content:"foo\"bar"
+file:my\ file.txt
+```
+
+## Language Support
+
+The `lang:` field filters by programming language as detected by [go-enry](https://github.com/go-enry/go-enry) (based on linguist):
+
+<Tabs>
+<TabItem label="Popular Languages">
+
+| Language | Also matches |
+|----------|--------------|
+| `lang:go` | Go |
+| `lang:python` | Python |
+| `lang:javascript` | JavaScript |
+| `lang:typescript` | TypeScript |
+| `lang:java` | Java |
+| `lang:rust` | Rust |
+| `lang:c` | C |
+| `lang:cpp` or `lang:c++` | C++ |
+
+</TabItem>
+<TabItem label="More Languages">
+
+| Language | Also matches |
+|----------|--------------|
+| `lang:ruby` | Ruby |
+| `lang:php` | PHP |
+| `lang:swift` | Swift |
+| `lang:kotlin` | Kotlin |
+| `lang:scala` | Scala |
+| `lang:shell` or `lang:bash` | Shell scripts |
+| `lang:yaml` | YAML |
+| `lang:json` | JSON |
+
+</TabItem>
+</Tabs>
+
+<Aside type="tip">
+Language names are case-insensitive: `lang:Go`, `lang:GO`, and `lang:go` all work.
+</Aside>
+
+## Common Patterns
+
+### Find Function Definitions
+
+<Tabs>
+<TabItem label="Go">
+```
+lang:go func\s+\w+\(
+```
+</TabItem>
+<TabItem label="Python">
+```
+lang:python def\s+\w+\(
+```
+</TabItem>
+<TabItem label="JavaScript/TypeScript">
+```
+lang:typescript function\s+\w+\(
+```
+</TabItem>
+</Tabs>
+
+### Find Import Statements
+
+<Tabs>
+<TabItem label="Go">
+```
+lang:go ^import\s
+```
+</TabItem>
+<TabItem label="Python">
+```
+lang:python ^(from|import)\s
+```
+</TabItem>
+<TabItem label="JavaScript/TypeScript">
+```
+lang:typescript ^import\s
+```
+</TabItem>
+</Tabs>
+
+### Find TODOs and FIXMEs
+
+```
+regex:(TODO|FIXME|HACK|XXX):
+```
+
+### Find Configuration Files
+
+```
+file:(config|settings)\.(json|yaml|yml|toml)$
+```
+
+### Exclude Test Files
+
+```
+myfunction -file:test -file:spec -file:mock
+```
+
+### Search Specific Repository
+
+```
+repo:myorg/myrepo lang:go error handling
+```
+
+## Advanced Examples
+
+### API Endpoints
+
+Search for HTTP handlers in Go:
+```
+lang:go func.*Handler repo:api
+```
+
+### Security Audit
+
+Find potential SQL injection:
+```
+lang:go (exec|query).*\+.*\$
+```
+
+### Dead Code
+
+Find unused exports:
+```
+sym:deprecated -file:test
+```
+
+### Dependency Check
+
+Find package imports:
+```
+lang:go "github.com/pkg/errors"
+```
+
+### More Examples
+
+**Find error handling in Go, excluding tests:**
+```
+lang:go (err != nil) -file:_test\.go
+```
+
+**Search multiple repos for a pattern:**
+```
+(repo:frontend or repo:backend) auth
+```
+
+**Find README files:**
+```
+type:filename README
+```
+
+**Case-sensitive class name search:**
+```
+lang:java class MyService case:yes
+```
+
+**Find files modified in feature branches:**
+```
+branch:/feature-.*/ config
+```
+
+## Quick Reference
+
+### Operators
+
+| Operator | Example | Description |
+|----------|---------|-------------|
+| (space) | `foo bar` | AND (both required) |
+| `or` | `foo or bar` | OR (either match) |
+| `-` | `-foo` | NOT (exclude) |
+| `()` | `(a or b) c` | Grouping |
+| `""` | `"foo bar"` | Literal string |
+| `//` | `/foo.*/` | Regex pattern |
+
+### Fields Summary
+
+| Field | Values | Description |
+|-------|--------|-------------|
+| `file:` | text/regex | File name filter |
+| `content:` | text/regex | Content only filter |
+| `repo:` | text/regex | Repository filter |
+| `branch:` | text/regex | Branch filter |
+| `lang:` | language name | Language filter |
+| `sym:` | text/regex | Symbol definitions |
+| `case:` | `yes`/`no`/`auto` | Case sensitivity |
+| `type:` | `filematch`/`filename`/`repo` | Result type |
+| `regex:` | pattern | Inline regex mode |
+
+## Tips
+
+1. **Start Simple**: Begin with plain text and add filters as needed
+2. **Use Quotes**: When searching for phrases with spaces
+3. **Add Filters**: Use `repo:` or `lang:` to narrow results quickly
+4. **Exclude Noise**: Use `-file:test` to skip test files
+5. **Use Regex Mode**: Add `regex:` prefix for complex pattern matching
+6. **Check Case**: Use `case:auto` (default) for smart matching

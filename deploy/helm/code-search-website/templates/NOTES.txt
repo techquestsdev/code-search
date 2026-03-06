@@ -1,0 +1,23 @@
+🎉 Code Search Website has been deployed!
+
+{{- if .Values.ingress.enabled }}
+Access the application at:
+{{- range $host := .Values.ingress.hosts }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ $host.host }}
+{{- end }}
+{{- else }}
+
+To access the application, run:
+
+  # Port forward the service
+  kubectl port-forward svc/{{ include "code-search-website.fullname" . }} {{ .Values.service.port }}:{{ .Values.service.port }}
+
+  # Then open http://localhost:{{ .Values.service.port }}
+
+{{- end }}
+
+To check the status of the deployment:
+
+  kubectl get pods -l app.kubernetes.io/instance={{ .Release.Name }}
+
+For more information, see: https://github.com/techquestsdev/code-search

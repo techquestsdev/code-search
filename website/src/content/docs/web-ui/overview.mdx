@@ -1,0 +1,106 @@
+---
+title: Web UI Overview
+description: Introduction to the Code Search web interface
+---
+
+import { Card, CardGrid, Aside } from "@astrojs/starlight/components";
+
+The Code Search web UI provides a powerful interface for searching and exploring your code.
+
+## Features
+
+<CardGrid>
+  <Card title="Instant Search" icon="magnifier">
+    Real-time search results as you type with syntax highlighting
+  </Card>
+  <Card title="Zoekt Filters" icon="setting">
+    Filter by repository, language, file path, branch, and more using Zoekt query syntax
+  </Card>
+  <Card title="Code Preview" icon="document">
+    View matching code with full context and syntax highlighting
+  </Card>
+  <Card title="Management" icon="list-format">
+    Manage connections, repos, and indexing jobs
+  </Card>
+</CardGrid>
+
+## Accessing the UI
+
+The web UI is available at your server's address:
+
+```
+http://localhost:3000
+```
+
+<Aside>
+  The web UI runs on port 3000 by default. The API server runs on port 8080.
+</Aside>
+
+Or if deployed:
+
+```
+https://your-code-search-domain.com
+```
+
+## Interface Overview
+
+### Search Page (Home)
+
+The main search interface at `/` includes:
+
+- **Search Bar**: Enter your query with optional Zoekt filters
+- **Search Help**: Quick reference for query syntax when no results
+- **Results List**: Matching code snippets with syntax highlighting
+- **Repository Count**: Shows total indexed repositories
+
+### Connections Page
+
+Navigate to `/connections` to manage code host connections:
+
+- View all configured connections (GitHub, GitLab, Gitea, Bitbucket)
+- Add new connections with token authentication
+- Test connectivity to verify credentials
+- Trigger repository sync
+- View indexed repositories per connection
+- Read-only mode when managed via config file
+
+### Repositories Page
+
+Navigate to `/repos` to browse indexed repositories:
+
+- List all repositories with status indicators
+- Filter by connection, status, or name
+- View indexing status and last indexed time
+- Manually trigger re-indexing
+
+### Jobs Page
+
+Navigate to `/jobs` to monitor background jobs:
+
+- View all index, sync, and replace jobs
+- Filter by status (pending, running, completed, failed)
+- See job progress and timing
+- Cancel pending jobs
+
+### Replace Page
+
+Navigate to `/replace` for bulk find-and-replace:
+
+- Search across repositories
+- Define replacement patterns
+- Preview changes before applying
+- Create merge requests with changes
+
+## Quick Start
+
+1. Open the web UI in your browser at `http://localhost:3000`
+2. If no repositories are indexed, go to Connections to add a code host
+3. Enter a search query in the search bar
+4. Use filters like `repo:`, `file:`, `lang:` to narrow results
+5. Click on a result to see the full file context
+
+## Next Steps
+
+- [Search Interface](/web-ui/search/) - Detailed search guide
+- [Connections](/web-ui/connections/) - Managing connections
+- [Repositories](/web-ui/repositories/) - Repository management

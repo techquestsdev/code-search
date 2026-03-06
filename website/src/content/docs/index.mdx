@@ -1,0 +1,41 @@
+---
+title: Documentation
+description: Code Search documentation — guides, configuration, API reference, and more.
+---
+
+import { Card, CardGrid, LinkCard } from "@astrojs/starlight/components";
+
+Welcome to the Code Search documentation. Code Search is a self-hosted code search and bulk operations platform powered by Zoekt.
+
+<CardGrid>
+  <LinkCard
+    title="Installation Guide"
+    description="Docker, Kubernetes, Helm, or build from source"
+    href="/getting-started/installation/"
+  />
+  <LinkCard
+    title="Quick Start Tutorial"
+    description="Get searching in 5 minutes"
+    href="/getting-started/quick-start/"
+  />
+  <LinkCard
+    title="Configuration Reference"
+    description="All options explained"
+    href="/configuration/overview/"
+  />
+  <LinkCard
+    title="CLI Documentation"
+    description="Master the command line"
+    href="/cli/installation/"
+  />
+  <LinkCard
+    title="API Reference"
+    description="REST API and MCP server"
+    href="/api/overview/"
+  />
+  <LinkCard
+    title="Architecture"
+    description="How Code Search works under the hood"
+    href="/architecture/overview/"
+  />
+</CardGrid>

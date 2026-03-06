@@ -1,0 +1,94 @@
+name: Release Helm Charts
+
+on:
+  push:
+    tags:
+      - 'helm-*/*'
+
+permissions:
+  contents: write
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  OCI_REPO: oci://ghcr.io/techquestsdev/charts
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Parse tag
+        id: parse
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          COMPONENT="${TAG%/*}"
+          VERSION="${TAG#*/}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+          case "$COMPONENT" in
+            helm-code-search)
+              echo "chart_path=deploy/helm/code-search" >> "$GITHUB_OUTPUT"
+              echo "chart_name=code-search" >> "$GITHUB_OUTPUT"
+              ;;
+            helm-website)
+              echo "chart_path=deploy/helm/code-search-website" >> "$GITHUB_OUTPUT"
+              echo "chart_name=code-search-website" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "Unknown chart: $COMPONENT"
+              exit 1
+              ;;
+          esac
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: Update Chart.yaml version
+        run: |
+          sed -i "s/^version:.*/version: \"${{ steps.parse.outputs.version }}\"/" "${{ steps.parse.outputs.chart_path }}/Chart.yaml"
+
+      - name: Login to GitHub Container Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login "${{ env.REGISTRY }}" --username "${{ github.actor }}" --password-stdin
+
+      - name: Package chart
+        run: helm package "${{ steps.parse.outputs.chart_path }}" --version "${{ steps.parse.outputs.version }}"
+
+      - name: Push chart
+        run: |
+          CHART_NAME=${{ steps.parse.outputs.chart_name }}
+          helm push "${CHART_NAME}-${{ steps.parse.outputs.version }}.tgz" "${{ env.OCI_REPO }}"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          CHART_NAME=${{ steps.parse.outputs.chart_name }}
+          VERSION=${{ steps.parse.outputs.version }}
+          CHART_PATH=${{ steps.parse.outputs.chart_path }}
+
+          cat > /tmp/release-notes.md << EOF
+          ## Installation
+
+          \`\`\`bash
+          helm install ${CHART_NAME} oci://ghcr.io/techquestsdev/charts/${CHART_NAME} --version ${VERSION}
+          \`\`\`
+
+          ## Upgrade
+
+          \`\`\`bash
+          helm upgrade ${CHART_NAME} oci://ghcr.io/techquestsdev/charts/${CHART_NAME} --version ${VERSION}
+          \`\`\`
+
+          > **Note:** The GHCR packages page incorrectly shows \`docker pull\` — this is a Helm chart, not a Docker image. Use \`helm install\` or \`helm pull\` as shown above.
+
+          ---
+
+          $(cat "${CHART_PATH}/README.md")
+          EOF
+
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "Helm Chart: ${CHART_NAME} v${VERSION}" \
+            --notes-file /tmp/release-notes.md \
+            "${CHART_NAME}-${VERSION}.tgz"

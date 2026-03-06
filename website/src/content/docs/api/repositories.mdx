@@ -1,0 +1,379 @@
+---
+title: Repositories API
+description: Repository management API endpoints
+---
+
+import { Tabs, TabItem, Aside } from "@astrojs/starlight/components";
+
+The Repositories API allows you to manage indexed repositories.
+
+## List Repositories
+
+Get all indexed repositories.
+
+```http
+GET /api/v1/repos
+```
+
+### Query Parameters
+
+| Parameter       | Type    | Description                                    |
+| --------------- | ------- | ---------------------------------------------- |
+| `connection_id` | integer | Filter by connection ID                        |
+| `search`        | string  | Search repositories by name (partial match)   |
+| `status`        | string  | Filter by status (`indexed`, `pending`, etc.) |
+| `limit`         | integer | Results per page (default: 15, max: 500)       |
+| `offset`        | integer | Pagination offset                              |
+
+### Response
+
+```json
+{
+  "repos": [
+    {
+      "id": 1,
+      "name": "myorg/api",
+      "clone_url": "https://github.com/myorg/api.git",
+      "branches": ["main", "develop"],
+      "status": "indexed",
+      "last_indexed": "2024-01-15T10:30:00Z",
+      "excluded": false,
+      "deleted": false,
+      "archived": false
+    }
+  ],
+  "total_count": 45,
+  "limit": 15,
+  "offset": 0,
+  "has_more": true
+}
+```
+
+## Get Repository
+
+Get a specific repository by ID.
+
+```http
+GET /api/v1/repos/by-id/{id}
+```
+
+### Parameters
+
+| Parameter | Type    | Description   |
+| --------- | ------- | ------------- |
+| `id`      | integer | Repository ID |
+
+### Response
+
+```json
+{
+  "id": 1,
+  "name": "myorg/api",
+  "clone_url": "https://github.com/myorg/api.git",
+  "branches": ["main", "develop"],
+  "status": "indexed",
+  "last_indexed": "2024-01-15T10:30:00Z",
+  "excluded": false,
+  "deleted": false,
+  "archived": false
+}
+```
+
+## Add Repository
+
+Add a new repository for indexing.
+
+```http
+POST /api/v1/repos
+```
+
+### Request Body
+
+```json
+{
+  "connection_id": 1,
+  "name": "myorg/api",
+  "clone_url": "https://github.com/myorg/api.git",
+  "default_branch": "main",
+  "branches": ["main", "develop"]
+}
+```
+
+### Response
+
+Returns the created repository with status `201 Created`.
+
+## Sync Repository
+
+Trigger a re-index for a repository.
+
+```http
+POST /api/v1/repos/by-id/{id}/sync
+```
+
+### Response
+
+```json
+{
+  "status": "queued",
+  "job_id": "abc123",
+  "message": "Sync job queued"
+}
+```
+
+### Conflict Response (409)
+
+If a sync is already in progress:
+
+```json
+{
+  "status": "already_syncing",
+  "message": "Repository sync already in progress"
+}
+```
+
+<Aside type="note">
+  The API prevents duplicate syncs. If a repository is already being synced or has a pending job,
+  the request returns `409 Conflict`.
+</Aside>
+```
+
+## Delete Repository
+
+Soft-delete a repository. The repository remains in the database but is marked as deleted and excluded from indexing.
+
+```http
+DELETE /api/v1/repos/by-id/{id}
+```
+
+### Response
+
+Returns `204 No Content` on success.
+
+<Aside type="tip">
+  Deleted repositories are **not** permanently removed from the database. They can be
+  restored using the restore endpoint. Index shards are cleaned up from disk.
+  Use this when you want to remove a repository but keep the option to bring it back.
+</Aside>
+
+## Restore Repository
+
+Restore a previously deleted repository.
+
+```http
+POST /api/v1/repos/by-id/{id}/restore
+```
+
+### Response
+
+```json
+{
+  "status": "restored",
+  "message": "Repository restored and queued for re-indexing"
+}
+```
+
+<Aside type="note">
+  Restoring a repository clears both the `deleted` and `excluded` flags. The repository
+  will be re-indexed on the next sync cycle.
+</Aside>
+
+## Exclude Repository
+
+Exclude a repository from sync and indexing (soft delete).
+
+```http
+POST /api/v1/repos/by-id/{id}/exclude
+```
+
+### Response
+
+```json
+{
+  "message": "Repository excluded from sync and indexing",
+  "id": 1
+}
+```
+
+<Aside type="tip">
+  Excluded repositories are not deleted from the database. They can be included
+  again later. This is useful when `repos_readonly` mode is enabled.
+</Aside>
+
+## Include Repository
+
+Include a previously excluded repository.
+
+```http
+POST /api/v1/repos/by-id/{id}/include
+```
+
+### Response
+
+```json
+{
+  "message": "Repository included - will be indexed on next sync",
+  "id": 1
+}
+```
+
+## Set Poll Interval
+
+Set a custom polling interval for a repository.
+
+```http
+PUT /api/v1/repos/by-id/{id}/poll-interval
+```
+
+### Request Body
+
+```json
+{
+  "interval_seconds": 3600
+}
+```
+
+Use `0` to reset to the default interval.
+
+### Response
+
+```json
+{
+  "status": "updated",
+  "repo_id": 1,
+  "interval_seconds": 3600
+}
+```
+
+## Repository Status Endpoint
+
+Check if repos are in read-only mode.
+
+```http
+GET /api/v1/repos/status
+```
+
+### Response
+
+```json
+{
+  "readonly": false
+}
+```
+
+## Examples
+
+<Tabs>
+  <TabItem label="cURL">
+    ```bash
+    # List repositories
+    curl "http://localhost:8080/api/v1/repos"
+    
+    # Search repositories
+    curl "http://localhost:8080/api/v1/repos?search=myorg"
+    
+    # Filter by connection
+    curl "http://localhost:8080/api/v1/repos?connection_id=1"
+    
+    # Filter by status
+    curl "http://localhost:8080/api/v1/repos?status=indexed"
+    
+    # Pagination
+    curl "http://localhost:8080/api/v1/repos?limit=20&offset=0"
+    
+    # Get specific repo
+    curl "http://localhost:8080/api/v1/repos/by-id/1"
+    
+    # Trigger sync
+    curl -X POST "http://localhost:8080/api/v1/repos/by-id/1/sync"
+    
+    # Exclude repo
+    curl -X POST "http://localhost:8080/api/v1/repos/by-id/1/exclude"
+    
+    # Include repo
+    curl -X POST "http://localhost:8080/api/v1/repos/by-id/1/include"
+    
+    # Restore deleted repo
+    curl -X POST "http://localhost:8080/api/v1/repos/by-id/1/restore"
+    
+    # Set poll interval (1 hour)
+    curl -X PUT "http://localhost:8080/api/v1/repos/by-id/1/poll-interval" \
+      -H "Content-Type: application/json" \
+      -d '{"interval_seconds": 3600}'
+    
+    # Delete repo
+    curl -X DELETE "http://localhost:8080/api/v1/repos/by-id/1"
+    ```
+  </TabItem>
+  <TabItem label="JavaScript">
+    ```javascript
+    const API = 'http://localhost:8080/api/v1';
+
+    // List repos
+    const repos = await fetch(`${API}/repos`).then(r => r.json());
+
+    // Get specific repo
+    const repo = await fetch(`${API}/repos/by-id/1`).then(r => r.json());
+
+    // Trigger sync
+    await fetch(`${API}/repos/by-id/1/sync`, { method: 'POST' });
+
+    // Exclude repo
+    await fetch(`${API}/repos/by-id/1/exclude`, { method: 'POST' });
+
+    // Restore deleted repo
+    await fetch(`${API}/repos/by-id/1/restore`, { method: 'POST' });
+
+    // Set poll interval
+    await fetch(`${API}/repos/by-id/1/poll-interval`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ interval_seconds: 3600 })
+    });
+    ```
+
+  </TabItem>
+  <TabItem label="Python">
+    ```python
+    import requests
+
+    API = 'http://localhost:8080/api/v1'
+
+    # List repos
+    repos = requests.get(f'{API}/repos').json()
+
+    # Get specific repo
+    repo = requests.get(f'{API}/repos/by-id/1').json()
+
+    # Trigger sync
+    requests.post(f'{API}/repos/by-id/1/sync')
+
+    # Exclude repo
+    requests.post(f'{API}/repos/by-id/1/exclude')
+
+    # Restore deleted repo
+    requests.post(f'{API}/repos/by-id/1/restore')
+
+    # Set poll interval
+    requests.put(f'{API}/repos/by-id/1/poll-interval',
+                 json={'interval_seconds': 3600})
+    ```
+
+  </TabItem>
+</Tabs>
+
+## Status Values
+
+| Status     | Description                                     |
+| ---------- | ----------------------------------------------- |
+| `pending`  | Waiting to be indexed                           |
+| `indexing` | Building search index                           |
+| `indexed`  | Ready for search                                |
+| `error`    | Indexing failed                                 |
+| `excluded` | Excluded from indexing (can be re-included)     |
+| `deleted`  | Soft-deleted (can be restored)                  |
+
+## Next Steps
+
+- [Connections API](/api/connections/) - Connection management
+- [Jobs API](/api/jobs/) - Job monitoring

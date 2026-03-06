@@ -1,0 +1,172 @@
+---
+title: Search & Replace
+description: Bulk search and replace with MR creation via the web UI
+---
+
+import { Aside, Steps } from "@astrojs/starlight/components";
+
+The Search & Replace page provides a visual interface for bulk search and replace operations across multiple repositories with automatic merge request creation.
+
+<Aside type="caution">
+  **All replacements create merge requests.** Changes are never committed directly to the main branch. This ensures all changes go through proper review.
+</Aside>
+
+## Accessing Replace
+
+Navigate to the **Replace** page from the main navigation.
+
+## How It Works
+
+<Steps>
+
+1. Enter your search pattern and replacement text
+
+2. Click **Preview** to see all matches
+
+3. Review the changes - each match shows the before/after diff
+
+4. Click **Execute** to create merge requests with the changes
+
+</Steps>
+
+## Search Pattern
+
+The search pattern field supports [Zoekt query syntax](/web-ui/search/):
+
+```
+oldFunction lang:go repo:myorg/api
+```
+
+### Available Filters
+
+| Filter | Example | Description |
+| ------ | ------- | ----------- |
+| `repo:` | `repo:myorg/api` | Filter by repository |
+| `lang:` | `lang:typescript` | Filter by language |
+| `file:` | `file:*.go` | Filter by file pattern |
+| `case:yes` | `FOO case:yes` | Case-sensitive search |
+| `case:no` | `foo case:no` | Case-insensitive (default) |
+| `-repo:` | `-repo:test` | Exclude repository |
+| `-file:` | `-file:*_test.go` | Exclude files |
+
+## Options Panel
+
+Click **More options** to access additional filtering:
+
+| Option | Description |
+| ------ | ----------- |
+| **File patterns** | Glob patterns to filter files (e.g., `*.go, *.ts`) |
+| **Repositories** | Filter to specific repos (comma-separated) |
+| **Limit** | Maximum number of matches (0 = unlimited) |
+| **MR/PR title** | Custom title for the merge request |
+
+<Aside type="note">
+  File patterns and repository filters apply **locally** to the preview results. This ensures only files matching your criteria are included in the replacement, even if the search query returns matches from other files.
+</Aside>
+
+## URL Sharing
+
+Replace parameters are encoded in the URL for easy sharing:
+
+```
+http://localhost:3000/replace?q=oldFunction&replace=newFunction&files=*.go&repos=myorg/api
+```
+
+Share the URL with teammates to let them preview or execute the same replacement.
+
+## Read-Only Mode & Personal Access Token
+
+<Aside type="caution" title="Read-Only Repositories">
+  When repositories are in **read-only mode** (managed via sync from code hosts), the replace feature requires a **Personal Access Token (PAT)** to create merge requests on your behalf. A banner at the top of the page indicates when read-only mode is active.
+</Aside>
+
+If you attempt to execute a replacement with read-only repositories, a modal will prompt you for your personal access token:
+
+1. Generate a PAT from your code host (GitLab, GitHub, etc.) with `api` or repository write permissions
+2. Enter the token in the modal
+3. The token is used **only for the current session** and is not stored in your browser
+4. The token is used to authenticate the MR creation on your behalf
+
+<Aside type="note" title="Security">
+  For security reasons, your token is kept in memory only for the current session. You will be prompted to enter it again if you close or refresh the page.
+</Aside>
+
+## Preview Results
+
+After clicking Preview, you'll see:
+
+- **Match count** - Total number of matches found
+- **File count** - Number of files with matches
+- **Grouped results** - Matches organized by repository and file
+- **Line preview** - Each match with the replacement highlighted
+
+### Diff View
+
+Each match shows:
+- ~~Old text~~ struck through in red
+- **New text** highlighted in green
+
+## Execute Replacement
+
+Once you're satisfied with the preview:
+
+1. Click **Execute (N matches)** button
+2. Confirm the action in the dialog
+3. A background job is queued
+4. Merge requests are created for each repository with changes
+
+<Aside type="note">
+  If the search pattern or options change after preview, the **Execute** button is disabled until you preview again. This ensures consistency between what you see and what gets replaced.
+</Aside>
+
+## Examples
+
+### Rename a Function
+
+```
+Search: getUserById
+Replace: findUserById
+Files: *.go, *.ts
+```
+
+### Update Import Path
+
+```
+Search: github.com/old-org/package
+Replace: github.com/new-org/package
+```
+
+### Version Bump
+
+```
+Search: "version": "1.0.0"
+Replace: "version": "2.0.0"
+Files: package.json
+```
+
+### Case-Sensitive Replacement
+
+```
+Search: FOO case:yes
+Replace: BAR
+```
+
+## Tips
+
+<Aside type="tip">
+  Use the **File patterns** option to narrow down replacements to specific file types, avoiding unintended changes in documentation or test files.
+</Aside>
+
+<Aside type="tip">
+  For regex patterns, use the query syntax directly: `/pattern/` in the search field.
+</Aside>
+
+<Aside type="tip">
+  The MR title defaults to "Replace X with Y" - customize it for clearer PR descriptions.
+</Aside>
+
+## Next Steps
+
+- [Search Interface](/web-ui/search/) - Learn the query syntax
+- [Jobs](/web-ui/jobs/) - Monitor replace job progress
+- [API Replace](/api/replace/) - Programmatic access

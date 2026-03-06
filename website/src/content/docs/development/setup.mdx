@@ -1,0 +1,377 @@
+---
+title: Development Setup
+description: Setting up a development environment
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+This guide will help you set up a development environment for Code Search.
+
+## Prerequisites
+
+- Go 1.21+
+- Node.js 18+
+- pnpm
+- Docker & Docker Compose
+- Git
+- PostgreSQL (or use Docker)
+- Redis (or use Docker)
+
+## Quick Start
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/your-org/code-search.git
+cd code-search
+```
+
+### 2. Start dependencies
+
+```bash
+docker-compose -f docker-compose.dev.yml up -d
+```
+
+This starts PostgreSQL, Redis, and Zoekt.
+
+### 3. Configure environment
+
+```bash
+cp config.example.yaml config.yaml
+# Edit config.yaml with your settings
+```
+
+### 4. Run migrations
+
+```bash
+make migrate
+```
+
+### 5. Start the API server
+
+```bash
+make run-api
+```
+
+### 6. Start the indexer (in another terminal)
+
+```bash
+make run-indexer
+```
+
+### 7. Start the web UI (in another terminal)
+
+```bash
+cd web
+pnpm install
+pnpm dev
+```
+
+The application is now running at:
+
+- Web UI: http://localhost:3001
+- API: http://localhost:3000
+
+## Project Structure
+
+```
+code-search/
+├── cmd/                    # Application entrypoints
+│   ├── api/               # API server
+│   ├── cli/               # CLI tool
+│   └── indexer/           # Indexer service
+├── internal/              # Internal packages
+│   ├── config/            # Configuration
+│   ├── db/                # Database access
+│   ├── codehost/          # Code host integrations
+│   ├── indexer/           # Indexing logic
+│   ├── search/            # Search logic
+│   └── queue/             # Job queue
+├── web/                   # Next.js frontend
+│   ├── app/               # App router pages
+│   ├── components/        # React components
+│   └── lib/               # Utilities
+├── migrations/            # SQL migrations
+├── docs/                  # Documentation
+└── docker/                # Dockerfiles
+```
+
+## Development Commands
+
+### Make Targets
+
+```bash
+# Build everything
+make build
+
+# Run tests
+make test
+
+# Run linter
+make lint
+
+# Format code
+make fmt
+
+# Generate code
+make generate
+
+# Run API server
+make run-api
+
+# Run indexer
+make run-indexer
+
+# Run migrations
+make migrate
+```
+
+### Go Commands
+
+```bash
+# Run tests with coverage
+go test -cover ./...
+
+# Run specific package tests
+go test ./internal/search/...
+
+# Build binary
+go build -o bin/code-search ./cmd/api
+
+# Run with race detector
+go run -race ./cmd/api
+```
+
+### Web Commands
+
+```bash
+cd web
+
+# Install dependencies
+pnpm install
+
+# Development server
+pnpm dev
+
+# Production build
+pnpm build
+
+# Run linter
+pnpm lint
+
+# Type check
+pnpm typecheck
+```
+
+## Configuration
+
+### Development Config
+
+Create `config.yaml` for development:
+
+```yaml
+server:
+  host: "0.0.0.0"
+  port: 3000
+
+database:
+  host: "localhost"
+  port: 5432
+  name: "code_search_dev"
+  user: "postgres"
+  password: "postgres"
+
+redis:
+  host: "localhost"
+  port: 6379
+
+zoekt:
+  data_dir: "./data"
+  index_dir: "./data/index"
+
+indexer:
+  concurrency: 2
+  data_dir: "./data"
+
+# Development connections for testing
+connections:
+  - name: test-github
+    type: github
+    token: "${GITHUB_TOKEN}"
+    orgs:
+      - your-test-org
+```
+
+### Environment Variables
+
+```bash
+export GITHUB_TOKEN="ghp_xxxxx"
+export GITLAB_TOKEN="glpat-xxxxx"
+export DATABASE_PASSWORD="postgres"
+export REDIS_PASSWORD=""
+```
+
+## Testing
+
+### Unit Tests
+
+```bash
+# Run all tests
+make test
+
+# Run with verbose output
+go test -v ./...
+
+# Run specific test
+go test -v ./internal/search -run TestSearchQuery
+```
+
+### Integration Tests
+
+```bash
+# Start test dependencies
+docker-compose -f docker-compose.test.yml up -d
+
+# Run integration tests
+make test-integration
+
+# Clean up
+docker-compose -f docker-compose.test.yml down
+```
+
+### End-to-End Tests
+
+```bash
+cd web
+pnpm e2e
+```
+
+## Debugging
+
+### API Server
+
+```bash
+# Run with delve debugger
+dlv debug ./cmd/api -- --config config.yaml
+
+# Attach to running process
+dlv attach <pid>
+```
+
+### VS Code Launch Config
+
+```json
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "API Server",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}/cmd/api",
+      "args": ["--config", "config.yaml"]
+    },
+    {
+      "name": "Indexer",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}/cmd/indexer",
+      "args": ["--config", "config.yaml"]
+    }
+  ]
+}
+```
+
+### Logging
+
+Enable debug logging:
+
+```yaml
+# config.yaml
+log:
+  level: debug
+  format: text # or json
+```
+
+## Database
+
+### Running Migrations
+
+```bash
+# Apply migrations
+make migrate
+
+# Rollback last migration
+make migrate-down
+
+# Create new migration
+make migrate-create name=add_new_table
+```
+
+### Accessing Database
+
+```bash
+# Via psql
+psql -h localhost -U postgres -d code_search_dev
+
+# Via make
+make db-shell
+```
+
+## Docker Development
+
+### Building Images
+
+```bash
+# Build all images
+make docker-build
+
+# Build specific image
+docker build -f docker/api.Dockerfile -t code-search-api .
+```
+
+### Running in Docker
+
+```bash
+# Start everything
+docker-compose up
+
+# Start with rebuild
+docker-compose up --build
+
+# View logs
+docker-compose logs -f api
+```
+
+## Code Style
+
+### Go
+
+- Follow [Effective Go](https://golang.org/doc/effective_go.html)
+- Use `gofmt` for formatting
+- Run `golangci-lint` for linting
+
+### TypeScript
+
+- Follow the project's ESLint config
+- Use Prettier for formatting
+- Use strict TypeScript
+
+### Commit Messages
+
+Follow conventional commits:
+
+```
+feat: add new search filter
+fix: resolve connection timeout issue
+docs: update API documentation
+refactor: simplify indexer logic
+test: add search tests
+```
+
+## Next Steps
+
+- [Contributing](/development/contributing/) - Contribution guidelines
+- [Building](/development/building/) - Build process details

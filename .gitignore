@@ -1,0 +1,58 @@
+# Dependencies
+/vendor/
+/node_modules/
+
+# Build outputs
+/bin/
+/dist/
+enterprise/bin/
+enterprise/dist/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test outputs
+*.test
+*.out
+coverage.out
+coverage.html
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+CLAUDE.md
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+.env.*.local
+.envrc
+
+# Config with secrets
+config.yaml
+!config.example.yaml
+
+# Data directories
+/data/
+*.zoekt
+
+# Logs
+*.log
+
+# Debug
+__debug_bin
+
+# Next.js
+/web/.next/
+/web/out/
+/web/node_modules/

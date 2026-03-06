@@ -1,0 +1,230 @@
+---
+title: Data Flow
+description: How data flows through Code Search
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+This page describes the data flows for common operations.
+
+## Search Request
+
+When a user searches for code:
+
+```
+┌──────┐    ┌─────────┐    ┌────────┐    ┌───────┐
+│ User │───▶│ Web UI  │───▶│  API   │───▶│ Zoekt │
+│      │    │         │    │ Server │    │       │
+└──────┘    └─────────┘    └────────┘    └───────┘
+                                              │
+    ┌──────────────────────────────────────────┘
+    │
+    ▼
+┌───────┐    ┌─────────┐    ┌──────┐
+│ Zoekt │───▶│  API    │───▶│ User │
+│       │    │ Server  │    │      │
+└───────┘    └─────────┘    └──────┘
+```
+
+### Step by Step
+
+1. **User Input**: User enters query in Web UI
+2. **API Request**: Web UI sends `GET /api/search?q=...`
+3. **Query Parsing**: API parses query and filters
+4. **Zoekt Search**: API forwards to Zoekt
+5. **Index Lookup**: Zoekt searches trigram index
+6. **Results**: Matching files and lines returned
+7. **Formatting**: API formats response
+8. **Display**: Web UI renders results
+
+### Timing
+
+| Step              | Typical Time |
+| ----------------- | ------------ |
+| API parsing       | &lt;1ms      |
+| Zoekt search      | 5-50ms       |
+| Result formatting | &lt;5ms      |
+| **Total**         | **10-60ms**  |
+
+## Repository Sync
+
+When a connection syncs repositories:
+
+```
+┌───────────┐    ┌──────────┐    ┌───────────┐
+│ Scheduler │───▶│  Queue   │───▶│  Worker   │
+│           │    │  (Redis) │    │           │
+└───────────┘    └──────────┘    └───────────┘
+                                       │
+                                       ▼
+                                 ┌───────────┐
+                                 │ Code Host │
+                                 │   (API)   │
+                                 └───────────┘
+                                       │
+    ┌──────────────────────────────────┘
+    │
+    ▼
+┌───────────┐    ┌──────────┐
+│PostgreSQL │◀───│  Worker  │
+│           │    │          │
+└───────────┘    └──────────┘
+```
+
+### Step by Step
+
+1. **Schedule Trigger**: Scheduler detects sync due
+2. **Job Creation**: Sync job queued in Redis
+3. **Worker Pickup**: Worker dequeues job
+4. **API Discovery**: Worker calls code host API
+5. **Repository List**: Code host returns repos
+6. **Filter**: Apply include/exclude patterns
+7. **Database Update**: Update repo metadata
+8. **Index Jobs**: Queue index jobs for new repos
+
+### Timing
+
+| Step            | Typical Time |
+| --------------- | ------------ |
+| Job queue       | &lt;10ms     |
+| API discovery   | 1-10s        |
+| Database update | &lt;100ms    |
+| **Total**       | **2-15s**    |
+
+## Repository Indexing
+
+When a repository is indexed:
+
+```
+┌──────────┐    ┌──────────┐    ┌──────────┐
+│  Queue   │───▶│  Worker  │───▶│   Git    │
+│ (Redis)  │    │          │    │  Clone   │
+└──────────┘    └──────────┘    └──────────┘
+                                      │
+                                      ▼
+                               ┌───────────┐
+                               │   Disk    │
+                               │ (Git Repo)│
+                               └───────────┘
+                                      │
+    ┌─────────────────────────────────┘
+    │
+    ▼
+┌──────────┐    ┌──────────┐    ┌──────────┐
+│  File    │───▶│  Index   │───▶│  Zoekt   │
+│ Analysis │    │  Build   │    │  Index   │
+└──────────┘    └──────────┘    └──────────┘
+                                      │
+    ┌─────────────────────────────────┘
+    │
+    ▼
+┌──────────┐
+│PostgreSQL│
+│ (Status) │
+└──────────┘
+```
+
+### Step by Step
+
+1. **Job Pickup**: Worker dequeues index job
+2. **Git Clone**: Clone or fetch repository
+3. **File Analysis**: Enumerate and analyze files
+4. **Language Detection**: Detect file languages
+5. **Index Build**: Create Zoekt trigram index
+6. **Index Write**: Write index to disk
+7. **Status Update**: Update database status
+
+### Timing
+
+| Step          | Typical Time  |
+| ------------- | ------------- |
+| Git clone     | 10s-5min      |
+| File analysis | 1-30s         |
+| Index build   | 5s-2min       |
+| **Total**     | **30s-10min** |
+
+<Aside>
+  Time varies significantly based on repository size. A small repo may index in
+  seconds; a monorepo may take minutes.
+</Aside>
+
+## Replace Operation
+
+When creating a merge request with changes:
+
+```
+┌──────┐    ┌──────────┐    ┌──────────┐
+│ CLI  │───▶│   API    │───▶│  Search  │
+│      │    │  Server  │    │          │
+└──────┘    └──────────┘    └──────────┘
+                                  │
+    ┌─────────────────────────────┘
+    │
+    ▼
+┌──────────┐    ┌──────────┐    ┌──────────┐
+│ Matches  │───▶│ Changes  │───▶│ Code Host│
+│          │    │ Applied  │    │   API    │
+└──────────┘    └──────────┘    └──────────┘
+                                      │
+    ┌─────────────────────────────────┘
+    │
+    ▼
+┌──────────┐
+│   MR     │
+│ Created  │
+└──────────┘
+```
+
+### Step by Step
+
+1. **Query**: CLI sends search/replace query
+2. **Search**: Find all matches
+3. **Preview**: Show changes to user
+4. **Confirm**: User confirms changes
+5. **Clone Repos**: Clone affected repos
+6. **Apply Changes**: Apply find/replace
+7. **Commit**: Create commits
+8. **Push**: Push branches
+9. **Create MR**: Create merge requests
+
+### Timing
+
+| Step             | Typical Time          |
+| ---------------- | --------------------- |
+| Search           | &lt;1s                |
+| Clone (per repo) | 10-60s                |
+| Apply changes    | &lt;1s                |
+| Push & MR        | 2-10s                 |
+| **Total**        | **20s-2min per repo** |
+
+## Connection Test
+
+When testing a new connection:
+
+```
+┌──────┐    ┌──────────┐    ┌───────────┐
+│ Web  │───▶│   API    │───▶│ Code Host │
+│ UI   │    │  Server  │    │    API    │
+└──────┘    └──────────┘    └───────────┘
+                                  │
+    ┌─────────────────────────────┘
+    │
+    ▼
+┌──────────┐    ┌──────────┐
+│ Validate │───▶│  Return  │
+│  Token   │    │  Result  │
+└──────────┘    └──────────┘
+```
+
+### Step by Step
+
+1. **Submit**: User submits connection details
+2. **API Call**: API tests against code host
+3. **Validate**: Verify token and permissions
+4. **Discover**: Test repository discovery
+5. **Return**: Return success/failure
+
+## Next Steps
+
+- [Indexing](/architecture/indexing/) - Deep dive into indexing
+- [Components](/architecture/components/) - Component details

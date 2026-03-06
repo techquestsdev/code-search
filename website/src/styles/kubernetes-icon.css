@@ -1,0 +1,48 @@
+/**
+ * Kubernetes Tab Icon Styles
+ * 
+ * Adds the Kubernetes logo icon to tabs with the "Kubernetes" label.
+ * This works with the KubernetesTabItem component.
+ * Matches Starlight's built-in icon styling.
+ */
+
+/* Ensure tabs have proper flex layout for icons */
+starlight-tabs .tablist-wrapper ul[role="tablist"] li.tab a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25em;
+}
+
+/* 
+ * Kubernetes icon - matches Starlight's Icon component styling
+ * Uses 1em size for consistency with text
+ */
+.k8s-icon {
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+/* Outer blue shape - always Kubernetes blue */
+.k8s-outer {
+  fill: #60a5fa;
+}
+
+/* Light theme - outer details should be darker blue for contrast */
+:root[data-theme="light"] .k8s-outer {
+  fill: #1d4ed8;
+}
+
+/* Inner details - white on dark theme, dark on light theme */
+.k8s-inner {
+  fill: #030712;
+  stroke: #030712;
+  stroke-width: 0.25;
+}
+
+/* Light theme - inner details should be dark for contrast on blue */
+:root[data-theme="light"] .k8s-inner {
+  fill: white;
+  stroke: white;
+}

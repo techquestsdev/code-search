@@ -1,0 +1,155 @@
+---
+title: Repositories
+description: Managing repositories in the web UI
+---
+
+import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
+
+The Repositories page shows all indexed repositories and their status.
+
+## Accessing Repositories
+
+Navigate to the Repositories page:
+
+```
+http://localhost:3000/repos
+```
+
+## Repository List
+
+The main view displays all repositories with:
+
+| Column       | Description                 |
+| ------------ | --------------------------- |
+| Checkbox     | Select for bulk operations  |
+| Repository   | Full repository path        |
+| Branches     | Indexed branches            |
+| Status       | Indexing state              |
+| Last Indexed | Last successful index time  |
+| Actions      | Sync, Exclude, Delete       |
+
+### Filtering
+
+Use the filter controls to narrow down:
+
+- **Search**: Type to filter by repository name
+- **Status**: Filter by indexing status (dropdown)
+
+The counter shows filtered/total count (e.g., "45/123").
+
+### Repository Status
+
+| Status   | Indicator | Description                      |
+| -------- | --------- | -------------------------------- |
+| indexed  | ●         | Ready for search                 |
+| indexing | ◐         | Currently being indexed          |
+| pending  | ○         | Waiting in queue                 |
+| cloning  | ↓         | Being cloned                     |
+| failed   | ✗         | Indexing failed                  |
+| excluded | —         | Excluded from indexing           |
+| deleted  | 🗑        | Soft-deleted (can be restored)   |
+
+## Repository Actions
+
+### Individual Actions
+
+Click the menu (⋮) on any repository row:
+
+- **Sync** - Trigger re-indexing (not available for excluded/deleted repos)
+- **Exclude** - Mark as excluded from indexing
+- **Include** - Re-enable indexing (for excluded repos)
+- **Delete** - Soft-delete the repository (can be restored later)
+- **Restore** - Restore a deleted repository (for deleted repos)
+
+### Bulk Operations
+
+Select multiple repositories using checkboxes:
+
+1. Click individual checkboxes or select all filtered
+2. A bulk action bar appears at the top
+3. Available actions:
+   - **Sync** - Re-index selected repositories
+   - **Exclude** - Exclude selected from indexing
+   - **Delete** - Soft-delete selected repositories
+   - **Restore** - Restore selected deleted repositories
+4. Click **Clear** to deselect all
+
+## Read-Only Mode
+
+When `connections_readonly` is enabled, delete operations are disabled. You can still:
+
+- Sync repositories
+- Exclude/include repositories
+
+## Pagination
+
+The repository list is paginated:
+
+- 15 repositories per page
+- Navigation controls at the bottom
+- Shows current page and total pages
+
+## Excluding Repositories
+
+Excluding a repository:
+
+- Prevents it from being indexed
+- Keeps the repository in the list (grayed out)
+- Shows "excluded" status badge
+- Can be re-included anytime
+
+<Aside type="tip">
+  Exclude repositories you don't want to search (forks, archived, etc.) to save disk space and index time.
+</Aside>
+
+## Deleting and Restoring Repositories
+
+Deleting a repository performs a **soft delete**:
+
+- The repository is marked as deleted but remains in the database
+- It is automatically excluded from indexing
+- Index shards are cleaned up from disk
+- The repository appears with a red "deleted" badge and strikethrough text
+- It can be restored at any time using the Restore action
+
+To restore a deleted repository:
+
+1. Find the repository (use the "Deleted" status filter)
+2. Click the menu (⋮) and select **Restore**
+3. The repository will be re-indexed on the next sync cycle
+
+<Aside type="note">
+  Unlike exclude/include, delete/restore is useful when you want to completely remove a repository
+  from search results but keep the option to bring it back later without re-syncing from the code host.
+</Aside>
+
+## Troubleshooting
+
+### Repository Not Appearing
+
+Check that:
+
+1. The connection is healthy
+2. The repository exists on the code host
+3. The sync job has completed (check Jobs page)
+
+### Indexing Stuck
+
+If a repository is stuck in "indexing":
+
+1. Check the Jobs page for errors
+2. Try triggering a manual Sync
+3. Check server logs for issues
+
+### Failed Status
+
+If a repository shows "failed":
+
+1. Check the Jobs page for the failed job
+2. Look for error messages (clone issues, permissions, etc.)
+3. Fix the underlying issue and re-sync
+
+## Next Steps
+
+- [Jobs](/web-ui/jobs/) - Monitor indexing jobs
+- [Search](/web-ui/search/) - Search your repositories

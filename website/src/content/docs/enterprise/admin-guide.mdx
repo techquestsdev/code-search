@@ -1,0 +1,295 @@
+---
+title: Administration Guide
+description: Manage users, roles, audit logs, and licenses in Code Search Enterprise.
+sidebar:
+  order: 2
+---
+
+import { Steps, Aside } from "@astrojs/starlight/components";
+
+The Code Search Enterprise Admin UI provides a centralized interface for governance, security, and compliance management.
+
+## Accessing the Admin Panel
+
+Users assigned the **admin** role can access the administration area by clicking the **Admin** link in the sidebar or navigating to `/admin`.
+
+<Aside type="caution">
+  Most sections in the Admin Panel require a valid **Enterprise License**. If your license is expired or missing required features (like `rbac` or `audit`), the corresponding pages will display a "Licensed Feature Required" message.
+</Aside>
+
+## User Management
+
+The Users page (`/admin/users`) lets you manage user access and role assignments.
+
+<Aside type="note">
+  This feature requires the **SSO** and **RBAC** licensed features.
+</Aside>
+
+### Assigning Roles
+
+Roles are assigned to users based on their OIDC subject (ID from the identity provider).
+
+1. Go to **Admin → Users**.
+2. Find the user you want to manage.
+3. Click **Edit Roles**.
+4. Select the roles to assign and click **Save**.
+
+<Aside type="note">
+  Users can have multiple roles. Permissions are additive, except for "deny" rules which always take precedence.
+</Aside>
+
+## Role-Based Access Control (RBAC)
+
+The Roles page (`/admin/roles`) is where you define fine-grained access control policies. 
+
+<Aside type="note">
+  This feature requires the **RBAC** licensed feature. Without it, all users have full read access to all repositories.
+</Aside>
+
+### Creating a Role
+
+1. Go to **Admin → Roles**.
+2. Click **Create Role**.
+3. Enter a name (e.g., `Platform Team`) and description.
+4. Click **Save**.
+
+### Defining Permissions
+
+Permissions are defined using glob patterns for repositories.
+
+1. Click on a role to edit its permissions.
+2. Add a rule:
+   - **Repository Pattern**: e.g., `myorg/infrastructure-*`
+   - **Access Level**: `read`, `write`, or `admin`.
+3. Click **Add Rule**.
+4. Click **Save Permissions**.
+
+<Aside type="tip">
+  Use `*` as a wildcard. For example, `*` matches all repositories, while `myorg/*` matches all repositories in the `myorg` host.
+</Aside>
+
+## Audit Logging
+
+The Audit Log (`/admin/audit`) provides a searchable trail of all sensitive activities in the system.
+
+<Aside type="note">
+  This feature requires the **Audit** licensed feature.
+</Aside>
+
+Events captured include:
+- Search queries (including the user and full query)
+- File access (which file in which repo)
+- Replace operations (old/new patterns and affected repos)
+- Administrative changes (role creation, permission updates)
+- Login/logout events
+
+### Searching Audit Events
+
+You can filter audit logs by:
+- **User**: Search by User ID or Email.
+- **Event Type**: Filter by `search`, `file_access`, `replace`, etc.
+- **Repository**: Filter events related to a specific repo.
+- **Date Range**: View events within a specific time window.
+
+## License Management
+
+The License page (`/admin/license`) displays information about your current enterprise subscription. 
+
+This page is always accessible to admins, even if the license is invalid, so that a new license key can be applied.
+
+Information shown:
+- **Customer Name**
+- **Expiration Date**
+- **Seat Limit**: Maximum number of unique users allowed.
+- **Enabled Features**: SSO, RBAC, Audit, etc.
+
+### Updating a License
+
+To update your license (e.g., to add more seats or extend expiration):
+
+1. Obtain a new signed license key from support.
+2. Update the `CSE_LICENSE_KEY` environment variable.
+3. Restart the API server.
+
+## API Token Management
+
+Admins can view and revoke API tokens for any user in the system via the **Tokens** tab in the admin panel. 
+
+<Aside type="note">
+  This feature requires the **RBAC** licensed feature to manage roles associated with tokens.
+</Aside>
+
+To manage your *own* tokens, use the **User Settings** menu.
+
+## TLS / HTTPS
+
+Code Search does not terminate TLS itself — use a reverse proxy (nginx, Caddy, Traefik, a cloud load balancer, etc.) in front of the API server.
+
+<Aside type="caution">
+  When running behind a TLS-terminating proxy, set `CSE_COOKIE_SECURE=true` (the default) so session cookies include the `Secure` flag. Only disable this for local HTTP development.
+</Aside>
+
+### Example: nginx reverse proxy
+
+```nginx
+server {
+    listen 443 ssl http2;
+    server_name search.example.com;
+
+    ssl_certificate     /etc/ssl/certs/search.example.com.pem;
+    ssl_certificate_key /etc/ssl/private/search.example.com-key.pem;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+    ssl_ciphers         HIGH:!aNULL:!MD5;
+
+    location / {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+Key points:
+
+- **`X-Forwarded-Proto`** is required for correct OIDC redirect URLs and secure cookie behavior.
+- **`X-Real-IP`** / **`X-Forwarded-For`** are used for rate limiting and audit log client IPs.
+- The API server reads `X-Forwarded-Proto` to determine the scheme when generating OAuth callback URLs.
+
+### Kubernetes Ingress
+
+When using an Ingress controller, ensure TLS is configured on the Ingress resource and the correct headers are forwarded:
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: code-search
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  tls:
+    - hosts:
+        - search.example.com
+      secretName: code-search-tls
+  rules:
+    - host: search.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: code-search-api
+                port:
+                  number: 8080
+```
+
+## Configuration Reference
+
+Enterprise features are configured via environment variables (using the `CSE_` prefix) or `config.yaml`. All enterprise sections are optional — they only activate when a valid license includes the corresponding feature.
+
+### License Configuration
+
+```yaml
+license:
+  key: "$CSE_LICENSE_KEY"          # License key string (env var recommended)
+  key_file: ""                     # Or path to license file (e.g., /etc/code-search/license.key)
+```
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `CSE_LICENSE_KEY` | Signed license key string | - |
+| `CSE_LICENSE_KEY_FILE` | Path to license key file on disk | - |
+| `CSE_LICENSE_PUBLIC_KEY` | Base64-encoded Ed25519 public key for verification | - |
+
+### OIDC Authentication (SSO)
+
+```yaml
+auth:
+  issuer: ""                       # OIDC issuer URL (e.g., https://login.mycompany.com)
+  client_id: ""                    # OIDC client ID
+  client_secret: "$CSE_OIDC_CLIENT_SECRET"  # OIDC client secret
+  redirect_url: ""                 # OAuth2 redirect URL
+  session_secret: "$CSE_SESSION_SECRET"     # HMAC secret for session JWTs (32+ chars)
+  session_duration: 24h            # Session validity duration
+  cookie_secure: true              # Set Secure flag on cookie (disable for local HTTP dev)
+```
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `CSE_OIDC_ISSUER` | OIDC issuer URL | - |
+| `CSE_OIDC_CLIENT_ID` | OIDC client ID | - |
+| `CSE_OIDC_CLIENT_SECRET` | OIDC client secret | - |
+| `CSE_OIDC_REDIRECT_URL` | OAuth2 redirect URL | - |
+| `CSE_SESSION_SECRET` | HMAC secret for signing session JWTs | - |
+| `CSE_SESSION_DURATION` | Session validity duration | `24h` |
+| `CSE_COOKIE_SECURE` | Set Secure flag on session cookie | `true` |
+
+Required OIDC scopes: `openid`, `profile`, `email`. Optional: `groups` (for RBAC group mappings).
+
+Public endpoints (no auth required): `/api/v1/auth/login`, `/api/v1/auth/callback`, `/health`, `/ready`.
+
+### Audit Logging
+
+```yaml
+audit:
+  enabled: true                    # Enable audit logging
+  retention: 2160h                 # How long to keep events (2160h = 90 days)
+  buffer_size: 1000                # In-memory event buffer (flushes every 500ms or 50 events)
+```
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `CSE_AUDIT_ENABLED` | Enable audit logging | `true` |
+| `CSE_AUDIT_RETENTION` | How long to keep audit events | `2160h` (90 days) |
+| `CSE_AUDIT_BUFFER_SIZE` | In-memory event buffer size | `1000` |
+
+Automatic cleanup runs hourly. The audit table is partitioned by month, so expired partitions are dropped instantly rather than deleting rows one by one. Any stray rows in the default partition are cleaned up via batched deletes.
+
+### RBAC Roles and Group Mappings
+
+RBAC is configured via YAML or the admin API. There are no `CSE_` environment variables for RBAC.
+
+```yaml
+rbac:
+  roles:
+    frontend-developer:
+      description: "Frontend team - web repositories only"
+      permissions:
+        - repos: "myorg/web-*"
+          access: "allow"
+        - repos: "myorg/frontend-*"
+          access: "allow"
+
+    platform-engineer:
+      description: "Platform team - all repos except secrets"
+      permissions:
+        - repos: "myorg/*"
+          access: "allow"
+        - repos: "myorg/*-secrets"
+          access: "deny"
+
+  group_mappings:
+    "engineering":              # OIDC group name
+      - "developer"             # Assigned role(s)
+    "frontend-team":
+      - "frontend-developer"
+    "admin-team":
+      - "admin"
+```
+
+Built-in roles (auto-created, cannot be deleted):
+- **admin** — Full access to all repos and admin functions
+- **developer** — Read access to all repos
+- **viewer** — Read-only access to search results
+
+Role sources:
+- **builtin** — Auto-created system roles
+- **config** — Defined in `config.yaml` (synced on startup)
+- **custom** — Created via admin API
+
+<Aside type="note">
+  Deny rules always take precedence over allow rules. Config-defined roles are synced on every startup, overwriting any API changes to roles with the same name.
+</Aside>
