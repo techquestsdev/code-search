@@ -12,7 +12,7 @@ api:
   replicaCount: 1
   image:
     repository: code-search-api
-    tag: "" # Defaults to appVersion
+    tag: "" # Defaults to appVersion (chart release version). Override to pin a specific image version
     pullPolicy: Always
   resources:
     requests:
@@ -49,7 +49,7 @@ indexer:
   replicaCount: 1
   image:
     repository: code-search-indexer
-    tag: ""
+    tag: "" # Defaults to appVersion (chart release version). Override to pin a specific image version
     pullPolicy: Always
   resources:
     requests:
@@ -84,7 +84,7 @@ web:
   replicaCount: 1
   image:
     repository: code-search-web
-    tag: ""
+    tag: "" # Defaults to appVersion (chart release version). Override to pin a specific image version
     pullPolicy: Always
   resources:
     requests:
@@ -127,7 +127,7 @@ ingress:
 zoekt:
   image:
     repository: code-search-zoekt
-    tag: ""
+    tag: "" # Defaults to appVersion (chart release version). Override to pin a specific image version
     pullPolicy: Always
   resources:
     requests:
@@ -153,7 +153,7 @@ zoekt:
     enabled: false
     image:
       repository: code-search-zoekt-refresh
-      tag: ""
+      tag: "" # Defaults to appVersion (chart release version). Override to pin a specific image version
       pullPolicy: Always
     # Interval between refresh checks (default: 30s)
     interval: "30s"

@@ -46,7 +46,6 @@ jobs:
       - name: Update Chart.yaml version
         run: |
           sed -i "s/^version:.*/version: \"${{ steps.parse.outputs.version }}\"/" "${{ steps.parse.outputs.chart_path }}/Chart.yaml"
-          sed -i "s/^appVersion:.*/appVersion: \"${{ steps.parse.outputs.version }}\"/" "${{ steps.parse.outputs.chart_path }}/Chart.yaml"
 
       - name: Login to GitHub Container Registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login "${{ env.REGISTRY }}" --username "${{ github.actor }}" --password-stdin
