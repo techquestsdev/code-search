@@ -11,7 +11,7 @@ A Helm chart for deploying Code Search to Kubernetes.
 
 ## Installation
 
-### Quick Start
+### From OCI Registry
 
 ```bash
 # Create secrets for database and Redis
@@ -20,14 +20,14 @@ kubectl create secret generic code-search-postgres-url \
 kubectl create secret generic code-search-redis-password \
   --from-literal=password='redis-password'
 
-# Install with default values
-helm install code-search ./deploy/helm/code-search
+# Install from OCI registry
+helm install code-search oci://ghcr.io/techquestsdev/charts/code-search --version <version>
 ```
 
 ### With Ingress
 
 ```bash
-helm install code-search ./deploy/helm/code-search \
+helm install code-search oci://ghcr.io/techquestsdev/charts/code-search --version <version> \
   --set ingress.enabled=true \
   --set ingress.host=code-search.example.com
 ```
@@ -128,7 +128,7 @@ indexer:
 ## Upgrading
 
 ```bash
-helm upgrade code-search ./deploy/helm/code-search
+helm upgrade code-search oci://ghcr.io/techquestsdev/charts/code-search --version <version>
 ```
 
 Database migrations run automatically as a pre-upgrade hook (when `migrations.enabled: true`).

@@ -10,13 +10,13 @@ A Helm chart for deploying the Code Search documentation website to Kubernetes.
 ## Installation
 
 ```bash
-helm install code-search-website ./deploy/helm/code-search-website
+helm install code-search-website oci://ghcr.io/techquestsdev/charts/code-search-website --version <version>
 ```
 
 ### With Ingress
 
 ```bash
-helm install code-search-website ./deploy/helm/code-search-website \
+helm install code-search-website oci://ghcr.io/techquestsdev/charts/code-search-website --version <version> \
   --set ingress.enabled=true \
   --set ingress.host=docs.example.com
 ```

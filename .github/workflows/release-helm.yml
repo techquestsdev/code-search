@@ -6,7 +6,7 @@ on:
       - 'helm-*/*'
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 env:
@@ -30,9 +30,11 @@ jobs:
           case "$COMPONENT" in
             helm-code-search)
               echo "chart_path=deploy/helm/code-search" >> "$GITHUB_OUTPUT"
+              echo "chart_name=code-search" >> "$GITHUB_OUTPUT"
               ;;
             helm-website)
               echo "chart_path=deploy/helm/code-search-website" >> "$GITHUB_OUTPUT"
+              echo "chart_name=code-search-website" >> "$GITHUB_OUTPUT"
               ;;
             *)
               echo "Unknown chart: $COMPONENT"
@@ -55,5 +57,38 @@ jobs:
 
       - name: Push chart
         run: |
-          CHART_NAME=$(basename "${{ steps.parse.outputs.chart_path }}")
+          CHART_NAME=${{ steps.parse.outputs.chart_name }}
           helm push "${CHART_NAME}-${{ steps.parse.outputs.version }}.tgz" "${{ env.OCI_REPO }}"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          CHART_NAME=${{ steps.parse.outputs.chart_name }}
+          VERSION=${{ steps.parse.outputs.version }}
+          CHART_PATH=${{ steps.parse.outputs.chart_path }}
+
+          cat > /tmp/release-notes.md << EOF
+          ## Installation
+
+          \`\`\`bash
+          helm install ${CHART_NAME} oci://ghcr.io/techquestsdev/charts/${CHART_NAME} --version ${VERSION}
+          \`\`\`
+
+          ## Upgrade
+
+          \`\`\`bash
+          helm upgrade ${CHART_NAME} oci://ghcr.io/techquestsdev/charts/${CHART_NAME} --version ${VERSION}
+          \`\`\`
+
+          > **Note:** The GHCR packages page incorrectly shows \`docker pull\` — this is a Helm chart, not a Docker image. Use \`helm install\` or \`helm pull\` as shown above.
+
+          ---
+
+          $(cat "${CHART_PATH}/README.md")
+          EOF
+
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "Helm Chart: ${CHART_NAME} v${VERSION}" \
+            --notes-file /tmp/release-notes.md \
+            "${CHART_NAME}-${VERSION}.tgz"
