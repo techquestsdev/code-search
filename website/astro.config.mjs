@@ -294,6 +294,7 @@ export default defineConfig({
             { label: "Query Syntax", slug: "web-ui/query-syntax" },
             { label: "Connections", slug: "web-ui/connections" },
             { label: "Repositories", slug: "web-ui/repositories" },
+            { label: "Replace", slug: "web-ui/replace" },
             { label: "Jobs", slug: "web-ui/jobs" },
           ],
         },
@@ -310,18 +311,19 @@ export default defineConfig({
             { label: "Jobs", slug: "api/jobs" },
           ],
         },
-        // {
-        //   label: "Pricing",
-        //   items: [
-        //     { label: "Plans", slug: "pricing" },
-        //   ],
-        // },
-        // {
-        //   label: "Enterprise",
-        //   items: [
-        //     { label: "Overview", slug: "enterprise/overview" },
-        //   ],
-        // },
+        {
+          label: "Pricing",
+          items: [
+            { label: "Plans", slug: "pricing" },
+          ],
+        },
+        {
+          label: "Enterprise",
+          items: [
+            { label: "Overview", slug: "enterprise/overview" },
+            { label: "Administration Guide", slug: "enterprise/admin-guide" },
+          ],
+        },
         {
           label: "Architecture",
           items: [

@@ -234,22 +234,16 @@
               >
                 <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
               </svg>
-              <!-- Laptop icon (Auto) -->
+              <!-- Monitor icon (Auto) — matches Starlight docs -->
               <svg
                 class="icon-label icon-auto"
                 xmlns="http://www.w3.org/2000/svg"
                 width="16"
                 height="16"
                 viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+                fill="currentColor"
               >
-                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                <line x1="8" y1="21" x2="16" y2="21"></line>
-                <line x1="12" y1="17" x2="12" y2="21"></line>
+                <path d="M21 14h-1V7a3 3 0 0 0-3-3H7a3 3 0 0 0-3 3v7H3a1 1 0 0 0-1 1v2a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3v-2a1 1 0 0 0-1-1ZM6 7a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v7H6V7Zm14 10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-1h16v1Z"></path>
               </svg>
 
               <select id="theme-select">
@@ -469,7 +463,7 @@
       </section>
 
       <!-- ===== Connect All Your Code ===== -->
-      <section class="section section-alt fade-in-section">
+      <section class="section fade-in-section">
         <div class="container">
           <h2>Connect All Your Code</h2>
           <div class="card-grid cols-2">
@@ -533,7 +527,7 @@
       </section>
 
       <!-- ===== Enterprise Features ===== -->
-      <section class="section fade-in-section">
+      <section class="section section-alt fade-in-section">
         <div class="container">
           <h2>Enterprise Features</h2>
           <p class="section-subtitle">
@@ -602,6 +596,23 @@
             </div>
             <div class="pricing-card featured">
               <div class="pricing-header">
+                <h3>Enterprise</h3>
+                <p class="pricing-users">All features included</p>
+                <div class="pricing-price">Contact Us</div>
+              </div>
+              <ul class="pricing-features">
+                <li>Everything in Community</li>
+                <li>SSO (OIDC)</li>
+                <li>Role-based access control</li>
+                <li>Audit logging</li>
+                <li>Priority support</li>
+                <li>Custom user limits & SLA</li>
+              </ul>
+              <a href="/contact/" class="pricing-cta primary">Contact Us</a>
+            </div>
+            <!-- TODO: Restore individual pricing tiers when ready
+            <div class="pricing-card featured">
+              <div class="pricing-header">
                 <h3>Team</h3>
                 <p class="pricing-users">Up to 25 users</p>
                 <div class="pricing-price">$49<span>/mo</span></div>
@@ -651,6 +662,7 @@
               </ul>
               <a href="/contact/" class="pricing-cta">Contact Us</a>
             </div>
+            -->
           </div>
         </div>
       </section>
@@ -723,7 +735,7 @@
       </section>
 
       <!-- ===== Get Started ===== -->
-      <section class="section fade-in-section">
+      <section class="section section-alt fade-in-section">
         <div class="container">
           <h2>Get Started</h2>
           <div class="card-grid cols-3">
@@ -759,11 +771,12 @@
     <!-- ===== Footer ===== -->
     <footer class="site-footer">
       <div class="container footer-inner">
-        <p>&copy; 2025 Code Search. Apache License 2.0.</p>
+        <p>&copy; 2025–2026 Code Search. Apache License 2.0.</p>
         <div class="footer-links">
           <a href="/getting-started/introduction/">Docs</a>
           <a href="/pricing/">Pricing</a>
           <a href="/contact/">Contact</a>
+          <a href="/privacy/">Privacy</a>
           <a
             href="https://github.com/techquestsdev/code-search"
             target="_blank"
@@ -774,12 +787,13 @@
       </div>
     </footer>
 
-    <!-- Polar checkout -->
+    <!-- TODO: Restore Polar checkout script when pricing tiers are live
     <script
       defer
       data-auto-init
       src="https://cdn.jsdelivr.net/npm/@polar-sh/checkout@latest/dist/embed.global.js"
     ></script>
+    -->
   </body>
 </html>
 
@@ -996,16 +1010,7 @@
      Starlight shows the icon matching the CURRENT theme.
   */
   [data-theme="dark"] .icon-sun,
-  [data-theme="light"] .icon-moon {
-    /* Wait, Starlight usually shows:
-       - Sun icon when Light theme is active
-       - Moon icon when Dark theme is active
-       - Laptop icon when Auto theme is active
-       Wait, let's check custom.css logic.
-    */
-  }
-
-  /* Logic to show icons - simplified for landing page to match current theme icon */
+  /* Show icon matching the selected theme */
   /* If we want to perfectly match Starlight, we should use JS to toggle these classes based on select value */
 
   .theme-select-label .icon-label { display: none; }
@@ -1223,7 +1228,6 @@
   }
 
   .demo-video-wrap {
-    max-width: 900px;
     margin: 0 auto;
     border-radius: 0.75rem;
     overflow: hidden;
@@ -1240,6 +1244,12 @@
     width: 100%;
     display: block;
     border-radius: 0.75rem;
+  }
+
+  @media (max-width: 768px) {
+    .demo-section {
+      display: none;
+    }
   }
 
   /* ============================================

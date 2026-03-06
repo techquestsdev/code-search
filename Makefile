@@ -46,7 +46,7 @@ dev-web: ## Run web frontend locally
 	cd web && bun dev
 
 dev-website: ## Run project website locally
-	cd website && npm run dev
+	cd website && bun run dev
 
 dev-zoekt: ## Run zoekt-webserver locally
 	@mkdir -p ./data/index
