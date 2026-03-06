@@ -42,7 +42,7 @@ RUN /tmp/install-ctags-alpine.sh
 FROM golang:1.24-alpine AS scip-go-builder
 
 RUN apk add --no-cache git
-RUN go install github.com/sourcegraph/scip-go@latest
+RUN go install github.com/sourcegraph/scip-go/cmd/scip-go@latest
 
 # Runtime stage
 FROM alpine:3.19

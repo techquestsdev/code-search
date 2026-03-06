@@ -2,6 +2,8 @@
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
+![Preview](website/public/og-image.svg)
+
 **Search, find, and replace code across all your repositories in milliseconds.**
 
 A self-hosted code search and bulk operations platform. Powered by Zoekt (the same search engine Google uses internally), designed for teams that need speed, privacy, and control.
