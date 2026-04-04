@@ -498,8 +498,29 @@ func (i *Indexer) indexGoProject(ctx context.Context, projectDir string) ([]byte
 	)
 	defer os.Remove(outputFile)
 
+	// Use a temporary GOMODCACHE to avoid bloating the global module cache
+	tmpModCache, err := os.MkdirTemp(i.config.WorkDir, "gomodcache-*")
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to create temp module cache: %w", err)
+	}
+	defer os.RemoveAll(tmpModCache)
+
+	goModCacheEnv := append(os.Environ(), "GOMODCACHE="+tmpModCache)
+
 	ctx, cancel := context.WithTimeout(ctx, i.config.Timeout)
 	defer cancel()
+
+	// Download module dependencies first so scip-go can resolve all packages
+	dlCmd := exec.CommandContext(ctx, "go", "mod", "download")
+	dlCmd.Dir = projectDir
+
+	dlCmd.Env = goModCacheEnv
+	if dlOut, err := dlCmd.CombinedOutput(); err != nil {
+		i.logger.Warn("go mod download failed (continuing anyway)",
+			zap.Error(err),
+			zap.String("output", string(dlOut)),
+		)
+	}
 
 	// Use explicit paths to avoid "project root is outside the repository" error
 	cmd := exec.CommandContext(ctx, scipGo,
@@ -509,6 +530,7 @@ func (i *Indexer) indexGoProject(ctx context.Context, projectDir string) ([]byte
 		"--repository-root", projectDir,
 	)
 	cmd.Dir = projectDir
+	cmd.Env = goModCacheEnv
 
 	var stdout, stderr bytes.Buffer
 

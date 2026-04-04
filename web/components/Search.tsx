@@ -1376,25 +1376,29 @@ function FileResultCard({ group, hideFileNavigator }: { group: FileGroup; hideFi
                   const beforeStartLine = matchLine - beforeLines.length;
                   const afterStartLine = matchLine + 1;
 
+                  // Check next group to cap after-context before the next match line
+                  const nextGroup = groupIndex < lineGroups.length - 1 ? lineGroups[groupIndex + 1] : null;
+                  const afterLinesToShow = nextGroup
+                    ? Math.min(afterLines.length, Math.max(0, nextGroup.line - matchLine - 1))
+                    : afterLines.length;
+                  const filteredAfterLines = afterLines.slice(0, afterLinesToShow);
+
                   // Check previous group to avoid duplicating context lines
                   const prevGroup = groupIndex > 0 ? lineGroups[groupIndex - 1] : null;
                   const prevResult = prevGroup ? prevGroup.matches[0] : null;
-                  const prevMatchEndLine = prevResult ? prevResult.line + (prevResult.context?.after?.length || 0) : 0;
+                  // Calculate how many after-context lines the previous group actually displayed
+                  const prevAfterLength = prevResult?.context?.after?.length || 0;
+                  const prevAfterShown = prevGroup
+                    ? Math.min(prevAfterLength, Math.max(0, matchLine - prevGroup.line - 1))
+                    : 0;
+                  const prevDisplayedEndLine = prevGroup ? prevGroup.line + prevAfterShown : 0;
 
-                  // Calculate how many before lines to skip
-                  const beforeLinesToSkip = prevResult ? Math.max(0, prevMatchEndLine - beforeStartLine + 1) : 0;
+                  // Calculate how many before lines to skip (already shown by previous group)
+                  const beforeLinesToSkip = prevGroup ? Math.max(0, prevDisplayedEndLine - beforeStartLine + 1) : 0;
                   const filteredBeforeLines = beforeLines.slice(beforeLinesToSkip);
                   const filteredBeforeStartLine = beforeStartLine + beforeLinesToSkip;
 
-                  // Check next group for after-context overlap
-                  const nextGroup = groupIndex < lineGroups.length - 1 ? lineGroups[groupIndex + 1] : null;
-                  const nextResult = nextGroup ? nextGroup.matches[0] : null;
-                  const nextMatchBeforeStartLine = nextResult ? nextResult.line - (nextResult.context?.before?.length || 0) : Infinity;
-
-                  const afterLinesToShow = nextResult ? Math.max(0, nextMatchBeforeStartLine - afterStartLine) : afterLines.length;
-                  const filteredAfterLines = afterLines.slice(0, afterLinesToShow);
-
-                  const needsSeparator = prevResult && filteredBeforeStartLine > prevMatchEndLine + 1;
+                  const needsSeparator = prevResult && filteredBeforeStartLine > prevDisplayedEndLine + 1;
 
                   const getLineLink = (line: number) => {
                     if (repoId && !hideFileNavigator) {

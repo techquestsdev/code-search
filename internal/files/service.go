@@ -114,15 +114,15 @@ func (s *Service) resolveRef(repo *git.Repository, ref string) (*object.Commit, 
 		}
 	}
 
-	// Try as remote branch (origin/main)
-	if strings.Contains(ref, "/") {
-		remoteRef, err := repo.Reference(
-			plumbing.NewRemoteReferenceName("origin", strings.TrimPrefix(ref, "origin/")),
-			true,
-		)
-		if err == nil {
-			return repo.CommitObject(remoteRef.Hash())
-		}
+	// Try as remote branch (origin/main, origin/feature/foo)
+	remoteName := strings.TrimPrefix(ref, "origin/")
+
+	remoteRef, err := repo.Reference(
+		plumbing.NewRemoteReferenceName("origin", remoteName),
+		true,
+	)
+	if err == nil {
+		return repo.CommitObject(remoteRef.Hash())
 	}
 
 	return nil, fmt.Errorf("could not resolve ref %q", ref)
