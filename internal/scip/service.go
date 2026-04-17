@@ -243,6 +243,10 @@ func (s *Service) ListFiles(ctx context.Context, repoID int64, limit int) ([]str
 
 // EvictCache evicts the in-memory cached connection for a repo.
 func (s *Service) EvictCache(repoID int64) {
+	if s == nil {
+		return
+	}
+
 	s.store.EvictCache(repoID)
 }
 
