@@ -564,17 +564,9 @@ func (h *Handler) TestConnection(w http.ResponseWriter, r *http.Request) {
 
 // SyncConnection queues a job to fetch repositories from a connection
 // The actual fetching is done asynchronously by the indexer worker.
+// SyncConnection triggers a sync for a connection.
+// This is allowed even in read-only mode since sync only fetches repo metadata from the code host.
 func (h *Handler) SyncConnection(w http.ResponseWriter, r *http.Request) {
-	if h.connectionsReadOnly {
-		http.Error(
-			w,
-			"Connections are read-only. Manage connections via config file.",
-			http.StatusForbidden,
-		)
-
-		return
-	}
-
 	idStr := chi.URLParam(r, "id")
 
 	id, err := strconv.ParseInt(idStr, 10, 64)

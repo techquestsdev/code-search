@@ -613,12 +613,8 @@ func (h *Handler) ReposStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 // SyncRepoByID triggers a sync/reindex for a repository by ID.
+// This is allowed even in read-only mode since sync is the primary way to manage repos.
 func (h *Handler) SyncRepoByID(w http.ResponseWriter, r *http.Request) {
-	if h.reposReadOnly {
-		http.Error(w, "Repositories are read-only. Manage repos via sync.", http.StatusForbidden)
-		return
-	}
-
 	idStr := chi.URLParam(r, "id")
 
 	id, err := strconv.ParseInt(idStr, 10, 64)
