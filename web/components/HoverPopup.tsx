@@ -78,7 +78,9 @@ function parseDocumentation(doc: string | undefined): {
     .replace(/\\`/g, "`");
 
   // Find ALL code blocks - use greedy matching to get the largest one for signature
-  const allCodeBlocks = [...normalizedDoc.matchAll(/```(\w*)\s*([\s\S]*?)```/g)];
+  const allCodeBlocks = [
+    ...normalizedDoc.matchAll(/```(\w*)\s*([\s\S]*?)```/g),
+  ];
 
   let signature: string | null = null;
   let description: string | null = null;
@@ -417,14 +419,14 @@ export function HoverPopup({
       onClose();
     };
 
-    const scroller = document.querySelector('.cm-scroller');
+    const scroller = document.querySelector(".cm-scroller");
     if (scroller) {
-      scroller.addEventListener('scroll', handleScroll, { passive: true });
+      scroller.addEventListener("scroll", handleScroll, { passive: true });
     }
 
     return () => {
       if (scroller) {
-        scroller.removeEventListener('scroll', handleScroll);
+        scroller.removeEventListener("scroll", handleScroll);
       }
     };
   }, [onClose]);
@@ -457,46 +459,46 @@ export function HoverPopup({
   return (
     <div
       ref={popupRef}
-      className="fixed z-50 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden min-w-[300px] max-w-[500px]"
+      className="fixed z-50 min-w-[300px] max-w-[500px] overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-800"
       style={{
         left: `${position.x}px`,
         top: `${position.y}px`,
       }}
     >
       {/* Header with word and language */}
-      <div className="px-3 py-2 bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-between mb-1">
+      <div className="border-b border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-900/50">
+        <div className="mb-1 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Code2 className="w-4 h-4 text-blue-500" />
-            <span className="font-mono font-semibold text-sm text-gray-900 dark:text-gray-100">
+            <Code2 className="h-4 w-4 text-blue-500" />
+            <span className="font-mono text-sm font-semibold text-gray-900 dark:text-gray-100">
               {word}
             </span>
             {language && (
-              <span className="text-xs px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded font-medium">
+              <span className="rounded bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
                 {language}
               </span>
             )}
           </div>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"
+            className="rounded p-1 transition-colors hover:bg-gray-200 dark:hover:bg-gray-600"
           >
-            <X className="w-3.5 h-3.5 text-gray-400" />
+            <X className="h-3.5 w-3.5 text-gray-400" />
           </button>
         </div>
 
         {/* Signature with syntax highlighting */}
         {isLoadingDefinition && !signature && (
-          <div className="flex items-center gap-2 mt-2">
-            <Loader2 className="w-3.5 h-3.5 animate-spin text-gray-400" />
+          <div className="mt-2 flex items-center gap-2">
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-gray-400" />
             <span className="text-xs text-gray-500 dark:text-gray-400">
               Loading signature...
             </span>
           </div>
         )}
         {highlightedSignature && (
-          <div className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
-            <code className="text-xs block whitespace-pre-wrap break-all font-mono text-gray-800 dark:text-gray-200 leading-relaxed">
+          <div className="mt-2 rounded border border-gray-200 bg-gray-100 p-2 dark:border-gray-700 dark:bg-gray-800">
+            <code className="block whitespace-pre-wrap break-all font-mono text-xs leading-relaxed text-gray-800 dark:text-gray-200">
               {highlightedSignature}
             </code>
           </div>
@@ -505,15 +507,15 @@ export function HoverPopup({
 
       {/* Description/Documentation */}
       {description && (
-        <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-          <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+        <div className="border-b border-gray-200 bg-white px-3 py-2 dark:border-gray-700 dark:bg-gray-800">
+          <p className="text-xs leading-relaxed text-gray-600 dark:text-gray-300">
             {description}
           </p>
         </div>
       )}
 
       {/* Actions */}
-      <div className="p-2 flex gap-2 bg-white dark:bg-gray-800">
+      <div className="flex gap-2 bg-white p-2 dark:bg-gray-800">
         {onGoToDefinition && (
           <button
             onClick={() => {
@@ -521,12 +523,12 @@ export function HoverPopup({
               onClose();
             }}
             disabled={isLoadingDefinition}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-600 transition-colors hover:bg-blue-100 disabled:opacity-50 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50"
           >
             {isLoadingDefinition ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
-              <ArrowRight className="w-3.5 h-3.5" />
+              <ArrowRight className="h-3.5 w-3.5" />
             )}
             Go to Definition
           </button>
@@ -537,19 +539,19 @@ export function HoverPopup({
               onFindReferences();
               onClose();
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded transition-colors"
+            className="flex items-center gap-1.5 rounded bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
           >
-            <Search className="w-3.5 h-3.5" />
+            <Search className="h-3.5 w-3.5" />
             Find References
           </button>
         )}
       </div>
 
       {/* Keyboard hint */}
-      <div className="px-3 py-1.5 bg-gray-50 dark:bg-gray-700/30 border-t border-gray-200 dark:border-gray-700">
+      <div className="border-t border-gray-200 bg-gray-50 px-3 py-1.5 dark:border-gray-700 dark:bg-gray-700/30">
         <span className="text-xs text-gray-400">
           Press{" "}
-          <kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-600 rounded text-[10px]">
+          <kbd className="rounded bg-gray-200 px-1 py-0.5 text-[10px] dark:bg-gray-600">
             Esc
           </kbd>{" "}
           to close

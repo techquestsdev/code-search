@@ -111,8 +111,12 @@ func outputSearchText(resp *client.SearchResponse) error {
 		fileKey := result.Repo + "/" + result.File
 
 		last := len(groups) - 1
-		if last >= 0 && groups[last].result.Repo+"/"+groups[last].result.File == fileKey && groups[last].result.Line == result.Line {
-			groups[last].ranges = append(groups[last].ranges, [2]int{result.MatchStart, result.MatchEnd})
+		if last >= 0 && groups[last].result.Repo+"/"+groups[last].result.File == fileKey &&
+			groups[last].result.Line == result.Line {
+			groups[last].ranges = append(
+				groups[last].ranges,
+				[2]int{result.MatchStart, result.MatchEnd},
+			)
 		} else {
 			groups = append(groups, lineGroup{
 				result: result,
@@ -350,7 +354,8 @@ func runStreamSearch(c *client.Client, req *client.SearchRequest, output string)
 			fileKey := result.Repo + "/" + result.File
 
 			// Check if this is a same-line match we can merge
-			if pendingResult != nil && pendingResult.Repo+"/"+pendingResult.File == fileKey && pendingResult.Line == result.Line {
+			if pendingResult != nil && pendingResult.Repo+"/"+pendingResult.File == fileKey &&
+				pendingResult.Line == result.Line {
 				pendingRanges = append(pendingRanges, [2]int{result.MatchStart, result.MatchEnd})
 				return nil
 			}

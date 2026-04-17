@@ -137,7 +137,12 @@ func TestExtractOrdinal(t *testing.T) {
 		t.Run(tt.podName, func(t *testing.T) {
 			result := sharding.ExtractOrdinal(tt.podName)
 			if result != tt.expected {
-				t.Errorf("sharding.ExtractOrdinal(%q) = %v, want %v", tt.podName, result, tt.expected)
+				t.Errorf(
+					"sharding.ExtractOrdinal(%q) = %v, want %v",
+					tt.podName,
+					result,
+					tt.expected,
+				)
 			}
 		})
 	}

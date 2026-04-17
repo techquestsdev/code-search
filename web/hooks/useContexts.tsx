@@ -1,6 +1,13 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  ReactNode,
+} from "react";
 import {
   Context,
   ContextState,
@@ -22,15 +29,33 @@ interface ContextProviderState {
   isLoading: boolean;
 
   // Context CRUD
-  createContext: (name: string, description?: string, color?: string) => Context;
-  updateContext: (id: string, updates: Partial<Pick<Context, "name" | "description" | "color" | "repoFilter" | "isRegexFilter">>) => void;
+  createContext: (
+    name: string,
+    description?: string,
+    color?: string
+  ) => Context;
+  updateContext: (
+    id: string,
+    updates: Partial<
+      Pick<
+        Context,
+        "name" | "description" | "color" | "repoFilter" | "isRegexFilter"
+      >
+    >
+  ) => void;
   deleteContext: (id: string) => void;
 
   // Active context
   setActiveContext: (id: string | null) => void;
 
   // Repo management
-  addRepo: (contextId: string, repoId: number, repoName: string, query?: string, isRegex?: boolean) => void;
+  addRepo: (
+    contextId: string,
+    repoId: number,
+    repoName: string,
+    query?: string,
+    isRegex?: boolean
+  ) => void;
   removeRepo: (contextId: string, repoId: number) => void;
 
   // Utilities
@@ -42,7 +67,10 @@ interface ContextProviderState {
 const ContextProviderContext = createContext<ContextProviderState | null>(null);
 
 export function ContextProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<ContextState>({ contexts: [], activeContextId: null });
+  const [state, setState] = useState<ContextState>({
+    contexts: [],
+    activeContextId: null,
+  });
   const [isLoading, setIsLoading] = useState(true);
 
   // Load from localStorage on mount
@@ -63,18 +91,29 @@ export function ContextProvider({ children }: { children: ReactNode }) {
   const activeContext = getActiveContext(state);
 
   // Create a new context
-  const handleCreateContext = useCallback((name: string, description?: string, color?: string) => {
-    const newContext = createNewContext(name, description, color);
-    setState((prev) => ({
-      ...prev,
-      contexts: [...prev.contexts, newContext],
-    }));
-    return newContext;
-  }, []);
+  const handleCreateContext = useCallback(
+    (name: string, description?: string, color?: string) => {
+      const newContext = createNewContext(name, description, color);
+      setState((prev) => ({
+        ...prev,
+        contexts: [...prev.contexts, newContext],
+      }));
+      return newContext;
+    },
+    []
+  );
 
   // Update a context
   const handleUpdateContext = useCallback(
-    (id: string, updates: Partial<Pick<Context, "name" | "description" | "color" | "repoFilter" | "isRegexFilter">>) => {
+    (
+      id: string,
+      updates: Partial<
+        Pick<
+          Context,
+          "name" | "description" | "color" | "repoFilter" | "isRegexFilter"
+        >
+      >
+    ) => {
       setState((prev) => ({
         ...prev,
         contexts: prev.contexts.map((ctx) =>
@@ -91,7 +130,8 @@ export function ContextProvider({ children }: { children: ReactNode }) {
   const handleDeleteContext = useCallback((id: string) => {
     setState((prev) => ({
       contexts: prev.contexts.filter((ctx) => ctx.id !== id),
-      activeContextId: prev.activeContextId === id ? null : prev.activeContextId,
+      activeContextId:
+        prev.activeContextId === id ? null : prev.activeContextId,
     }));
   }, []);
 
@@ -104,14 +144,25 @@ export function ContextProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Add repo to context
-  const handleAddRepo = useCallback((contextId: string, repoId: number, repoName: string, query?: string, isRegex?: boolean) => {
-    setState((prev) => ({
-      ...prev,
-      contexts: prev.contexts.map((ctx) =>
-        ctx.id === contextId ? addRepoToContext(ctx, repoId, repoName, query, isRegex) : ctx
-      ),
-    }));
-  }, []);
+  const handleAddRepo = useCallback(
+    (
+      contextId: string,
+      repoId: number,
+      repoName: string,
+      query?: string,
+      isRegex?: boolean
+    ) => {
+      setState((prev) => ({
+        ...prev,
+        contexts: prev.contexts.map((ctx) =>
+          ctx.id === contextId
+            ? addRepoToContext(ctx, repoId, repoName, query, isRegex)
+            : ctx
+        ),
+      }));
+    },
+    []
+  );
 
   // Remove repo from context
   const handleRemoveRepo = useCallback((contextId: string, repoId: number) => {

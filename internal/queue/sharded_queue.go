@@ -58,7 +58,7 @@ func NewShardedQueue(client *redis.Client) *ShardedQueue {
 
 // processingKey returns the key for jobs being processed.
 func (sq *ShardedQueue) processingKey() string {
-	return "codesearch:jobs:processing"
+	return sq.Queue.processingKey
 }
 
 // workerKey returns the key for tracking worker heartbeats.
@@ -83,7 +83,9 @@ func (sq *ShardedQueue) DequeueForShard(ctx context.Context, timeout time.Durati
 		result, err := sq.client.RPop(ctx, sq.priorityQueueKey).Result()
 		if err == nil && result != "" {
 			job, err := sq.GetJob(ctx, result)
-			if err == nil && job != nil {
+			if err != nil || job == nil {
+				sq.cleanupGhostJob(ctx, result)
+			} else {
 				// Priority jobs (replace) don't need shard checks - any worker can handle them
 				if err := sq.claimJob(ctx, job); err == nil {
 					return job, nil
@@ -114,6 +116,10 @@ func (sq *ShardedQueue) DequeueForShard(ctx context.Context, timeout time.Durati
 
 		job, err := sq.GetJob(ctx, jobID)
 		if err != nil || job == nil {
+			// Job data expired — clean up stale index entries for this ghost job.
+			// We don't know the type/status, so remove from all possible indexes.
+			sq.cleanupGhostJob(ctx, jobID)
+
 			continue
 		}
 
@@ -149,7 +155,8 @@ func (sq *ShardedQueue) claimJob(ctx context.Context, job *Job) error {
 	workerKey := sq.workerKey(job.ID)
 
 	// SET NX is atomic - only succeeds if key doesn't exist
-	_, err := sq.client.SetArgs(ctx, workerKey, sq.workerID, redis.SetArgs{Mode: "NX", TTL: DefaultJobClaimTTL}).Result()
+	_, err := sq.client.SetArgs(ctx, workerKey, sq.workerID, redis.SetArgs{Mode: "NX", TTL: DefaultJobClaimTTL}).
+		Result()
 	if errors.Is(err, redis.Nil) {
 		return errors.New("job already claimed")
 	}
@@ -198,28 +205,32 @@ func (sq *ShardedQueue) MarkCompletedAndRelease(ctx context.Context, jobID strin
 
 // MarkFailedAndRelease marks a job failed and releases it.
 // If the job has retries remaining, it will be scheduled for retry instead of being marked as permanently failed.
+// If the error is a PermanentError, retries are skipped entirely.
 func (sq *ShardedQueue) MarkFailedAndRelease(
 	ctx context.Context,
 	jobID string,
 	jobErr error,
 ) error {
-	// Try to schedule retry
-	retried, err := sq.ScheduleRetry(ctx, jobID, jobErr)
-	if err != nil {
-		// If retry scheduling fails, fall back to marking as failed
-		if markErr := sq.MarkFailed(ctx, jobID, jobErr); markErr != nil {
-			return markErr
+	if IsPermanentError(jobErr) {
+		// Permanent errors skip retry — mark as failed immediately
+		_ = sq.MarkFailed(ctx, jobID, jobErr)
+	} else {
+		// Try to schedule retry
+		retried, err := sq.ScheduleRetry(ctx, jobID, jobErr)
+		if err != nil {
+			// If retry scheduling fails, fall back to marking as failed
+			if markErr := sq.MarkFailed(ctx, jobID, jobErr); markErr != nil {
+				return markErr
+			}
 		}
+
+		// If job was not retried (max attempts exceeded), it's already marked as failed by ScheduleRetry
+		// If job was retried, it's now in the retry queue waiting for its scheduled time
+		_ = retried // Used implicitly by ScheduleRetry updating the job
 	}
 
-	// Release the job from processing regardless of retry status
-	releaseErr := sq.ReleaseJob(ctx, jobID)
-
-	// If job was not retried (max attempts exceeded), it's already marked as failed by ScheduleRetry
-	// If job was retried, it's now in the retry queue waiting for its scheduled time
-	_ = retried // Used implicitly by ScheduleRetry updating the job
-
-	return releaseErr
+	// Release the job from processing regardless
+	return sq.ReleaseJob(ctx, jobID)
 }
 
 // RecoverStaleJobs finds jobs that were being processed but worker died
@@ -342,4 +353,23 @@ func (sq *ShardedQueue) GetTotalShards() int {
 // IsShardingEnabled returns whether sharding is enabled.
 func (sq *ShardedQueue) IsShardingEnabled() bool {
 	return sq.enabled
+}
+
+// cleanupGhostJob removes stale index entries for a job whose data has expired.
+// Since we don't know the original type/status, we remove from all possible indexes.
+func (sq *ShardedQueue) cleanupGhostJob(ctx context.Context, jobID string) {
+	pipe := sq.client.Pipeline()
+	pipe.ZRem(ctx, sq.jobIndexKey, jobID)
+
+	for _, status := range []JobStatus{JobStatusPending, JobStatusRunning, JobStatusCompleted, JobStatusFailed} {
+		pipe.ZRem(ctx, sq.statusIndexKey(status), jobID)
+	}
+
+	for _, jobType := range []JobType{JobTypeIndex, JobTypeReplace, JobTypeSync, JobTypeCleanup} {
+		pipe.ZRem(ctx, sq.typeIndexKey(jobType), jobID)
+	}
+
+	pipe.SRem(ctx, sq.processingKey(), jobID)
+
+	_, _ = pipe.Exec(ctx)
 }

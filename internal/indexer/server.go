@@ -400,7 +400,13 @@ func (s *Server) handleSCIPDefinition(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := s.scipService.GoToDefinition(r.Context(), repoID, req.FilePath, req.Line, req.Column)
+	result, err := s.scipService.GoToDefinition(
+		r.Context(),
+		repoID,
+		req.FilePath,
+		req.Line,
+		req.Column,
+	)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -437,7 +443,14 @@ func (s *Server) handleSCIPReferences(w http.ResponseWriter, r *http.Request) {
 		req.Limit = 100
 	}
 
-	result, err := s.scipService.FindReferences(r.Context(), repoID, req.FilePath, req.Line, req.Column, req.Limit)
+	result, err := s.scipService.FindReferences(
+		r.Context(),
+		repoID,
+		req.FilePath,
+		req.Line,
+		req.Column,
+		req.Limit,
+	)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return

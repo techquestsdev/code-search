@@ -30,7 +30,10 @@ func NewSCIPHandler(services *Services, scipSvc *scip.Service) *SCIPHandler {
 }
 
 // getBlob fetches file content using federated access when available.
-func (h *SCIPHandler) getBlob(ctx context.Context, repoName, path, ref string) (*files.BlobResponse, error) {
+func (h *SCIPHandler) getBlob(
+	ctx context.Context,
+	repoName, path, ref string,
+) (*files.BlobResponse, error) {
 	if h.services.FederatedFiles != nil {
 		return h.services.FederatedFiles.GetBlob(ctx, repoName, path, ref)
 	}
@@ -116,7 +119,11 @@ func (h *SCIPHandler) checkRepoAccess(w http.ResponseWriter, r *http.Request, re
 		return false
 	}
 
-	if !h.services.Authorizer.CanAccessRepo(r.Context(), middleware.UserFromContext(r.Context()), repo.Name) {
+	if !h.services.Authorizer.CanAccessRepo(
+		r.Context(),
+		middleware.UserFromContext(r.Context()),
+		repo.Name,
+	) {
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return false
 	}
@@ -352,7 +359,11 @@ func (h *SCIPHandler) IndexRepository(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !h.services.Authorizer.CanAccessRepo(r.Context(), middleware.UserFromContext(r.Context()), repo.Name) {
+	if !h.services.Authorizer.CanAccessRepo(
+		r.Context(),
+		middleware.UserFromContext(r.Context()),
+		repo.Name,
+	) {
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}

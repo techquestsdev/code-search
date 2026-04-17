@@ -1,4 +1,4 @@
-.PHONY: all build clean test lint help \
+.PHONY: all build build-website clean test test-go test-web lint lint-go lint-web fmt fmt-go fmt-web vet help \
 	release-api release-indexer release-web release-zoekt release-website \
 	release-helm release-helm-website release-cli
 
@@ -24,13 +24,16 @@ DEV_ENV := CS_DATABASE_URL=postgres://codesearch:codesearch@localhost:5432/codes
 
 all: build
 
-build: ## Build all binaries
+build: ## Build all Go binaries
 	$(GOCMD) build -o $(BIN_DIR)/code-search ./$(CMD_DIR)/cli
 	$(GOCMD) build -o $(BIN_DIR)/api-server ./$(CMD_DIR)/api
 	$(GOCMD) build -o $(BIN_DIR)/indexer ./$(CMD_DIR)/indexer
 	$(GOCMD) build -o $(BIN_DIR)/migrate ./$(CMD_DIR)/migrate
 	$(GOCMD) build -o $(BIN_DIR)/zoekt-refresh ./$(CMD_DIR)/zoekt-refresh
 	$(GOCMD) build -o $(BIN_DIR)/mcp-server ./$(CMD_DIR)/mcp
+
+build-website: ## Build project website
+	cd website && bun run build
 
 # =============================================================================
 # Development
@@ -85,15 +88,34 @@ dev-setup: ## First-time setup for local development
 # Testing & Linting
 # =============================================================================
 
-test: ## Run tests
+test: test-go test-web ## Run all tests
+
+test-go: ## Run Go tests
 	$(GOCMD) test -v ./...
 
-test-cover: ## Run tests with coverage
+test-web: ## Run web frontend tests
+	cd web && bun run test:run
+
+test-cover: ## Run Go tests with coverage
 	$(GOCMD) test -v -cover -coverprofile=coverage.out ./...
 	$(GOCMD) tool cover -html=coverage.out -o coverage.html
 
-lint: ## Run linters
+lint: lint-go lint-web ## Run all linters
+
+lint-go: ## Run Go linters
 	golangci-lint run ./...
+
+lint-web: ## Run web frontend linter
+	cd web && bun lint
+
+fmt: fmt-go fmt-web ## Format all code
+
+fmt-go: ## Format Go code
+	gofmt -w .
+	golines -w .
+
+fmt-web: ## Format web frontend code (prettier)
+	cd web && bun run format
 
 vet: ## Run go vet
 	$(GOCMD) vet ./...

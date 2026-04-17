@@ -33,14 +33,14 @@ export function ThemeToggle() {
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors"
+        className="rounded-lg p-2 text-gray-600 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
         aria-label="Toggle theme"
       >
-        <CurrentIcon className="w-5 h-5" />
+        <CurrentIcon className="h-5 w-5" />
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-36 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg py-1 z-50">
+        <div className="absolute right-0 z-50 mt-2 w-36 rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800">
           {options.map((option) => {
             const Icon = option.icon;
             const isSelected = theme === option.value;
@@ -52,12 +52,13 @@ export function ThemeToggle() {
                   setTheme(option.value);
                   setIsOpen(false);
                 }}
-                className={`w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors ${isSelected
+                className={`flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors ${
+                  isSelected
                     ? "bg-blue-50 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
-                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  }`}
+                    : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                }`}
               >
-                <Icon className="w-4 h-4" />
+                <Icon className="h-4 w-4" />
                 {option.label}
               </button>
             );

@@ -31,7 +31,7 @@ function highlightMatch(text: string, query: string): React.ReactNode {
   return (
     <>
       {text.slice(0, index)}
-      <mark className="bg-yellow-200 dark:bg-yellow-500/40 text-inherit rounded">
+      <mark className="rounded bg-yellow-200 text-inherit dark:bg-yellow-500/40">
         {text.slice(index, index + query.length)}
       </mark>
       {text.slice(index + query.length)}
@@ -49,10 +49,7 @@ export function QuickFilePickerList({
   listRef,
 }: QuickFilePickerListProps) {
   return (
-    <div
-      ref={listRef}
-      className="max-h-80 overflow-y-auto"
-    >
+    <div ref={listRef} className="max-h-80 overflow-y-auto">
       {filteredFiles.length === 0 ? (
         <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
           {loading ? "Loading files..." : "No matching files"}
@@ -66,28 +63,29 @@ export function QuickFilePickerList({
               onSelect(file.path);
               onClose();
             }}
-            className={`w-full flex items-center gap-3 px-4 py-2 text-left transition-colors ${index === selectedIndex
-              ? "bg-blue-50 dark:bg-blue-900/30"
-              : "hover:bg-gray-50 dark:hover:bg-gray-700/30"
-              }`}
+            className={`flex w-full items-center gap-3 px-4 py-2 text-left transition-colors ${
+              index === selectedIndex
+                ? "bg-blue-50 dark:bg-blue-900/30"
+                : "hover:bg-gray-50 dark:hover:bg-gray-700/30"
+            }`}
           >
             {file.type === "dir" ? (
-              <Folder className="w-4 h-4 text-blue-500 flex-shrink-0" />
+              <Folder className="h-4 w-4 flex-shrink-0 text-blue-500" />
             ) : (
-              <FileCode className="w-4 h-4 text-gray-400 flex-shrink-0" />
+              <FileCode className="h-4 w-4 flex-shrink-0 text-gray-400" />
             )}
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium truncate">
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-medium">
                 {highlightMatch(file.name, query)}
               </div>
               {file.path !== file.name && (
-                <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                <div className="truncate text-xs text-gray-500 dark:text-gray-400">
                   {highlightMatch(file.path, query)}
                 </div>
               )}
             </div>
             {file.language && (
-              <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0">
+              <span className="flex-shrink-0 text-xs text-gray-400 dark:text-gray-500">
                 {file.language}
               </span>
             )}

@@ -59,69 +59,69 @@ function getFileIcon(language?: string, name?: string) {
   if (language) {
     const langLower = language.toLowerCase();
     if (["javascript", "typescript", "jsx", "tsx"].includes(langLower)) {
-      return <FileCode className="w-4 h-4 text-yellow-500" />;
+      return <FileCode className="h-4 w-4 text-yellow-500" />;
     }
     if (["python"].includes(langLower)) {
-      return <FileCode className="w-4 h-4 text-blue-500" />;
+      return <FileCode className="h-4 w-4 text-blue-500" />;
     }
     if (["go"].includes(langLower)) {
-      return <FileCode className="w-4 h-4 text-cyan-500" />;
+      return <FileCode className="h-4 w-4 text-cyan-500" />;
     }
     if (["java", "kotlin"].includes(langLower)) {
-      return <FileCode className="w-4 h-4 text-orange-500" />;
+      return <FileCode className="h-4 w-4 text-orange-500" />;
     }
     if (["rust"].includes(langLower)) {
-      return <FileCode className="w-4 h-4 text-orange-700" />;
+      return <FileCode className="h-4 w-4 text-orange-700" />;
     }
     if (["json"].includes(langLower)) {
-      return <FileJson className="w-4 h-4 text-yellow-600" />;
+      return <FileJson className="h-4 w-4 text-yellow-600" />;
     }
     if (["markdown", "md"].includes(langLower)) {
-      return <FileText className="w-4 h-4 text-gray-500" />;
+      return <FileText className="h-4 w-4 text-gray-500" />;
     }
   }
 
   // Extension-based fallback
   if (ext) {
     if (["js", "jsx", "ts", "tsx", "mjs", "cjs"].includes(ext)) {
-      return <FileCode className="w-4 h-4 text-yellow-500" />;
+      return <FileCode className="h-4 w-4 text-yellow-500" />;
     }
     if (["py"].includes(ext)) {
-      return <FileCode className="w-4 h-4 text-blue-500" />;
+      return <FileCode className="h-4 w-4 text-blue-500" />;
     }
     if (["go"].includes(ext)) {
-      return <FileCode className="w-4 h-4 text-cyan-500" />;
+      return <FileCode className="h-4 w-4 text-cyan-500" />;
     }
     if (["java", "kt", "kts"].includes(ext)) {
-      return <FileCode className="w-4 h-4 text-orange-500" />;
+      return <FileCode className="h-4 w-4 text-orange-500" />;
     }
     if (["rs"].includes(ext)) {
-      return <FileCode className="w-4 h-4 text-orange-700" />;
+      return <FileCode className="h-4 w-4 text-orange-700" />;
     }
     if (["json"].includes(ext)) {
-      return <FileJson className="w-4 h-4 text-yellow-600" />;
+      return <FileJson className="h-4 w-4 text-yellow-600" />;
     }
     if (["md", "mdx"].includes(ext)) {
-      return <FileText className="w-4 h-4 text-gray-500" />;
+      return <FileText className="h-4 w-4 text-gray-500" />;
     }
     if (["yaml", "yml"].includes(ext)) {
-      return <FileText className="w-4 h-4 text-red-400" />;
+      return <FileText className="h-4 w-4 text-red-400" />;
     }
     if (["html", "htm"].includes(ext)) {
-      return <FileCode className="w-4 h-4 text-orange-500" />;
+      return <FileCode className="h-4 w-4 text-orange-500" />;
     }
     if (["css", "scss", "sass", "less"].includes(ext)) {
-      return <FileCode className="w-4 h-4 text-blue-400" />;
+      return <FileCode className="h-4 w-4 text-blue-400" />;
     }
     if (["sql"].includes(ext)) {
-      return <FileCode className="w-4 h-4 text-blue-600" />;
+      return <FileCode className="h-4 w-4 text-blue-600" />;
     }
     if (["sh", "bash", "zsh"].includes(ext)) {
-      return <FileCode className="w-4 h-4 text-green-600" />;
+      return <FileCode className="h-4 w-4 text-green-600" />;
     }
   }
 
-  return <File className="w-4 h-4 text-gray-400" />;
+  return <File className="h-4 w-4 text-gray-400" />;
 }
 
 // Node renderer component
@@ -136,12 +136,7 @@ function Node({ node, style, dragHandle }: NodeRendererProps<FileTreeNode>) {
       style={style}
       role="button"
       tabIndex={0}
-      className={`
-        flex items-center gap-1 px-2 py-1 cursor-pointer select-none
-        hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded outline-none
-        focus-visible:ring-1 focus-visible:ring-blue-500
-        ${isSelected ? "bg-blue-100 dark:bg-blue-900/30" : ""}
-      `}
+      className={`flex cursor-pointer select-none items-center gap-1 rounded px-2 py-1 outline-none hover:bg-gray-100 focus-visible:ring-1 focus-visible:ring-blue-500 dark:hover:bg-gray-700/50 ${isSelected ? "bg-blue-100 dark:bg-blue-900/30" : ""} `}
       onClick={() => {
         if (isFolder) {
           node.toggle();
@@ -157,23 +152,22 @@ function Node({ node, style, dragHandle }: NodeRendererProps<FileTreeNode>) {
       }}
     >
       {/* Expand/collapse arrow for folders */}
-      <span className="w-4 h-4 flex items-center justify-center flex-shrink-0">
-        {isFolder && (
-          node.isOpen ? (
-            <ChevronDown className="w-3 h-3 text-gray-400" />
+      <span className="flex h-4 w-4 flex-shrink-0 items-center justify-center">
+        {isFolder &&
+          (node.isOpen ? (
+            <ChevronDown className="h-3 w-3 text-gray-400" />
           ) : (
-            <ChevronRight className="w-3 h-3 text-gray-400" />
-          )
-        )}
+            <ChevronRight className="h-3 w-3 text-gray-400" />
+          ))}
       </span>
 
       {/* Icon */}
       <span className="flex-shrink-0">
         {isFolder ? (
           node.isOpen ? (
-            <FolderOpen className="w-4 h-4 text-blue-500" />
+            <FolderOpen className="h-4 w-4 text-blue-500" />
           ) : (
-            <Folder className="w-4 h-4 text-blue-500" />
+            <Folder className="h-4 w-4 text-blue-500" />
           )
         ) : (
           getFileIcon(data.language, data.name)
@@ -217,7 +211,9 @@ function FileTree({
 
   if (entries.length === 0) {
     return (
-      <div className={`flex items-center justify-center h-32 text-gray-400 dark:text-gray-500 ${className}`}>
+      <div
+        className={`flex h-32 items-center justify-center text-gray-400 dark:text-gray-500 ${className}`}
+      >
         Empty directory
       </div>
     );

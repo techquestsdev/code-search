@@ -521,7 +521,11 @@ func (h *Handler) SearchSuggestions(w http.ResponseWriter, r *http.Request) {
 			Example:     "content:FOO",
 		},
 		{Keyword: "branch:", Description: "Filter by branch/tag", Example: "branch:main"},
-		{Keyword: "type:", Description: "Result type: filematch, filename, or repo", Example: "type:filename main"},
+		{
+			Keyword:     "type:",
+			Description: "Result type: filematch, filename, or repo",
+			Example:     "type:filename main",
+		},
 		{Keyword: "regex:", Description: "Treat pattern as regex", Example: "regex:func\\s+main"},
 		{Keyword: "-repo:", Description: "Exclude repository", Example: "-repo:test"},
 		{Keyword: "-file:", Description: "Exclude file pattern", Example: "-file:*_test.go"},

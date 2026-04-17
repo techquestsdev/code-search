@@ -50,11 +50,11 @@ export function BrowseTabBar({
   };
 
   return (
-    <div className="flex items-center bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 min-h-[36px]">
+    <div className="flex min-h-[36px] items-center border-b border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-800">
       {/* Tab list */}
       <div
         ref={tabsRef}
-        className="flex-1 flex items-center overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600"
+        className="scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 flex flex-1 items-center overflow-x-auto"
       >
         {tabs.map((tab) => {
           const isActive = tab.id === activeTabId;
@@ -67,23 +67,19 @@ export function BrowseTabBar({
               onClick={() => onTabSelect(tab)}
               onMouseDown={(e) => handleMiddleClick(e, tab.id)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
+                if (e.key === "Enter" || e.key === " ") {
                   onTabSelect(tab);
                 }
               }}
-              className={`
-                group flex items-center gap-1.5 px-3 py-1.5 cursor-pointer
-                border-r border-gray-200 dark:border-gray-700
-                transition-colors min-w-0 max-w-[200px] text-left
-                ${isActive
-                  ? "bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
-                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                }
-              `}
+              className={`group flex min-w-0 max-w-[200px] cursor-pointer items-center gap-1.5 border-r border-gray-200 px-3 py-1.5 text-left transition-colors dark:border-gray-700 ${
+                isActive
+                  ? "bg-white text-gray-900 dark:bg-gray-900 dark:text-white"
+                  : "text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700/50"
+              } `}
               title={`${tab.repoName}/${tab.filePath}`}
             >
               <span className="flex-shrink-0">{fileIcon}</span>
-              <span className="text-xs truncate">{fileName}</span>
+              <span className="truncate text-xs">{fileName}</span>
               <span
                 role="button"
                 tabIndex={-1}
@@ -92,21 +88,19 @@ export function BrowseTabBar({
                   onTabClose(tab.id);
                 }}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
+                  if (e.key === "Enter" || e.key === " ") {
                     e.stopPropagation();
                     onTabClose(tab.id);
                   }
                 }}
                 aria-label={`Close ${fileName}`}
-                className={`
-                  ml-1 p-0.5 rounded flex-shrink-0 cursor-pointer
-                  ${isActive
-                    ? "opacity-60 hover:opacity-100 hover:bg-gray-200 dark:hover:bg-gray-700"
-                    : "opacity-0 group-hover:opacity-60 hover:opacity-100 hover:bg-gray-200 dark:hover:bg-gray-600"
-                  }
-                `}
+                className={`ml-1 flex-shrink-0 cursor-pointer rounded p-0.5 ${
+                  isActive
+                    ? "opacity-60 hover:bg-gray-200 hover:opacity-100 dark:hover:bg-gray-700"
+                    : "opacity-0 hover:bg-gray-200 hover:opacity-100 group-hover:opacity-60 dark:hover:bg-gray-600"
+                } `}
               >
-                <X className="w-3 h-3" />
+                <X className="h-3 w-3" />
               </span>
             </button>
           );
@@ -115,23 +109,23 @@ export function BrowseTabBar({
 
       {/* Split buttons */}
       {showSplitButtons && tabs.length > 0 && (
-        <div className="flex items-center gap-0.5 px-2 border-l border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-0.5 border-l border-gray-200 px-2 dark:border-gray-700">
           {onSplitVertical && (
             <button
               onClick={onSplitVertical}
-              className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded"
+              className="rounded p-1 text-gray-400 hover:bg-gray-200 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
               title="Split Right (⌘\)"
             >
-              <Columns className="w-4 h-4" />
+              <Columns className="h-4 w-4" />
             </button>
           )}
           {onSplitHorizontal && (
             <button
               onClick={onSplitHorizontal}
-              className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded"
+              className="rounded p-1 text-gray-400 hover:bg-gray-200 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
               title="Split Down (⌘⇧\)"
             >
-              <Rows className="w-4 h-4" />
+              <Rows className="h-4 w-4" />
             </button>
           )}
         </div>

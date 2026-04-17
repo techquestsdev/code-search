@@ -14,20 +14,35 @@ import (
 
 // SearchCodeTool returns the tool definition for search_code.
 func SearchCodeTool() mcp.Tool {
-	return mcp.NewTool("search_code",
-		mcp.WithDescription("Search for code patterns across all indexed repositories. Supports text and regex search with filtering by repo, language, and file pattern."),
-		mcp.WithString("query",
+	return mcp.NewTool(
+		"search_code",
+		mcp.WithDescription(
+			"Search for code patterns across all indexed repositories. Supports text and regex search with filtering by repo, language, and file pattern.",
+		),
+		mcp.WithString(
+			"query",
 			mcp.Required(),
-			mcp.Description("Search query (text or regex pattern). Supports Zoekt query syntax including operators like repo:, file:, lang:, case:yes, sym:, branch:"),
+			mcp.Description(
+				"Search query (text or regex pattern). Supports Zoekt query syntax including operators like repo:, file:, lang:, case:yes, sym:, branch:",
+			),
 		),
-		mcp.WithString("repos",
-			mcp.Description("Comma-separated list of repository name patterns to search in (regex). Example: 'org/repo1,org/repo2'"),
+		mcp.WithString(
+			"repos",
+			mcp.Description(
+				"Comma-separated list of repository name patterns to search in (regex). Example: 'org/repo1,org/repo2'",
+			),
 		),
-		mcp.WithString("languages",
-			mcp.Description("Comma-separated list of languages to filter by. Example: 'go,typescript'"),
+		mcp.WithString(
+			"languages",
+			mcp.Description(
+				"Comma-separated list of languages to filter by. Example: 'go,typescript'",
+			),
 		),
-		mcp.WithString("file_patterns",
-			mcp.Description("Comma-separated list of file path patterns to filter by. Example: '*.go,*.ts'"),
+		mcp.WithString(
+			"file_patterns",
+			mcp.Description(
+				"Comma-separated list of file path patterns to filter by. Example: '*.go,*.ts'",
+			),
 		),
 		mcp.WithBoolean("is_regex",
 			mcp.Description("Treat query as a regular expression"),
@@ -170,7 +185,10 @@ func formatAPIError(operation string, err error) string {
 	}
 
 	if strings.Contains(err.Error(), "connect to Code Search API") {
-		return fmt.Sprintf("Failed to connect to Code Search API. Is the API server running? Error: %v", err)
+		return fmt.Sprintf(
+			"Failed to connect to Code Search API. Is the API server running? Error: %v",
+			err,
+		)
 	}
 
 	return fmt.Sprintf("%s failed: %v", operation, err)

@@ -68,7 +68,13 @@ func TestSecurityHeaders_PresentOnAllMethods(t *testing.T) {
 	})
 	handler := securityHeaders(inner)
 
-	methods := []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodOptions}
+	methods := []string{
+		http.MethodGet,
+		http.MethodPost,
+		http.MethodPut,
+		http.MethodDelete,
+		http.MethodOptions,
+	}
 	for _, method := range methods {
 		req := httptest.NewRequest(method, "/", nil)
 		rr := httptest.NewRecorder()

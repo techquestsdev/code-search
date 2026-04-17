@@ -283,7 +283,10 @@ func runRepoRemove(cmd *cobra.Command, args []string) error {
 	force, _ := cmd.Flags().GetBool("force")
 
 	if !force {
-		fmt.Printf("Remove repository ID '%d'? This will soft-delete the repository (can be restored later). [y/N]: ", repoID)
+		fmt.Printf(
+			"Remove repository ID '%d'? This will soft-delete the repository (can be restored later). [y/N]: ",
+			repoID,
+		)
 
 		reader := bufio.NewReader(os.Stdin)
 		response, _ := reader.ReadString('\n')

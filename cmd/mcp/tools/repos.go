@@ -13,8 +13,11 @@ import (
 
 // ListReposTool returns the tool definition for list_repos.
 func ListReposTool() mcp.Tool {
-	return mcp.NewTool("list_repos",
-		mcp.WithDescription("List indexed repositories. Use this to discover available repositories and their IDs, which are needed for other tools like get_file_tree, get_file_content, and SCIP tools."),
+	return mcp.NewTool(
+		"list_repos",
+		mcp.WithDescription(
+			"List indexed repositories. Use this to discover available repositories and their IDs, which are needed for other tools like get_file_tree, get_file_content, and SCIP tools.",
+		),
 		mcp.WithString("search",
 			mcp.Description("Filter repositories by name (substring match)"),
 		),
@@ -51,8 +54,11 @@ func HandleListRepos(c *client.Client) server.ToolHandlerFunc {
 
 // GetRepoBranchesTool returns the tool definition for get_repo_branches.
 func GetRepoBranchesTool() mcp.Tool {
-	return mcp.NewTool("get_repo_branches",
-		mcp.WithDescription("List branches and tags for a repository. Returns the default branch, all branches, and all tags."),
+	return mcp.NewTool(
+		"get_repo_branches",
+		mcp.WithDescription(
+			"List branches and tags for a repository. Returns the default branch, all branches, and all tags.",
+		),
 		mcp.WithNumber("repo_id",
 			mcp.Required(),
 			mcp.Description("Repository ID (use list_repos to find IDs)"),
@@ -84,7 +90,15 @@ func formatListRepos(resp *client.ListReposResponse) string {
 
 	var sb strings.Builder
 	fmt.Fprintf(&sb, "Repositories (showing %d of %d):\n\n", len(resp.Repos), resp.TotalCount)
-	fmt.Fprintf(&sb, "%-6s %-50s %-10s %-10s %s\n", "ID", "Name", "Status", "Branch", "Last Indexed")
+	fmt.Fprintf(
+		&sb,
+		"%-6s %-50s %-10s %-10s %s\n",
+		"ID",
+		"Name",
+		"Status",
+		"Branch",
+		"Last Indexed",
+	)
 	sb.WriteString(strings.Repeat("-", 110) + "\n")
 
 	for _, r := range resp.Repos {
@@ -103,7 +117,11 @@ func formatListRepos(resp *client.ListReposResponse) string {
 	}
 
 	if resp.HasMore {
-		fmt.Fprintf(&sb, "\n[More results available. Use offset=%d to see next page.]", resp.Offset+len(resp.Repos))
+		fmt.Fprintf(
+			&sb,
+			"\n[More results available. Use offset=%d to see next page.]",
+			resp.Offset+len(resp.Repos),
+		)
 	}
 
 	return sb.String()

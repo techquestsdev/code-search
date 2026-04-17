@@ -111,8 +111,11 @@ func New(
 		redisClient:    redisClient,
 		reposService:   repos.NewService(pool, tokenEncryptor),
 		tokenEncryptor: tokenEncryptor,
-		logger:         logger.With(zap.String("component", "scheduler"), zap.String("instance", instanceID)),
-		instanceID:     instanceID,
+		logger: logger.With(
+			zap.String("component", "scheduler"),
+			zap.String("instance", instanceID),
+		),
+		instanceID: instanceID,
 	}
 }
 
@@ -174,7 +177,8 @@ func (s *Scheduler) Stop() {
 // tryBecomeLeader attempts to acquire the scheduler leader lock.
 // Returns true if this instance is now the leader.
 func (s *Scheduler) tryBecomeLeader(ctx context.Context) bool {
-	_, err := s.redisClient.SetArgs(ctx, leaderKey, s.instanceID, redis.SetArgs{Mode: "NX", TTL: leaderLeaseTTL}).Result()
+	_, err := s.redisClient.SetArgs(ctx, leaderKey, s.instanceID, redis.SetArgs{Mode: "NX", TTL: leaderLeaseTTL}).
+		Result()
 	if errors.Is(err, redis.Nil) {
 		return false
 	}
@@ -322,10 +326,11 @@ func (s *Scheduler) cleanupOldJobs(ctx context.Context) {
 		return
 	}
 
-	if result.DeletedCount > 0 {
+	if result.DeletedCount > 0 || result.GhostEntriesCount > 0 {
 		s.logger.Info("Cleaned up old jobs",
 			zap.Int("deleted", result.DeletedCount),
 			zap.Int("scanned", result.ScannedCount),
+			zap.Int("ghost_entries_removed", result.GhostEntriesCount),
 			zap.Duration("retention", s.cfg.JobRetentionPeriod),
 		)
 	} else {
@@ -377,7 +382,10 @@ func (s *Scheduler) recoverOrphanedActiveJobs(ctx context.Context) {
 		return
 	}
 
-	s.logger.Debug("Checking active index jobs for orphans", zap.Int("active_count", len(activeRepos)))
+	s.logger.Debug(
+		"Checking active index jobs for orphans",
+		zap.Int("active_count", len(activeRepos)),
+	)
 
 	// Check each repo to see if it has an actual pending/running job
 	orphanCount := 0
@@ -554,7 +562,11 @@ func (s *Scheduler) cleanupOrphanShards(ctx context.Context) {
 
 // cleanupOrphanSCIPDatabases removes SCIP database files whose repo IDs no
 // longer map to a valid (non-excluded) repository.
-func (s *Scheduler) cleanupOrphanSCIPDatabases(ctx context.Context, _ map[string]bool, allRepos []repos.Repository) {
+func (s *Scheduler) cleanupOrphanSCIPDatabases(
+	ctx context.Context,
+	_ map[string]bool,
+	allRepos []repos.Repository,
+) {
 	scipIDs, err := s.scipService.ListIndexedRepoIDs()
 	if err != nil {
 		s.logger.Warn("Failed to list SCIP indexed repo IDs", zap.Error(err))

@@ -266,7 +266,12 @@ func (w *Worker) isSCIPLanguageEnabled(language string) bool {
 // runSCIPIndexing runs SCIP code intelligence indexing after successful Zoekt indexing.
 // It detects all languages in the repo and indexes each enabled/available one.
 // This is non-fatal: errors are logged as warnings but never fail the index job.
-func (w *Worker) runSCIPIndexing(ctx context.Context, repoID int64, repoPath, repoName string, conn *repos.Connection) {
+func (w *Worker) runSCIPIndexing(
+	ctx context.Context,
+	repoID int64,
+	repoPath, repoName string,
+	conn *repos.Connection,
+) {
 	if w.scipService == nil || !w.cfg.SCIP.Enabled || !w.cfg.SCIP.AutoIndex {
 		return
 	}
@@ -394,6 +399,12 @@ func (w *Worker) updateIndexStatusBestEffort(
 	}
 }
 
+// redisHealthMaxFailures is the number of consecutive Redis failures before
+// the worker exits to allow K8s to restart the pod.
+// With a 1-second sleep between retries and 5-second dequeue timeout,
+// this gives roughly 5 minutes of Redis downtime before exiting.
+const redisHealthMaxFailures = 50
+
 // Run starts the worker loop.
 // It supports graceful shutdown: when ctx is canceled, it will finish
 // processing the current job before returning (up to shutdownTimeout).
@@ -406,6 +417,8 @@ func (w *Worker) Run(ctx context.Context) error {
 	// Start job recovery loop in background.
 	// Uses Redis lock to ensure only one indexer runs recovery, regardless of shard index.
 	go w.runRecoveryWithLeaderElection(ctx)
+
+	consecutiveFailures := 0
 
 	for {
 		select {
@@ -422,11 +435,30 @@ func (w *Worker) Run(ctx context.Context) error {
 					return nil
 				}
 
-				w.logger.Error("Failed to dequeue job", zap.Error(err))
+				consecutiveFailures++
+				w.logger.Error("Failed to dequeue job",
+					zap.Error(err),
+					zap.Int("consecutive_failures", consecutiveFailures),
+				)
+
+				if consecutiveFailures >= redisHealthMaxFailures {
+					w.logger.Error("Redis unreachable for too long, exiting to allow restart",
+						zap.Int("consecutive_failures", consecutiveFailures),
+					)
+
+					return fmt.Errorf(
+						"redis health check failed: %d consecutive dequeue failures",
+						consecutiveFailures,
+					)
+				}
+
 				time.Sleep(1 * time.Second)
 
 				continue
 			}
+
+			// Reset failure counter on successful dequeue (including timeout with no job)
+			consecutiveFailures = 0
 
 			if job == nil {
 				// No job available, continue waiting
@@ -577,7 +609,8 @@ func (w *Worker) runRecoveryWithLeaderElection(ctx context.Context) {
 			// Release leadership on shutdown
 			if isLeader {
 				script := `if redis.call("GET", KEYS[1]) == ARGV[1] then return redis.call("DEL", KEYS[1]) else return 0 end`
-				_, _ = w.redisClient.Eval(ctx, script, []string{recoveryLeaderKey}, w.workerID).Result()
+				_, _ = w.redisClient.Eval(ctx, script, []string{recoveryLeaderKey}, w.workerID).
+					Result()
 			}
 
 			return
@@ -645,7 +678,9 @@ func (w *Worker) extendLock(ctx context.Context, repoLock *lock.DistributedLock,
 // This prevents CleanupStaleIndexing from resetting long-running indexing jobs.
 // Call this in a goroutine for long-running indexing operations.
 func (w *Worker) sendRepoHeartbeats(ctx context.Context, repoID int64, repoName string) {
-	ticker := time.NewTicker(10 * time.Minute) // Touch every 10 minutes (stale threshold is 1+ hours)
+	ticker := time.NewTicker(
+		10 * time.Minute,
+	) // Touch every 10 minutes (stale threshold is 1+ hours)
 	defer ticker.Stop()
 
 	for {
@@ -780,6 +815,10 @@ func (w *Worker) processIndexJob(ctx context.Context, job *queue.Job) error {
 		}
 		// Clone the repository
 		if _, err := w.CloneRepository(ctx, payload.CloneURL, payload.RepoName, conn); err != nil {
+			if isRepoNotFoundError(err) {
+				return w.handleRepoNotFound(ctx, payload, logger, start, err)
+			}
+
 			w.updateIndexStatusBestEffort(ctx, payload.RepositoryID, "failed")
 
 			metrics.RecordJob("index", time.Since(start), false)
@@ -796,11 +835,22 @@ func (w *Worker) processIndexJob(ctx context.Context, job *queue.Job) error {
 		// Fetch updates
 		err = w.FetchRepository(ctx, repoPath, conn)
 		if err != nil {
+			// If repo is gone from remote, no point re-cloning
+			if isRepoNotFoundError(err) {
+				_ = os.RemoveAll(repoPath)
+
+				return w.handleRepoNotFound(ctx, payload, logger, start, err)
+			}
+
 			w.logger.Warn("Failed to fetch, will try to re-clone", zap.Error(err))
 			// Try removing and re-cloning
 			_ = os.RemoveAll(repoPath)
 
 			if _, err := w.CloneRepository(ctx, payload.CloneURL, payload.RepoName, conn); err != nil {
+				if isRepoNotFoundError(err) {
+					return w.handleRepoNotFound(ctx, payload, logger, start, err)
+				}
+
 				w.updateIndexStatusBestEffort(ctx, payload.RepositoryID, "failed")
 
 				metrics.RecordJob("index", time.Since(start), false)
@@ -907,8 +957,11 @@ func (w *Worker) processIndexJob(ctx context.Context, job *queue.Job) error {
 
 	// Check repo size if configured
 	if w.cfg.Indexer.MaxRepoSizeMB > 0 && repoSizeMB > w.cfg.Indexer.MaxRepoSizeMB {
-		msg := fmt.Sprintf("repository size (%d MB) exceeds max_repo_size_mb limit (%d MB), skipping indexing",
-			repoSizeMB, w.cfg.Indexer.MaxRepoSizeMB)
+		msg := fmt.Sprintf(
+			"repository size (%d MB) exceeds max_repo_size_mb limit (%d MB), skipping indexing",
+			repoSizeMB,
+			w.cfg.Indexer.MaxRepoSizeMB,
+		)
 
 		logger.Warn(msg,
 			zap.Int64("repo_size_mb", repoSizeMB),
@@ -947,14 +1000,31 @@ func (w *Worker) processIndexJob(ctx context.Context, job *queue.Job) error {
 	}
 
 	if len(validBranches) == 0 {
-		logger.Warn("No valid branches found, repository may be empty",
-			zap.Strings("requested_branches", branches),
-		)
+		// Before marking as empty, check if the repo has any branches at all.
+		// The configured branch may have been renamed (e.g. master → main).
+		detectedBranch := w.detectDefaultBranch(ctx, repoPath)
+		if detectedBranch != "" {
+			logger.Info("Detected branch rename, using actual default branch",
+				zap.String("old_branch", payload.Branch),
+				zap.String("detected_branch", detectedBranch),
+				zap.Strings("requested_branches", branches),
+			)
 
-		w.updateIndexStatusBestEffort(ctx, payload.RepositoryID, "empty")
-		metrics.RecordJob("index", time.Since(start), true)
+			if err := w.reposService.UpdateDefaultBranch(ctx, payload.RepositoryID, detectedBranch); err != nil {
+				logger.Warn("Failed to update default branch in database", zap.Error(err))
+			}
 
-		return nil
+			validBranches = []string{detectedBranch}
+		} else {
+			logger.Warn("No valid branches found, repository is empty",
+				zap.Strings("requested_branches", branches),
+			)
+
+			w.updateIndexStatusBestEffort(ctx, payload.RepositoryID, "empty")
+			metrics.RecordJob("index", time.Since(start), true)
+
+			return nil
+		}
 	}
 
 	branches = validBranches
@@ -1111,7 +1181,15 @@ func (w *Worker) processSyncJob(ctx context.Context, job *queue.Job) error {
 
 	adapter := &codeHostAdapter{client: client}
 
-	archivedRepos, err := w.reposService.SyncRepositories(ctx, payload.ConnectionID, adapter, conn.ExcludeArchived, cleanupArchived, conn.Repos, repoConfigs)
+	archivedRepos, err := w.reposService.SyncRepositories(
+		ctx,
+		payload.ConnectionID,
+		adapter,
+		conn.ExcludeArchived,
+		cleanupArchived,
+		conn.Repos,
+		repoConfigs,
+	)
 	if err != nil {
 		metrics.RecordJob("sync", time.Since(start), false)
 		tracing.RecordError(ctx, err)
@@ -1526,7 +1604,10 @@ func (w *Worker) processCleanupJob(ctx context.Context, job *queue.Job) error {
 			if strings.HasPrefix(baseName, pattern+"_v") ||
 				strings.Contains(baseName, "%2F"+pattern+"_v") ||
 				strings.Contains(baseName, "/"+pattern+"_v") ||
-				strings.HasSuffix(strings.TrimSuffix(baseName, "_v"+extractVersionSuffix(baseName)), pattern) {
+				strings.HasSuffix(
+					strings.TrimSuffix(baseName, "_v"+extractVersionSuffix(baseName)),
+					pattern,
+				) {
 				shardFiles = append(shardFiles, shardFile)
 				break
 			}
@@ -1806,6 +1887,33 @@ func (w *Worker) discoverBranches(ctx context.Context, repoPath string) ([]strin
 	return branches, nil
 }
 
+// detectDefaultBranch discovers the actual default branch of a repository.
+// Uses discoverBranches and picks the best candidate (preferring main > master).
+// Returns empty string if the repo has no branches (truly empty).
+func (w *Worker) detectDefaultBranch(ctx context.Context, repoPath string) string {
+	discovered, err := w.discoverBranches(ctx, repoPath)
+	if err != nil || len(discovered) == 0 {
+		return ""
+	}
+
+	// If discoverBranches returned only "HEAD" fallback, repo is likely empty
+	if len(discovered) == 1 && discovered[0] == "HEAD" {
+		return ""
+	}
+
+	// Prefer common default branch names
+	for _, preferred := range []string{"main", "master"} {
+		for _, b := range discovered {
+			if b == preferred {
+				return b
+			}
+		}
+	}
+
+	// Fall back to first discovered branch
+	return discovered[0]
+}
+
 // branchExists checks if a branch exists in the local git repository.
 // It checks both local and remote tracking branches.
 func (w *Worker) branchExists(ctx context.Context, repoPath, branch string) bool {
@@ -1818,7 +1926,14 @@ func (w *Worker) branchExists(ctx context.Context, repoPath, branch string) bool
 	}
 
 	// Also check remote tracking branch
-	cmd = exec.CommandContext(ctx, "git", "rev-parse", "--verify", "--quiet", "refs/remotes/origin/"+branch)
+	cmd = exec.CommandContext(
+		ctx,
+		"git",
+		"rev-parse",
+		"--verify",
+		"--quiet",
+		"refs/remotes/origin/"+branch,
+	)
 	cmd.Dir = repoPath
 
 	return cmd.Run() == nil
@@ -1988,8 +2103,65 @@ func (w *Worker) FetchRepository(
 	return nil
 }
 
+// isRepoNotFoundError checks if a git error indicates the repository
+// no longer exists on the remote (deleted, access revoked, etc.).
+// These errors are permanent and should not be retried.
+func isRepoNotFoundError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	errStr := strings.ToLower(err.Error())
+
+	patterns := []string{
+		"repository not found",
+		"could not read from remote repository",
+		"does not appear to be a git repository",
+		"the requested url returned error: 404",
+		"404 not found",
+		"project not found",
+		"the project you were looking for could not be found",
+	}
+
+	for _, pattern := range patterns {
+		if strings.Contains(errStr, pattern) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// handleRepoNotFound handles the case where a repository no longer exists on
+// the remote code host. Marks the repo as excluded and returns a PermanentError
+// to prevent retries.
+func (w *Worker) handleRepoNotFound(
+	ctx context.Context,
+	payload queue.IndexPayload,
+	logger *zap.Logger,
+	start time.Time,
+	originalErr error,
+) error {
+	logger.Warn("Repository not found on remote, marking as excluded",
+		zap.Error(originalErr),
+	)
+
+	if err := w.reposService.ExcludeRepository(ctx, payload.RepositoryID); err != nil {
+		logger.Warn("Failed to exclude deleted repository", zap.Error(err))
+	}
+
+	w.updateIndexStatusBestEffort(ctx, payload.RepositoryID, "failed")
+	metrics.RecordJob("index", time.Since(start), false)
+	metrics.RecordIndexFailure("repo_not_found")
+	tracing.RecordError(ctx, originalErr)
+
+	return queue.NewPermanentError(
+		fmt.Errorf("repository not found on remote: %w", originalErr),
+	)
+}
+
 // categorizeIndexFailure categorizes indexing failures for better observability.
-// Returns one of: oom_killed, timeout, git_error, zoekt_error, unknown.
+// Returns one of: repo_not_found, oom_killed, timeout, git_error, zoekt_error, unknown.
 func categorizeIndexFailure(err error) string {
 	if err == nil {
 		return "unknown"
@@ -2010,6 +2182,11 @@ func categorizeIndexFailure(err error) string {
 		strings.Contains(errStr, "context deadline exceeded") ||
 		strings.Contains(errStr, "deadline") {
 		return "timeout"
+	}
+
+	// Check for repo not found (before generic git_error)
+	if isRepoNotFoundError(err) {
+		return "repo_not_found"
 	}
 
 	// Check for git errors

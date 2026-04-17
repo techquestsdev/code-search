@@ -58,7 +58,11 @@ func (h *Handler) FindSymbols(w http.ResponseWriter, r *http.Request) {
 
 	// RBAC: filter requested repos to only those the user can access
 	if len(req.Repos) > 0 {
-		req.Repos = h.services.Authorizer.FilterRepos(r.Context(), middleware.UserFromContext(r.Context()), req.Repos)
+		req.Repos = h.services.Authorizer.FilterRepos(
+			r.Context(),
+			middleware.UserFromContext(r.Context()),
+			req.Repos,
+		)
 	}
 
 	// Build Zoekt query with sym: filter for symbol search
@@ -160,7 +164,11 @@ func (h *Handler) FindRefs(w http.ResponseWriter, r *http.Request) {
 
 	// RBAC: filter requested repos to only those the user can access
 	if len(req.Repos) > 0 {
-		req.Repos = h.services.Authorizer.FilterRepos(r.Context(), middleware.UserFromContext(r.Context()), req.Repos)
+		req.Repos = h.services.Authorizer.FilterRepos(
+			r.Context(),
+			middleware.UserFromContext(r.Context()),
+			req.Repos,
+		)
 	}
 
 	// Build Zoekt query - search for the symbol as a literal string
@@ -558,7 +566,12 @@ func (h *Handler) TestConnection(w http.ResponseWriter, r *http.Request) {
 // The actual fetching is done asynchronously by the indexer worker.
 func (h *Handler) SyncConnection(w http.ResponseWriter, r *http.Request) {
 	if h.connectionsReadOnly {
-		http.Error(w, "Connections are read-only. Manage connections via config file.", http.StatusForbidden)
+		http.Error(
+			w,
+			"Connections are read-only. Manage connections via config file.",
+			http.StatusForbidden,
+		)
+
 		return
 	}
 

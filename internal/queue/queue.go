@@ -146,6 +146,7 @@ type Queue struct {
 	activeIndexKey   string // SET of repo IDs with active index jobs
 	activeSyncKey    string // SET of connection IDs with active sync jobs
 	activeCleanupKey string // SET of repo IDs with active cleanup jobs
+	processingKey    string // SET of job IDs currently being processed
 	// Sorted set indexes for efficient queries (score = unix timestamp in milliseconds)
 	jobIndexKey       string // All jobs sorted by creation time
 	statusIndexPrefix string // Jobs by status: codesearch:jobs:status:{status}
@@ -163,6 +164,7 @@ func NewQueue(client *redis.Client) *Queue {
 		activeIndexKey:    "codesearch:active:index",
 		activeSyncKey:     "codesearch:active:sync",
 		activeCleanupKey:  "codesearch:active:cleanup",
+		processingKey:     "codesearch:jobs:processing",
 		jobIndexKey:       "codesearch:jobs:index",
 		statusIndexPrefix: "codesearch:jobs:status:",
 		typeIndexPrefix:   "codesearch:jobs:type:",
@@ -389,6 +391,32 @@ func (q *Queue) EnqueueWithOptions(
 
 // ErrJobAlreadyExists is returned when trying to enqueue a duplicate job.
 var ErrJobAlreadyExists = errors.New("job already exists")
+
+// PermanentError wraps an error to indicate it should not be retried.
+// When a job fails with a PermanentError, the retry mechanism skips
+// all remaining attempts and marks the job as permanently failed.
+type PermanentError struct {
+	Err error
+}
+
+func (e *PermanentError) Error() string {
+	return e.Err.Error()
+}
+
+func (e *PermanentError) Unwrap() error {
+	return e.Err
+}
+
+// NewPermanentError creates a PermanentError wrapping the given error.
+func NewPermanentError(err error) *PermanentError {
+	return &PermanentError{Err: err}
+}
+
+// IsPermanentError checks if an error (or any error in its chain) is a PermanentError.
+func IsPermanentError(err error) bool {
+	var pe *PermanentError
+	return errors.As(err, &pe)
+}
 
 // FindPendingJob searches for an existing pending or running job of the given type
 // that matches the provided key extractor function.
@@ -960,7 +988,8 @@ func (q *Queue) ListJobsWithOptions(
 
 	// Get all job IDs from the index (sorted by creation time, newest first)
 	// ZRangeArgs with Rev returns in reverse order (highest score first = newest)
-	jobIDs, err := q.client.ZRangeArgs(ctx, redis.ZRangeArgs{Key: indexKey, Start: int64(0), Stop: int64(-1), Rev: true}).Result()
+	jobIDs, err := q.client.ZRangeArgs(ctx, redis.ZRangeArgs{Key: indexKey, Start: int64(0), Stop: int64(-1), Rev: true}).
+		Result()
 	if err != nil {
 		return nil, fmt.Errorf("get job index: %w", err)
 	}
@@ -1104,8 +1133,9 @@ func (q *Queue) QueueLength(ctx context.Context) (int64, error) {
 
 // CleanupResult contains the result of a cleanup operation.
 type CleanupResult struct {
-	DeletedCount int `json:"deleted_count"`
-	ScannedCount int `json:"scanned_count"`
+	DeletedCount      int `json:"deleted_count"`
+	ScannedCount      int `json:"scanned_count"`
+	GhostEntriesCount int `json:"ghost_entries_count"`
 }
 
 // CleanupOldJobs removes completed and failed jobs older than the specified duration.
@@ -1159,17 +1189,20 @@ func (q *Queue) CleanupOldJobs(ctx context.Context, maxAge time.Duration) (*Clea
 					switch job.Type {
 					case JobTypeIndex:
 						var payload IndexPayload
-						if err := json.Unmarshal(job.Payload, &payload); err == nil && payload.RepositoryID > 0 {
+						if err := json.Unmarshal(job.Payload, &payload); err == nil &&
+							payload.RepositoryID > 0 {
 							_ = q.MarkIndexJobInactive(ctx, payload.RepositoryID)
 						}
 					case JobTypeSync:
 						var payload SyncPayload
-						if err := json.Unmarshal(job.Payload, &payload); err == nil && payload.ConnectionID > 0 {
+						if err := json.Unmarshal(job.Payload, &payload); err == nil &&
+							payload.ConnectionID > 0 {
 							_ = q.MarkSyncJobInactive(ctx, payload.ConnectionID)
 						}
 					case JobTypeCleanup:
 						var payload CleanupPayload
-						if err := json.Unmarshal(job.Payload, &payload); err == nil && payload.RepositoryID > 0 {
+						if err := json.Unmarshal(job.Payload, &payload); err == nil &&
+							payload.RepositoryID > 0 {
 							_ = q.MarkCleanupJobInactive(ctx, payload.RepositoryID)
 						}
 					}
@@ -1180,7 +1213,100 @@ func (q *Queue) CleanupOldJobs(ctx context.Context, maxAge time.Duration) (*Clea
 		}
 	}
 
+	// Clean up ghost entries in running/pending status indexes and type/main indexes.
+	// These accumulate when job data expires (24h TTL) but index entries persist.
+	result.GhostEntriesCount += q.cleanupGhostIndexEntries(ctx)
+
 	return result, nil
+}
+
+// cleanupGhostIndexEntries removes entries from status, type, and main indexes
+// where the underlying job data no longer exists (expired via Redis TTL).
+// Returns the number of ghost entries removed.
+func (q *Queue) cleanupGhostIndexEntries(ctx context.Context) int {
+	removed := 0
+
+	// Clean ghost entries from running and pending status indexes
+	for _, status := range []JobStatus{JobStatusRunning, JobStatusPending} {
+		indexKey := q.statusIndexKey(status)
+
+		jobIDs, err := q.client.ZRange(ctx, indexKey, 0, -1).Result()
+		if err != nil {
+			continue
+		}
+
+		for _, jobID := range jobIDs {
+			exists, err := q.client.Exists(ctx, q.jobPrefix+jobID).Result()
+			if err != nil {
+				continue
+			}
+
+			if exists == 0 {
+				q.client.ZRem(ctx, indexKey, jobID)
+
+				removed++
+			}
+		}
+	}
+
+	// Clean ghost entries from type indexes
+	for _, jobType := range []JobType{JobTypeIndex, JobTypeReplace, JobTypeSync, JobTypeCleanup} {
+		indexKey := q.typeIndexKey(jobType)
+
+		jobIDs, err := q.client.ZRange(ctx, indexKey, 0, -1).Result()
+		if err != nil {
+			continue
+		}
+
+		for _, jobID := range jobIDs {
+			exists, err := q.client.Exists(ctx, q.jobPrefix+jobID).Result()
+			if err != nil {
+				continue
+			}
+
+			if exists == 0 {
+				q.client.ZRem(ctx, indexKey, jobID)
+
+				removed++
+			}
+		}
+	}
+
+	// Clean ghost entries from the main job index
+	jobIDs, err := q.client.ZRange(ctx, q.jobIndexKey, 0, -1).Result()
+	if err == nil {
+		for _, jobID := range jobIDs {
+			exists, err := q.client.Exists(ctx, q.jobPrefix+jobID).Result()
+			if err != nil {
+				continue
+			}
+
+			if exists == 0 {
+				q.client.ZRem(ctx, q.jobIndexKey, jobID)
+
+				removed++
+			}
+		}
+	}
+
+	// Clean ghost entries from the processing set
+	processingIDs, err := q.client.SMembers(ctx, q.processingKey).Result()
+	if err == nil {
+		for _, jobID := range processingIDs {
+			exists, err := q.client.Exists(ctx, q.jobPrefix+jobID).Result()
+			if err != nil {
+				continue
+			}
+
+			if exists == 0 {
+				q.client.SRem(ctx, q.processingKey, jobID)
+
+				removed++
+			}
+		}
+	}
+
+	return removed
 }
 
 // Clear removes all jobs from the queue.
