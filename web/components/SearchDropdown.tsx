@@ -5,12 +5,7 @@ import { useRouter } from "next/navigation";
 import { api, SearchResult, SearchResponse, buildBrowseUrl } from "@/lib/api";
 import { useActiveContext } from "@/hooks/useContexts";
 import { Context } from "@/lib/contexts";
-import {
-  ExternalLink,
-  FileCode,
-  FolderGit2,
-  Loader2,
-} from "lucide-react";
+import { ExternalLink, FileCode, FolderGit2, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { SearchInput } from "./SearchInput";
 
@@ -22,46 +17,67 @@ interface SearchDropdownProps {
 }
 
 interface SearchResultItemProps {
-  group: { repo: string; file: string; language?: string; matches: SearchResult[] };
+  group: {
+    repo: string;
+    file: string;
+    language?: string;
+    matches: SearchResult[];
+  };
   index: number;
   selectedIndex: number;
   onSelect: (group: SearchResultItemProps["group"]) => void;
-  highlightContent: (content: string, start: number, end: number) => React.ReactNode;
+  highlightContent: (
+    content: string,
+    start: number,
+    end: number
+  ) => React.ReactNode;
 }
 
-function SearchResultItem({ group, index, selectedIndex, onSelect, highlightContent }: SearchResultItemProps) {
+function SearchResultItem({
+  group,
+  index,
+  selectedIndex,
+  onSelect,
+  highlightContent,
+}: SearchResultItemProps) {
   const isSelected = index === selectedIndex;
-  
+
   return (
     <button
       role="option"
       aria-selected={isSelected}
       data-result-index={index}
       onClick={() => onSelect(group)}
-      className={`w-full flex flex-col gap-1 px-3 py-2 text-left transition-colors border-b border-gray-50 dark:border-gray-700/50 last:border-0 ${
-        isSelected ? "bg-blue-50 dark:bg-blue-900/20" : "hover:bg-gray-50 dark:hover:bg-gray-700/30"
+      className={`flex w-full flex-col gap-1 border-b border-gray-50 px-3 py-2 text-left transition-colors last:border-0 dark:border-gray-700/50 ${
+        isSelected
+          ? "bg-blue-50 dark:bg-blue-900/20"
+          : "hover:bg-gray-50 dark:hover:bg-gray-700/30"
       }`}
     >
       <div className="flex items-center gap-2">
-        <FileCode className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-200 truncate flex-1">
+        <FileCode className="h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
+        <span className="flex-1 truncate text-sm font-medium text-gray-700 dark:text-gray-200">
           {group.file.split("/").pop()}
         </span>
         {group.language && (
-          <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded uppercase font-bold tracking-wider">
+          <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:bg-gray-700 dark:text-gray-400">
             {group.language}
           </span>
         )}
       </div>
-      <div className="flex items-center gap-1.5 text-[10px] text-gray-400 truncate ml-5">
-        <FolderGit2 className="w-3 h-3 flex-shrink-0" />
+      <div className="ml-5 flex items-center gap-1.5 truncate text-[10px] text-gray-400">
+        <FolderGit2 className="h-3 w-3 flex-shrink-0" />
         <span>{group.repo}</span>
         <span>•</span>
         <span className="truncate">{group.file}</span>
       </div>
       {group.matches[0] && (
-        <div className="ml-5 mt-1 text-xs font-mono text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50 p-1 rounded border border-gray-100 dark:border-gray-800 truncate">
-          {highlightContent(group.matches[0].content, group.matches[0].match_start, group.matches[0].match_end)}
+        <div className="ml-5 mt-1 truncate rounded border border-gray-100 bg-gray-50 p-1 font-mono text-xs text-gray-600 dark:border-gray-800 dark:bg-gray-900/50 dark:text-gray-400">
+          {highlightContent(
+            group.matches[0].content,
+            group.matches[0].match_start,
+            group.matches[0].match_end
+          )}
         </div>
       )}
     </button>
@@ -70,14 +86,23 @@ function SearchResultItem({ group, index, selectedIndex, onSelect, highlightCont
 
 interface SearchDropdownResultsProps {
   results: SearchResponse;
-  groupedList: { repo: string; file: string; language?: string; matches: SearchResult[] }[];
+  groupedList: {
+    repo: string;
+    file: string;
+    language?: string;
+    matches: SearchResult[];
+  }[];
   selectedIndex: number;
   searchInRepo: boolean;
   repoName?: string;
   query: string;
   activeContext: Context | null;
   onSelect: (group: SearchResultItemProps["group"]) => void;
-  highlightContent: (content: string, start: number, end: number) => React.ReactNode;
+  highlightContent: (
+    content: string,
+    start: number,
+    end: number
+  ) => React.ReactNode;
 }
 
 function SearchDropdownResults({
@@ -89,27 +114,39 @@ function SearchDropdownResults({
   query,
   activeContext,
   onSelect,
-  highlightContent
+  highlightContent,
 }: SearchDropdownResultsProps) {
   const fullSearchUrl = `/?q=${encodeURIComponent(searchInRepo && repoName ? `repo:${repoName} ${query}` : query)}`;
-  
+
   return (
     <>
-      <div className="p-2 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+      <div className="flex items-center justify-between border-b border-gray-100 p-2 dark:border-gray-700">
         <div className="flex items-center gap-2">
           <span className="text-xs text-gray-500 dark:text-gray-400">
             {results.total_count} results in {results.duration}
           </span>
           {activeContext && !searchInRepo && (
-            <span className="text-xs px-1.5 py-0.5 rounded-full flex items-center gap-1" style={{ backgroundColor: `${activeContext.color}20`, color: activeContext.color }}>
-              <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: activeContext.color }} />
+            <span
+              className="flex items-center gap-1 rounded-full px-1.5 py-0.5 text-xs"
+              style={{
+                backgroundColor: `${activeContext.color}20`,
+                color: activeContext.color,
+              }}
+            >
+              <div
+                className="h-1.5 w-1.5 rounded-full"
+                style={{ backgroundColor: activeContext.color }}
+              />
               {activeContext.name}
             </span>
           )}
         </div>
-        <Link href={fullSearchUrl} className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+        <Link
+          href={fullSearchUrl}
+          className="flex items-center gap-1 text-xs text-blue-600 hover:underline dark:text-blue-400"
+        >
           View all
-          <ExternalLink className="w-3 h-3" />
+          <ExternalLink className="h-3 w-3" />
         </Link>
       </div>
       <div className="max-h-80 overflow-y-auto" role="listbox">
@@ -125,8 +162,11 @@ function SearchDropdownResults({
         ))}
       </div>
       {groupedList.length > 10 && (
-        <div className="p-2 border-t border-gray-100 dark:border-gray-700 text-center">
-          <Link href={fullSearchUrl} className="text-xs text-blue-600 dark:text-blue-400 hover:underline">
+        <div className="border-t border-gray-100 p-2 text-center dark:border-gray-700">
+          <Link
+            href={fullSearchUrl}
+            className="text-xs text-blue-600 hover:underline dark:text-blue-400"
+          >
             Show {groupedList.length - 10} more results...
           </Link>
         </div>
@@ -137,10 +177,25 @@ function SearchDropdownResults({
 
 function SearchDropdownFooter() {
   return (
-    <div className="p-2 border-t border-gray-100 dark:border-gray-700 text-xs text-gray-400 flex items-center gap-4">
-      <span><kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">↑↓</kbd> navigate</span>
-      <span><kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">Enter</kbd> open</span>
-      <span><kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">Esc</kbd> close</span>
+    <div className="flex items-center gap-4 border-t border-gray-100 p-2 text-xs text-gray-400 dark:border-gray-700">
+      <span>
+        <kbd className="rounded bg-gray-100 px-1.5 py-0.5 dark:bg-gray-700">
+          ↑↓
+        </kbd>{" "}
+        navigate
+      </span>
+      <span>
+        <kbd className="rounded bg-gray-100 px-1.5 py-0.5 dark:bg-gray-700">
+          Enter
+        </kbd>{" "}
+        open
+      </span>
+      <span>
+        <kbd className="rounded bg-gray-100 px-1.5 py-0.5 dark:bg-gray-700">
+          Esc
+        </kbd>{" "}
+        close
+      </span>
     </div>
   );
 }
@@ -153,7 +208,7 @@ export function SearchDropdown({
 }: SearchDropdownProps) {
   const router = useRouter();
   const { activeContext, getRepoFilter } = useActiveContext();
-  
+
   const [state, setState] = useState({
     query: "",
     searchInRepo: !!repoId,
@@ -163,10 +218,13 @@ export function SearchDropdown({
     selectedIndex: 0,
   });
 
-  const { query, searchInRepo, results, loading, showDropdown, selectedIndex } = state;
+  const { query, searchInRepo, results, loading, showDropdown, selectedIndex } =
+    state;
 
-  const setSearchInRepo = (val: boolean) => setState(prev => ({ ...prev, searchInRepo: val }));
-  const setShowDropdown = (val: boolean) => setState(prev => ({ ...prev, showDropdown: val }));
+  const setSearchInRepo = (val: boolean) =>
+    setState((prev) => ({ ...prev, searchInRepo: val }));
+  const setShowDropdown = (val: boolean) =>
+    setState((prev) => ({ ...prev, showDropdown: val }));
 
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -176,11 +234,11 @@ export function SearchDropdown({
   const performSearch = useCallback(
     async (searchQuery: string) => {
       if (!searchQuery.trim()) {
-        setState(prev => ({ ...prev, results: null }));
+        setState((prev) => ({ ...prev, results: null }));
         return;
       }
 
-      setState(prev => ({ ...prev, loading: true }));
+      setState((prev) => ({ ...prev, loading: true }));
       try {
         // Build query with repo filter
         let finalQuery = searchQuery;
@@ -202,10 +260,15 @@ export function SearchDropdown({
           limit: 20,
           context_lines: 1,
         });
-        setState(prev => ({ ...prev, results: response, selectedIndex: 0, loading: false }));
+        setState((prev) => ({
+          ...prev,
+          results: response,
+          selectedIndex: 0,
+          loading: false,
+        }));
       } catch (error) {
         console.error("Search failed:", error);
-        setState(prev => ({ ...prev, results: null, loading: false }));
+        setState((prev) => ({ ...prev, results: null, loading: false }));
       }
     },
     [state.searchInRepo, repoName, activeContext, getRepoFilter]
@@ -214,7 +277,7 @@ export function SearchDropdown({
   // Handle input change with debounce
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setState(prev => ({ ...prev, query: value, showDropdown: true }));
+    setState((prev) => ({ ...prev, query: value, showDropdown: true }));
 
     // Clear previous timeout
     if (searchTimeoutRef.current) {
@@ -228,19 +291,25 @@ export function SearchDropdown({
   };
 
   // Group results by repo and file
-  const groupedResults = results?.results.reduce((acc, result) => {
-    const key = `${result.repo}:${result.file}`;
-    if (!acc[key]) {
-      acc[key] = {
-        repo: result.repo,
-        file: result.file,
-        language: result.language,
-        matches: [],
-      };
-    }
-    acc[key].matches.push(result);
-    return acc;
-  }, {} as Record<string, { repo: string; file: string; language: string; matches: SearchResult[] }>);
+  const groupedResults = results?.results.reduce(
+    (acc, result) => {
+      const key = `${result.repo}:${result.file}`;
+      if (!acc[key]) {
+        acc[key] = {
+          repo: result.repo,
+          file: result.file,
+          language: result.language,
+          matches: [],
+        };
+      }
+      acc[key].matches.push(result);
+      return acc;
+    },
+    {} as Record<
+      string,
+      { repo: string; file: string; language: string; matches: SearchResult[] }
+    >
+  );
 
   const groupedList = groupedResults ? Object.values(groupedResults) : [];
 
@@ -250,9 +319,8 @@ export function SearchDropdown({
       if (e.key === "Enter" && query.trim()) {
         // Navigate to full search page
         e.preventDefault();
-        const searchQuery = searchInRepo && repoName
-          ? `repo:${repoName} ${query}`
-          : query;
+        const searchQuery =
+          searchInRepo && repoName ? `repo:${repoName} ${query}` : query;
         router.push(`/?q=${encodeURIComponent(searchQuery)}`);
         setShowDropdown(false);
       }
@@ -262,11 +330,20 @@ export function SearchDropdown({
     switch (e.key) {
       case "ArrowDown":
         e.preventDefault();
-        setState(prev => ({ ...prev, selectedIndex: Math.min(prev.selectedIndex + 1, groupedList.length - 1) }));
+        setState((prev) => ({
+          ...prev,
+          selectedIndex: Math.min(
+            prev.selectedIndex + 1,
+            groupedList.length - 1
+          ),
+        }));
         break;
       case "ArrowUp":
         e.preventDefault();
-        setState(prev => ({ ...prev, selectedIndex: Math.max(prev.selectedIndex - 1, 0) }));
+        setState((prev) => ({
+          ...prev,
+          selectedIndex: Math.max(prev.selectedIndex - 1, 0),
+        }));
         break;
       case "Enter":
         e.preventDefault();
@@ -294,8 +371,10 @@ export function SearchDropdown({
       const lookupResult = await api.lookupRepoByName(group.repo);
       if (lookupResult) {
         const firstLine = group.matches[0]?.line || 1;
-        router.push(buildBrowseUrl(lookupResult.id, group.file, { line: firstLine }));
-        setState(prev => ({ ...prev, showDropdown: false, query: "" }));
+        router.push(
+          buildBrowseUrl(lookupResult.id, group.file, { line: firstLine })
+        );
+        setState((prev) => ({ ...prev, showDropdown: false, query: "" }));
       }
     } catch (err) {
       console.error("Failed to navigate:", err);
@@ -322,7 +401,9 @@ export function SearchDropdown({
   // Scroll selected into view
   useEffect(() => {
     if (showDropdown && groupedList.length > 0) {
-      const element = document.querySelector(`[data-result-index="${selectedIndex}"]`);
+      const element = document.querySelector(
+        `[data-result-index="${selectedIndex}"]`
+      );
       element?.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }
   }, [selectedIndex, showDropdown, groupedList.length]);
@@ -339,7 +420,8 @@ export function SearchDropdown({
     if (content.length > maxLen) {
       const matchCenter = Math.floor((start + end) / 2);
       const displayOffset = Math.max(0, matchCenter - maxLen / 2);
-      displayContent = (displayOffset > 0 ? "..." : "") +
+      displayContent =
+        (displayOffset > 0 ? "..." : "") +
         content.slice(displayOffset, displayOffset + maxLen) +
         (displayOffset + maxLen < content.length ? "..." : "");
       displayStart = start - displayOffset + (displayOffset > 0 ? 3 : 0);
@@ -349,7 +431,7 @@ export function SearchDropdown({
     return (
       <>
         {displayContent.slice(0, displayStart)}
-        <mark className="bg-yellow-300 dark:bg-yellow-500/40 text-yellow-900 dark:text-yellow-100 px-0.5 rounded">
+        <mark className="rounded bg-yellow-300 px-0.5 text-yellow-900 dark:bg-yellow-500/40 dark:text-yellow-100">
           {displayContent.slice(displayStart, displayEnd)}
         </mark>
         {displayContent.slice(displayEnd)}
@@ -381,7 +463,12 @@ export function SearchDropdown({
         onFocus={() => query && setShowDropdown(true)}
         onKeyDown={handleKeyDown}
         onClear={() => {
-          setState(prev => ({ ...prev, query: "", results: null, showDropdown: false }));
+          setState((prev) => ({
+            ...prev,
+            query: "",
+            results: null,
+            showDropdown: false,
+          }));
           inputRef.current?.focus();
         }}
         repoId={repoId}
@@ -394,11 +481,11 @@ export function SearchDropdown({
       {showDropdown && (query || loading) && (
         <div
           ref={dropdownRef}
-          className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl z-50 overflow-hidden max-h-[60vh]"
+          className="absolute left-0 right-0 top-full z-50 mt-1 max-h-[60vh] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-800"
         >
           {loading && !results && (
             <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400">
-              <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2" />
+              <Loader2 className="mx-auto mb-2 h-5 w-5 animate-spin" />
               Searching...
             </div>
           )}

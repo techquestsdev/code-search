@@ -43,7 +43,11 @@ func (c *FederatedClient) getShardURL(shard int) string {
 }
 
 // HasIndex checks if a SCIP index exists for a repo on its owning shard.
-func (c *FederatedClient) HasIndex(ctx context.Context, repoName string, repoID int64) (bool, error) {
+func (c *FederatedClient) HasIndex(
+	ctx context.Context,
+	repoName string,
+	repoID int64,
+) (bool, error) {
 	shard := c.getShardForRepo(repoName)
 	shardURL := c.getShardURL(shard)
 
@@ -162,7 +166,11 @@ func (c *FederatedClient) FindReferences(
 }
 
 // GetStats proxies a stats request to the owning shard.
-func (c *FederatedClient) GetStats(ctx context.Context, repoName string, repoID int64) (map[string]any, error) {
+func (c *FederatedClient) GetStats(
+	ctx context.Context,
+	repoName string,
+	repoID int64,
+) (map[string]any, error) {
 	shard := c.getShardForRepo(repoName)
 	shardURL := c.getShardURL(shard)
 

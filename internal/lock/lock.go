@@ -36,7 +36,8 @@ func NewDistributedLock(client *redis.Client, key string, ttl time.Duration) *Di
 // TryAcquire attempts to acquire the lock without blocking
 // Returns true if lock was acquired, false otherwise.
 func (l *DistributedLock) TryAcquire(ctx context.Context) (bool, error) {
-	_, err := l.client.SetArgs(ctx, l.key, l.workerID, redis.SetArgs{Mode: "NX", TTL: l.ttl}).Result()
+	_, err := l.client.SetArgs(ctx, l.key, l.workerID, redis.SetArgs{Mode: "NX", TTL: l.ttl}).
+		Result()
 	if errors.Is(err, redis.Nil) {
 		return false, nil
 	}

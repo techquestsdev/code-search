@@ -17,7 +17,11 @@ func main() {
 	log.SetOutput(os.Stderr)
 
 	apiURL := flag.String("api-url", "http://localhost:8080", "Code Search API URL")
-	authToken := flag.String("auth-token", "", "Authentication token for the Code Search API (env: CODE_SEARCH_AUTH_TOKEN)")
+	authToken := flag.String(
+		"auth-token",
+		"",
+		"Authentication token for the Code Search API (env: CODE_SEARCH_AUTH_TOKEN)",
+	)
 	transport := flag.String("transport", "stdio", "Transport type: stdio or http")
 	httpAddr := flag.String("http-addr", ":9090", "HTTP listen address (for http transport)")
 

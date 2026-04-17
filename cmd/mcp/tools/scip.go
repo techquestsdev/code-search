@@ -14,8 +14,11 @@ import (
 
 // SearchSymbolsTool returns the tool definition for search_symbols.
 func SearchSymbolsTool() mcp.Tool {
-	return mcp.NewTool("search_symbols",
-		mcp.WithDescription("Search for symbol definitions (functions, classes, methods, variables) in a repository using SCIP code intelligence. Requires SCIP indexing to be enabled on the server."),
+	return mcp.NewTool(
+		"search_symbols",
+		mcp.WithDescription(
+			"Search for symbol definitions (functions, classes, methods, variables) in a repository using SCIP code intelligence. Requires SCIP indexing to be enabled on the server.",
+		),
 		mcp.WithNumber("repo_id",
 			mcp.Required(),
 			mcp.Description("Repository ID (use list_repos to find IDs)"),
@@ -56,8 +59,11 @@ func HandleSearchSymbols(c *client.Client) server.ToolHandlerFunc {
 
 // GoToDefinitionTool returns the tool definition for go_to_definition.
 func GoToDefinitionTool() mcp.Tool {
-	return mcp.NewTool("go_to_definition",
-		mcp.WithDescription("Jump to the definition of a symbol at a specific location in a file. Uses SCIP code intelligence for precise navigation. Line is 1-indexed, column is 0-indexed."),
+	return mcp.NewTool(
+		"go_to_definition",
+		mcp.WithDescription(
+			"Jump to the definition of a symbol at a specific location in a file. Uses SCIP code intelligence for precise navigation. Line is 1-indexed, column is 0-indexed.",
+		),
 		mcp.WithNumber("repo_id",
 			mcp.Required(),
 			mcp.Description("Repository ID (use list_repos to find IDs)"),
@@ -111,8 +117,11 @@ func HandleGoToDefinition(c *client.Client) server.ToolHandlerFunc {
 
 // FindReferencesTool returns the tool definition for find_references.
 func FindReferencesTool() mcp.Tool {
-	return mcp.NewTool("find_references",
-		mcp.WithDescription("Find all usages/references of a symbol at a specific location in a file. Uses SCIP code intelligence. Line is 1-indexed, column is 0-indexed."),
+	return mcp.NewTool(
+		"find_references",
+		mcp.WithDescription(
+			"Find all usages/references of a symbol at a specific location in a file. Uses SCIP code intelligence. Line is 1-indexed, column is 0-indexed.",
+		),
 		mcp.WithNumber("repo_id",
 			mcp.Required(),
 			mcp.Description("Repository ID (use list_repos to find IDs)"),

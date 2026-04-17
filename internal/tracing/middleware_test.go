@@ -16,7 +16,12 @@ func TestHTTPMiddleware(t *testing.T) {
 
 		wrapped := HTTPMiddleware(handler)
 
-		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/repos", nil)
+		req := httptest.NewRequestWithContext(
+			context.Background(),
+			http.MethodGet,
+			"/api/repos",
+			nil,
+		)
 		rec := httptest.NewRecorder()
 
 		wrapped.ServeHTTP(rec, req)
@@ -38,7 +43,12 @@ func TestHTTPMiddleware(t *testing.T) {
 
 		wrapped := HTTPMiddleware(handler)
 
-		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/notfound", nil)
+		req := httptest.NewRequestWithContext(
+			context.Background(),
+			http.MethodGet,
+			"/api/notfound",
+			nil,
+		)
 		rec := httptest.NewRecorder()
 
 		wrapped.ServeHTTP(rec, req)
@@ -55,7 +65,12 @@ func TestHTTPMiddleware(t *testing.T) {
 
 		wrapped := HTTPMiddleware(handler)
 
-		req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/api/repos", nil)
+		req := httptest.NewRequestWithContext(
+			context.Background(),
+			http.MethodPost,
+			"/api/repos",
+			nil,
+		)
 		rec := httptest.NewRecorder()
 
 		wrapped.ServeHTTP(rec, req)

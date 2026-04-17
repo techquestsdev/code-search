@@ -153,7 +153,11 @@ func main() {
 			}
 		}
 
-		svc, scipErr := scip.NewServiceWithConfig(scipCacheDir, indexerCfg, log.L.With(zap.String("component", "scip")))
+		svc, scipErr := scip.NewServiceWithConfig(
+			scipCacheDir,
+			indexerCfg,
+			log.L.With(zap.String("component", "scip")),
+		)
 		if scipErr != nil {
 			log.Warn("Failed to initialize SCIP service, auto-indexing disabled", log.Err(scipErr))
 		} else {

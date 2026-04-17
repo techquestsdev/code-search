@@ -227,7 +227,11 @@ func (h *Handler) GetRepoByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !h.services.Authorizer.CanAccessRepo(r.Context(), middleware.UserFromContext(r.Context()), repo.Name) {
+	if !h.services.Authorizer.CanAccessRepo(
+		r.Context(),
+		middleware.UserFromContext(r.Context()),
+		repo.Name,
+	) {
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}
@@ -463,7 +467,11 @@ func (h *Handler) IncludeRepoByID(w http.ResponseWriter, r *http.Request) {
 	acquired, err := h.services.Queue.TryAcquireIndexJob(r.Context(), repo.ID)
 	if err != nil {
 		// Log but don't fail - queue check is best-effort
-		log.L.Debug("Failed to acquire index job slot", zap.Int64("repo_id", repo.ID), zap.Error(err))
+		log.L.Debug(
+			"Failed to acquire index job slot",
+			zap.Int64("repo_id", repo.ID),
+			zap.Error(err),
+		)
 	}
 
 	var jobID string
@@ -548,7 +556,11 @@ func (h *Handler) RestoreRepoByID(w http.ResponseWriter, r *http.Request) {
 	// Queue an index job immediately so it doesn't wait for scheduler
 	acquired, err := h.services.Queue.TryAcquireIndexJob(r.Context(), repo.ID)
 	if err != nil {
-		log.L.Debug("Failed to acquire index job slot", zap.Int64("repo_id", repo.ID), zap.Error(err))
+		log.L.Debug(
+			"Failed to acquire index job slot",
+			zap.Int64("repo_id", repo.ID),
+			zap.Error(err),
+		)
 	}
 
 	var jobID string
@@ -630,7 +642,11 @@ func (h *Handler) SyncRepoByID(w http.ResponseWriter, r *http.Request) {
 	if repo.IndexStatus == "pending" {
 		active, err := h.services.Queue.HasPendingIndexJob(r.Context(), repo.ID)
 		if err != nil {
-			log.L.Debug("Failed to check active index job", zap.Int64("repo_id", repo.ID), zap.Error(err))
+			log.L.Debug(
+				"Failed to check active index job",
+				zap.Int64("repo_id", repo.ID),
+				zap.Error(err),
+			)
 
 			active = true
 		}

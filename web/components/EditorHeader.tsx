@@ -2,14 +2,14 @@
 
 import React from "react";
 import Link from "next/link";
-import { 
-  PanelLeftClose, 
-  PanelLeftOpen, 
-  ChevronLeft, 
-  ChevronRight, 
-  Search, 
-  Keyboard, 
-  ListTree, 
+import {
+  PanelLeftClose,
+  PanelLeftOpen,
+  ChevronLeft,
+  ChevronRight,
+  Search,
+  Keyboard,
+  ListTree,
   PanelRightClose,
   ArrowLeft,
   Tag,
@@ -17,7 +17,7 @@ import {
   Home,
   Copy,
   Check,
-  ExternalLink
+  ExternalLink,
 } from "lucide-react";
 import { SearchDropdown } from "./SearchDropdown";
 import { Repository, RefsResponse } from "@/lib/api";
@@ -80,22 +80,23 @@ export function EditorHeader({
   return (
     <>
       {/* Top Bar with Search */}
-      <div className="flex-shrink-0 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-1.5">
+      <div className="flex-shrink-0 border-b border-gray-200 bg-white px-3 py-1.5 dark:border-gray-700 dark:bg-gray-800">
         <div className="flex items-center gap-3">
           {/* File tree toggle */}
           <button
             type="button"
             onClick={onToggleFileTree}
-            className={`p-1.5 rounded-lg transition-colors ${showFileTree
-              ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-              : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-              }`}
+            className={`rounded-lg p-1.5 transition-colors ${
+              showFileTree
+                ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
+                : "text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+            }`}
             title={showFileTree ? "Hide file tree" : "Show file tree"}
           >
             {showFileTree ? (
-              <PanelLeftClose className="w-4 h-4" />
+              <PanelLeftClose className="h-4 w-4" />
             ) : (
-              <PanelLeftOpen className="w-4 h-4" />
+              <PanelLeftOpen className="h-4 w-4" />
             )}
           </button>
 
@@ -103,72 +104,76 @@ export function EditorHeader({
           <SearchDropdown
             repoId={repoId}
             repoName={repo?.name}
-            className="flex-1 max-w-xl"
+            className="max-w-xl flex-1"
           />
 
           {/* Back/Forward navigation */}
-          <div className="flex items-center gap-1 border-l border-gray-200 dark:border-gray-700 pl-3">
+          <div className="flex items-center gap-1 border-l border-gray-200 pl-3 dark:border-gray-700">
             <button
               type="button"
               onClick={onHistoryBack}
               disabled={!navHistory.canGoBack}
-              className={`p-1.5 rounded transition-colors ${navHistory.canGoBack
-                ? "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                : "text-gray-300 dark:text-gray-600 cursor-not-allowed"
-                }`}
+              className={`rounded p-1.5 transition-colors ${
+                navHistory.canGoBack
+                  ? "text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+                  : "cursor-not-allowed text-gray-300 dark:text-gray-600"
+              }`}
               title="Go back (⌘[)"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="h-4 w-4" />
             </button>
             <button
               type="button"
               onClick={onHistoryForward}
               disabled={!navHistory.canGoForward}
-              className={`p-1.5 rounded transition-colors ${navHistory.canGoForward
-                ? "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                : "text-gray-300 dark:text-gray-600 cursor-not-allowed"
-                }`}
+              className={`rounded p-1.5 transition-colors ${
+                navHistory.canGoForward
+                  ? "text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+                  : "cursor-not-allowed text-gray-300 dark:text-gray-600"
+              }`}
               title="Go forward (⌘])"
             >
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="h-4 w-4" />
             </button>
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-1 border-l border-gray-200 dark:border-gray-700 pl-3">
+          <div className="flex items-center gap-1 border-l border-gray-200 pl-3 dark:border-gray-700">
             <button
               type="button"
               onClick={onShowQuickPicker}
-              className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+              className="rounded p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
               title="Quick open file (⌘P)"
             >
-              <Search className="w-4 h-4" />
+              <Search className="h-4 w-4" />
             </button>
             <button
               type="button"
               onClick={onToggleShortcutsHelp}
-              className={`p-1.5 rounded transition-colors ${showShortcutsHelp
-                ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-                : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                }`}
+              className={`rounded p-1.5 transition-colors ${
+                showShortcutsHelp
+                  ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
+                  : "text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+              }`}
               title="Keyboard shortcuts"
             >
-              <Keyboard className="w-4 h-4" />
+              <Keyboard className="h-4 w-4" />
             </button>
             {isFile && (
               <button
                 type="button"
                 onClick={onToggleSymbols}
-                className={`p-1.5 rounded transition-colors ${showSymbols
-                  ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-                  : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  }`}
+                className={`rounded p-1.5 transition-colors ${
+                  showSymbols
+                    ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
+                    : "text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+                }`}
                 title={showSymbols ? "Hide symbols" : "Show symbols"}
               >
                 {showSymbols ? (
-                  <PanelRightClose className="w-4 h-4" />
+                  <PanelRightClose className="h-4 w-4" />
                 ) : (
-                  <ListTree className="w-4 h-4" />
+                  <ListTree className="h-4 w-4" />
                 )}
               </button>
             )}
@@ -177,20 +182,20 @@ export function EditorHeader({
       </div>
 
       {/* Secondary toolbar with repo info and breadcrumbs */}
-      <div className="flex-shrink-0 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80 px-3 py-1">
+      <div className="flex-shrink-0 border-b border-gray-200 bg-gray-50 px-3 py-1 dark:border-gray-700 dark:bg-gray-800/80">
         <div className="flex flex-wrap items-center gap-3">
           {/* Back to repos */}
           <Link
             href="/repos"
-            className="flex items-center gap-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+            className="flex items-center gap-1 text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
           >
-            <ArrowLeft className="w-4 h-4" />
-            <span className="text-sm hidden sm:inline">Repos</span>
+            <ArrowLeft className="h-4 w-4" />
+            <span className="hidden text-sm sm:inline">Repos</span>
           </Link>
           <span className="text-gray-300 dark:text-gray-600">/</span>
 
           {/* Repo name - shows active pane's repo in split mode */}
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate max-w-[150px]">
+          <span className="max-w-[150px] truncate text-sm font-medium text-gray-700 dark:text-gray-300">
             {displayRepo?.name || repo?.name || "Loading..."}
           </span>
 
@@ -199,7 +204,7 @@ export function EditorHeader({
             <select
               value={currentDisplayRef}
               onChange={(e) => onRefChange(e.target.value)}
-              className="appearance-none pl-6 pr-4 py-0.5 text-xs border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800 focus:outline-none focus:border-blue-500 cursor-pointer"
+              className="cursor-pointer appearance-none rounded border border-gray-200 bg-white py-0.5 pl-6 pr-4 text-xs focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800"
             >
               {(displayRefs || refs)?.branches?.length ? (
                 <optgroup label="Branches">
@@ -219,26 +224,34 @@ export function EditorHeader({
                   ))}
                 </optgroup>
               ) : null}
-              {!(displayRefs || refs)?.branches?.length && !(displayRefs || refs)?.tags?.length && (
-                <option value={currentDisplayRef}>{currentDisplayRef}</option>
-              )}
+              {!(displayRefs || refs)?.branches?.length &&
+                !(displayRefs || refs)?.tags?.length && (
+                  <option value={currentDisplayRef}>{currentDisplayRef}</option>
+                )}
             </select>
             {(displayRefs || refs)?.tags?.includes(currentDisplayRef) ? (
-              <Tag className="absolute left-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
+              <Tag className="pointer-events-none absolute left-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-gray-400" />
             ) : (
-              <GitBranch className="absolute left-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
+              <GitBranch className="pointer-events-none absolute left-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-gray-400" />
             )}
           </div>
 
           {/* Breadcrumbs */}
-          <nav className="flex items-center gap-1 text-sm overflow-x-auto flex-1">
+          <nav className="flex flex-1 items-center gap-1 overflow-x-auto text-sm">
             <button
               onClick={() => !splitPaneEnabled && onNavigate("")}
-              className={`flex items-center gap-1 px-1.5 py-0.5 rounded transition-colors ${splitPaneEnabled ? "cursor-default" : "hover:bg-gray-200 dark:hover:bg-gray-700"
-                }`}
+              className={`flex items-center gap-1 rounded px-1.5 py-0.5 transition-colors ${
+                splitPaneEnabled
+                  ? "cursor-default"
+                  : "hover:bg-gray-200 dark:hover:bg-gray-700"
+              }`}
             >
-              <Home className="w-3.5 h-3.5 text-gray-400" />
-              <span className="text-xs font-medium">{displayRepo?.name?.split("/").pop() || repo?.name?.split("/").pop() || "root"}</span>
+              <Home className="h-3.5 w-3.5 text-gray-400" />
+              <span className="text-xs font-medium">
+                {displayRepo?.name?.split("/").pop() ||
+                  repo?.name?.split("/").pop() ||
+                  "root"}
+              </span>
             </button>
 
             {pathParts.map((part, index) => {
@@ -247,11 +260,14 @@ export function EditorHeader({
 
               return (
                 <span key={pathUpTo} className="flex items-center">
-                  <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
+                  <ChevronRight className="h-3.5 w-3.5 text-gray-400" />
                   <button
                     onClick={() => !splitPaneEnabled && onNavigate(pathUpTo)}
-                    className={`px-1.5 py-0.5 rounded transition-colors text-xs ${isLast ? "font-medium text-blue-600 dark:text-blue-400" : ""} ${splitPaneEnabled ? "cursor-default" : "hover:bg-gray-200 dark:hover:bg-gray-700"
-                      }`}
+                    className={`rounded px-1.5 py-0.5 text-xs transition-colors ${isLast ? "font-medium text-blue-600 dark:text-blue-400" : ""} ${
+                      splitPaneEnabled
+                        ? "cursor-default"
+                        : "hover:bg-gray-200 dark:hover:bg-gray-700"
+                    }`}
                   >
                     {part}
                   </button>
@@ -262,13 +278,17 @@ export function EditorHeader({
 
           {/* File actions */}
           {isFile && currentPath && (
-            <div className="flex items-center gap-1 ml-auto">
+            <div className="ml-auto flex items-center gap-1">
               <button
                 onClick={onCopyPath}
-                className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                className="p-1 text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                 title="Copy path"
               >
-                {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                {copied ? (
+                  <Check className="h-4 w-4 text-green-500" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
               </button>
               {repo && (
                 <a
@@ -286,10 +306,10 @@ export function EditorHeader({
                   })()}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                  className="p-1 text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                   title="View on code host"
                 >
-                  <ExternalLink className="w-4 h-4" />
+                  <ExternalLink className="h-4 w-4" />
                 </a>
               )}
             </div>

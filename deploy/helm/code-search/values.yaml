@@ -288,6 +288,7 @@ serviceAccount:
 # Pod Security
 podSecurityContext:
   fsGroup: 1000
+  fsGroupChangePolicy: OnRootMismatch
   seccompProfile:
     type: RuntimeDefault
 

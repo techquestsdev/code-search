@@ -25,7 +25,9 @@ import type { HoverState } from "@/lib/code-viewer-utils";
 // Heavy imports for dynamic loading
 const CodeMirror = dynamic(() => import("@uiw/react-codemirror"), {
   ssr: false,
-  loading: () => <div className="h-full w-full bg-gray-50 dark:bg-gray-900 animate-pulse" />
+  loading: () => (
+    <div className="h-full w-full animate-pulse bg-gray-50 dark:bg-gray-900" />
+  ),
 });
 
 // API URL for SCIP requests (same as lib/api.ts)
@@ -83,84 +85,97 @@ function useSCIPHover({
   const [hoverState, setHoverState] = useState<HoverState | null>(null);
 
   // Fetch SCIP definition info for hover
-  const fetchSCIPInfo = useCallback(async (word: string, line: number, col: number): Promise<string | undefined> => {
-    if (!repoId || !filePath) {
-      return undefined;
-    }
-
-    try {
-      const response = await fetch(`${API_URL}/api/v1/scip/repos/${repoId}/definition`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          filePath,
-          line, // API accepts 1-indexed lines (same as CodeMirror)
-          column: col,
-        }),
-      });
-
-      if (!response.ok) {
+  const fetchSCIPInfo = useCallback(
+    async (
+      word: string,
+      line: number,
+      col: number
+    ): Promise<string | undefined> => {
+      if (!repoId || !filePath) {
         return undefined;
       }
 
-      const data = await response.json();
+      try {
+        const response = await fetch(
+          `${API_URL}/api/v1/scip/repos/${repoId}/definition`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              filePath,
+              line, // API accepts 1-indexed lines (same as CodeMirror)
+              column: col,
+            }),
+          }
+        );
 
-      if (data.found) {
-        // Return raw documentation - HoverPopup will parse it
-        if (data.info?.documentation) {
-          return data.info.documentation;
+        if (!response.ok) {
+          return undefined;
         }
-        // Fall back to the definition's source line (context)
-        if (data.definition?.context) {
-          return data.definition.context.trim();
+
+        const data = await response.json();
+
+        if (data.found) {
+          // Return raw documentation - HoverPopup will parse it
+          if (data.info?.documentation) {
+            return data.info.documentation;
+          }
+          // Fall back to the definition's source line (context)
+          if (data.definition?.context) {
+            return data.definition.context.trim();
+          }
         }
+
+        // SCIP didn't find anything - fall back to Zoekt symbol search
+        return await fetchSymbolInfo(word, language);
+      } catch (e) {
+        console.error("Failed to fetch SCIP info:", e);
+        // Also try symbol search on error
+        return await fetchSymbolInfo(word, language);
       }
-
-      // SCIP didn't find anything - fall back to Zoekt symbol search
-      return await fetchSymbolInfo(word, language);
-    } catch (e) {
-      console.error("Failed to fetch SCIP info:", e);
-      // Also try symbol search on error
-      return await fetchSymbolInfo(word, language);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [repoId, filePath, language]);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    },
+    [repoId, filePath, language]
+  );
 
   // Fallback: fetch symbol info from Zoekt when SCIP doesn't have data
-  const fetchSymbolInfo = useCallback(async (word: string, lang?: string): Promise<string | undefined> => {
-    try {
-      const response = await fetch(`${API_URL}/api/v1/symbols/find`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: word,
-          language: lang,
-          limit: 1,
-        }),
-      });
+  const fetchSymbolInfo = useCallback(
+    async (word: string, lang?: string): Promise<string | undefined> => {
+      try {
+        const response = await fetch(`${API_URL}/api/v1/symbols/find`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: word,
+            language: lang,
+            limit: 1,
+          }),
+        });
 
-      if (!response.ok) {
+        if (!response.ok) {
+          return undefined;
+        }
+
+        const symbols = await response.json();
+        if (symbols && symbols.length > 0) {
+          const sym = symbols[0];
+          // Return the symbol's context/signature if available
+          if (sym.context) {
+            return sym.context.trim();
+          }
+          // Or construct a basic signature from available info
+          if (sym.kind && sym.name) {
+            return `${sym.kind} ${sym.name}`;
+          }
+        }
+        return undefined;
+      } catch (e) {
+        console.error("Failed to fetch symbol info:", e);
         return undefined;
       }
-
-      const symbols = await response.json();
-      if (symbols && symbols.length > 0) {
-        const sym = symbols[0];
-        // Return the symbol's context/signature if available
-        if (sym.context) {
-          return sym.context.trim();
-        }
-        // Or construct a basic signature from available info
-        if (sym.kind && sym.name) {
-          return `${sym.kind} ${sym.name}`;
-        }
-      }
-      return undefined;
-    } catch (e) {
-      console.error("Failed to fetch symbol info:", e);
-      return undefined;
-    }
-  }, []);
+    },
+    []
+  );
 
   // Handle hover popup close
   const handleHoverClose = useCallback(() => {
@@ -189,8 +204,8 @@ function useSCIPHover({
       fetchSCIPInfo,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (state: any) => {
-        if (typeof state === 'function') {
-          setHoverState(prev => state(prev));
+        if (typeof state === "function") {
+          setHoverState((prev) => state(prev));
         } else {
           setHoverState(state);
         }
@@ -203,7 +218,13 @@ function useSCIPHover({
     );
   }, [showHoverPopup, language, fetchSCIPInfo, onHover]);
 
-  return { hoverState, hoverExtension, handleHoverClose, handleFindReferences, handleGoToDefinition };
+  return {
+    hoverState,
+    hoverExtension,
+    handleHoverClose,
+    handleFindReferences,
+    handleGoToDefinition,
+  };
 }
 
 // ---------- CodeViewer component ----------
@@ -237,7 +258,13 @@ export function CodeViewer({
   const effectiveMode = languageMode || language?.toLowerCase() || "text";
 
   // SCIP/symbol hover logic
-  const { hoverState, hoverExtension, handleHoverClose, handleFindReferences, handleGoToDefinition } = useSCIPHover({
+  const {
+    hoverState,
+    hoverExtension,
+    handleHoverClose,
+    handleFindReferences,
+    handleGoToDefinition,
+  } = useSCIPHover({
     repoId,
     filePath,
     language,
@@ -277,7 +304,17 @@ export function CodeViewer({
     }
 
     return exts;
-  }, [effectiveMode, highlightLines, readonly, onWordClick, onLineClick, language, hoverExtension, keyboardShortcutsExtension, resolvedTheme]);
+  }, [
+    effectiveMode,
+    highlightLines,
+    readonly,
+    onWordClick,
+    onLineClick,
+    language,
+    hoverExtension,
+    keyboardShortcutsExtension,
+    resolvedTheme,
+  ]);
 
   // Scroll to line on mount or when scrollToLine changes
   useEffect(() => {
@@ -313,7 +350,7 @@ export function CodeViewer({
       role="application"
       className={`code-viewer relative h-full ${className}`}
       onKeyDown={(e) => {
-        if ((e.metaKey || e.ctrlKey) && e.key === 'a') {
+        if ((e.metaKey || e.ctrlKey) && e.key === "a") {
           e.stopPropagation();
         }
       }}
@@ -350,7 +387,7 @@ export function CodeViewer({
           lintKeymap: false,
         }}
         theme={editorTheme}
-        className="text-sm h-full [&_.cm-editor]:h-full [&_.cm-scroller]:!overflow-auto"
+        className="h-full text-sm [&_.cm-editor]:h-full [&_.cm-scroller]:!overflow-auto"
       />
 
       {showHoverPopup && hoverState && (

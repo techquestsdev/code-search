@@ -36,11 +36,11 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="h-full bg-white dark:bg-gray-950 overflow-hidden">
+      <body className="h-full overflow-hidden bg-white dark:bg-gray-950">
         <ThemeProvider>
           <AuthProvider>
             <ContextProvider>
-              <div className="h-full flex flex-col overflow-hidden">
+              <div className="flex h-full flex-col overflow-hidden">
                 <Navigation />
                 <main className="flex-1 overflow-hidden">{children}</main>
               </div>

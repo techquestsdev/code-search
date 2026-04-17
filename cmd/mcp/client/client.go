@@ -209,7 +209,10 @@ type ListReposParams struct {
 }
 
 // ListRepos lists indexed repositories.
-func (c *Client) ListRepos(ctx context.Context, params ListReposParams) (*ListReposResponse, error) {
+func (c *Client) ListRepos(
+	ctx context.Context,
+	params ListReposParams,
+) (*ListReposResponse, error) {
 	q := url.Values{}
 	if params.Search != "" {
 		q.Set("search", params.Search)
@@ -262,7 +265,11 @@ type TreeResponse struct {
 }
 
 // GetFileTree returns directory contents for a repository.
-func (c *Client) GetFileTree(ctx context.Context, repoID int64, path, ref string) (*TreeResponse, error) {
+func (c *Client) GetFileTree(
+	ctx context.Context,
+	repoID int64,
+	path, ref string,
+) (*TreeResponse, error) {
 	q := url.Values{}
 	if path != "" {
 		q.Set("path", path)
@@ -301,7 +308,11 @@ type BlobResponse struct {
 }
 
 // GetFileContent returns the content of a file.
-func (c *Client) GetFileContent(ctx context.Context, repoID int64, path, ref string) (*BlobResponse, error) {
+func (c *Client) GetFileContent(
+	ctx context.Context,
+	repoID int64,
+	path, ref string,
+) (*BlobResponse, error) {
 	q := url.Values{}
 	q.Set("path", path)
 
@@ -364,7 +375,12 @@ type SearchSymbolsResponse struct {
 }
 
 // SearchSymbols searches for symbols in a repository.
-func (c *Client) SearchSymbols(ctx context.Context, repoID int64, query string, limit int) (*SearchSymbolsResponse, error) {
+func (c *Client) SearchSymbols(
+	ctx context.Context,
+	repoID int64,
+	query string,
+	limit int,
+) (*SearchSymbolsResponse, error) {
 	body := map[string]any{
 		"query": query,
 	}
@@ -415,7 +431,12 @@ type GoToDefinitionResponse struct {
 }
 
 // GoToDefinition finds the definition of a symbol.
-func (c *Client) GoToDefinition(ctx context.Context, repoID int64, file string, line, column int) (*GoToDefinitionResponse, error) {
+func (c *Client) GoToDefinition(
+	ctx context.Context,
+	repoID int64,
+	file string,
+	line, column int,
+) (*GoToDefinitionResponse, error) {
 	body := map[string]any{
 		"filePath": file,
 		"line":     line,
@@ -447,7 +468,12 @@ type FindReferencesResponse struct {
 }
 
 // FindReferences finds all references to a symbol.
-func (c *Client) FindReferences(ctx context.Context, repoID int64, file string, line, column, limit int) (*FindReferencesResponse, error) {
+func (c *Client) FindReferences(
+	ctx context.Context,
+	repoID int64,
+	file string,
+	line, column, limit int,
+) (*FindReferencesResponse, error) {
 	body := map[string]any{
 		"filePath": file,
 		"line":     line,

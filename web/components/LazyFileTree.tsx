@@ -43,69 +43,69 @@ export function getFileIcon(language?: string, name?: string) {
   if (language) {
     const langLower = language.toLowerCase();
     if (["javascript", "typescript", "jsx", "tsx"].includes(langLower)) {
-      return <FileCode className="w-4 h-4 text-yellow-500" />;
+      return <FileCode className="h-4 w-4 text-yellow-500" />;
     }
     if (["python"].includes(langLower)) {
-      return <FileCode className="w-4 h-4 text-blue-500" />;
+      return <FileCode className="h-4 w-4 text-blue-500" />;
     }
     if (["go"].includes(langLower)) {
-      return <FileCode className="w-4 h-4 text-cyan-500" />;
+      return <FileCode className="h-4 w-4 text-cyan-500" />;
     }
     if (["java", "kotlin"].includes(langLower)) {
-      return <FileCode className="w-4 h-4 text-orange-500" />;
+      return <FileCode className="h-4 w-4 text-orange-500" />;
     }
     if (["rust"].includes(langLower)) {
-      return <FileCode className="w-4 h-4 text-orange-700" />;
+      return <FileCode className="h-4 w-4 text-orange-700" />;
     }
     if (["json"].includes(langLower)) {
-      return <FileJson className="w-4 h-4 text-yellow-600" />;
+      return <FileJson className="h-4 w-4 text-yellow-600" />;
     }
     if (["markdown", "md"].includes(langLower)) {
-      return <FileText className="w-4 h-4 text-gray-500" />;
+      return <FileText className="h-4 w-4 text-gray-500" />;
     }
   }
 
   // Extension-based fallback
   if (ext) {
     if (["js", "jsx", "ts", "tsx", "mjs", "cjs"].includes(ext)) {
-      return <FileCode className="w-4 h-4 text-yellow-500" />;
+      return <FileCode className="h-4 w-4 text-yellow-500" />;
     }
     if (["py"].includes(ext)) {
-      return <FileCode className="w-4 h-4 text-blue-500" />;
+      return <FileCode className="h-4 w-4 text-blue-500" />;
     }
     if (["go"].includes(ext)) {
-      return <FileCode className="w-4 h-4 text-cyan-500" />;
+      return <FileCode className="h-4 w-4 text-cyan-500" />;
     }
     if (["java", "kt", "kts"].includes(ext)) {
-      return <FileCode className="w-4 h-4 text-orange-500" />;
+      return <FileCode className="h-4 w-4 text-orange-500" />;
     }
     if (["rs"].includes(ext)) {
-      return <FileCode className="w-4 h-4 text-orange-700" />;
+      return <FileCode className="h-4 w-4 text-orange-700" />;
     }
     if (["json"].includes(ext)) {
-      return <FileJson className="w-4 h-4 text-yellow-600" />;
+      return <FileJson className="h-4 w-4 text-yellow-600" />;
     }
     if (["md", "mdx"].includes(ext)) {
-      return <FileText className="w-4 h-4 text-gray-500" />;
+      return <FileText className="h-4 w-4 text-gray-500" />;
     }
     if (["yaml", "yml"].includes(ext)) {
-      return <FileText className="w-4 h-4 text-red-400" />;
+      return <FileText className="h-4 w-4 text-red-400" />;
     }
     if (["html", "htm"].includes(ext)) {
-      return <FileCode className="w-4 h-4 text-orange-500" />;
+      return <FileCode className="h-4 w-4 text-orange-500" />;
     }
     if (["css", "scss", "sass", "less"].includes(ext)) {
-      return <FileCode className="w-4 h-4 text-blue-400" />;
+      return <FileCode className="h-4 w-4 text-blue-400" />;
     }
     if (["sql"].includes(ext)) {
-      return <FileCode className="w-4 h-4 text-blue-600" />;
+      return <FileCode className="h-4 w-4 text-blue-600" />;
     }
     if (["sh", "bash", "zsh"].includes(ext)) {
-      return <FileCode className="w-4 h-4 text-green-600" />;
+      return <FileCode className="h-4 w-4 text-green-600" />;
     }
   }
 
-  return <File className="w-4 h-4 text-gray-400" />;
+  return <File className="h-4 w-4 text-gray-400" />;
 }
 
 // Convert API entries to tree nodes
@@ -176,16 +176,17 @@ function TreeNodeComponent({
       <button
         onClick={handleRowClick}
         onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
+          if (e.key === "Enter" || e.key === " ") {
             handleRowClick();
-          } else if (e.key === 'ArrowRight' && isFolder && !node.isExpanded) {
+          } else if (e.key === "ArrowRight" && isFolder && !node.isExpanded) {
             onToggle(node.path, false, !!node.isLoaded);
-          } else if (e.key === 'ArrowLeft' && isFolder && node.isExpanded) {
+          } else if (e.key === "ArrowLeft" && isFolder && node.isExpanded) {
             onToggle(node.path, true, !!node.isLoaded);
           }
         }}
-        className={`w-full flex items-center gap-1.5 py-1 pr-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-blue-500 z-0 ${isSelected ? "bg-blue-100 dark:bg-blue-900/30" : ""
-          }`}
+        className={`z-0 flex w-full cursor-pointer items-center gap-1.5 py-1 pr-2 text-left outline-none transition-colors hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-blue-500 dark:hover:bg-gray-700/50 ${
+          isSelected ? "bg-blue-100 dark:bg-blue-900/30" : ""
+        }`}
         style={{ paddingLeft }}
       >
         {/* Expand/collapse icon - separate interactive area */}
@@ -195,32 +196,32 @@ function TreeNodeComponent({
             tabIndex={-1}
             onClick={handleChevronClick}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
+              if (e.key === "Enter" || e.key === " ") {
                 handleChevronClick(e as unknown as React.MouseEvent);
               }
             }}
-            className="w-4 h-4 flex items-center justify-center flex-shrink-0 hover:bg-gray-200 dark:hover:bg-gray-600 rounded cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-blue-500"
+            className="flex h-4 w-4 flex-shrink-0 cursor-pointer items-center justify-center rounded outline-none hover:bg-gray-200 focus-visible:ring-1 focus-visible:ring-blue-500 dark:hover:bg-gray-600"
             aria-label={node.isExpanded ? "Collapse folder" : "Expand folder"}
           >
             {node.isLoading ? (
-              <Loader2 className="w-3 h-3 text-gray-400 animate-spin" />
+              <Loader2 className="h-3 w-3 animate-spin text-gray-400" />
             ) : node.isExpanded ? (
-              <ChevronDown className="w-3 h-3 text-gray-400" />
+              <ChevronDown className="h-3 w-3 text-gray-400" />
             ) : (
-              <ChevronRight className="w-3 h-3 text-gray-400" />
+              <ChevronRight className="h-3 w-3 text-gray-400" />
             )}
           </span>
         ) : (
-          <div className="w-4 h-4 flex-shrink-0" />
+          <div className="h-4 w-4 flex-shrink-0" />
         )}
 
         {/* Icon */}
         <span className="flex-shrink-0">
           {isFolder ? (
             node.isExpanded ? (
-              <FolderOpen className="w-4 h-4 text-blue-500" />
+              <FolderOpen className="h-4 w-4 text-blue-500" />
             ) : (
-              <Folder className="w-4 h-4 text-blue-500" />
+              <Folder className="h-4 w-4 text-blue-500" />
             )
           ) : (
             getFileIcon(node.language, node.name)
@@ -229,10 +230,11 @@ function TreeNodeComponent({
 
         {/* Name */}
         <span
-          className={`truncate text-sm ${isSelected
-            ? "text-blue-700 dark:text-blue-300 font-medium"
-            : "text-gray-700 dark:text-gray-300"
-            }`}
+          className={`truncate text-sm ${
+            isSelected
+              ? "font-medium text-blue-700 dark:text-blue-300"
+              : "text-gray-700 dark:text-gray-300"
+          }`}
         >
           {node.name}
         </span>
@@ -266,10 +268,14 @@ export function LazyFileTree({
   className = "",
   splitEnabled = false,
 }: LazyFileTreeProps) {
-  type TreeState = { rootNodes: TreeNode[]; loading: boolean; error: string | null };
+  type TreeState = {
+    rootNodes: TreeNode[];
+    loading: boolean;
+    error: string | null;
+  };
   const [treeState, updateTree] = useReducer(
     (s: TreeState, u: Partial<TreeState> | ((prev: TreeState) => TreeState)) =>
-      typeof u === 'function' ? u(s) : { ...s, ...u },
+      typeof u === "function" ? u(s) : { ...s, ...u },
     { rootNodes: [] as TreeNode[], loading: true, error: null as string | null }
   );
 
@@ -285,7 +291,7 @@ export function LazyFileTree({
     // Reset tree when repo changes and set loading
     const resetNeeded = lastRepoId.current !== repoId;
     if (resetNeeded) lastRepoId.current = repoId;
-    updateTree(prev => ({
+    updateTree((prev) => ({
       ...prev,
       ...(resetNeeded ? { rootNodes: [] } : {}),
       loading: true,
@@ -297,11 +303,11 @@ export function LazyFileTree({
         const tree = await api.getTree(repoId, undefined, currentRef);
         if (!cancelled) {
           const nodes = entriesToNodes(tree.entries);
-          updateTree(prev => ({ ...prev, rootNodes: nodes, loading: false }));
+          updateTree((prev) => ({ ...prev, rootNodes: nodes, loading: false }));
         }
       } catch (err) {
         if (!cancelled) {
-          updateTree(prev => ({
+          updateTree((prev) => ({
             ...prev,
             error: err instanceof Error ? err.message : "Failed to load files",
             loading: false,
@@ -311,22 +317,27 @@ export function LazyFileTree({
     };
     loadRoot();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [repoId, currentRef]);
 
   // Check if a path is already expanded in the tree
-  const isPathExpanded = useCallback((path: string, nodes: TreeNode[]): boolean => {
-    for (const node of nodes) {
-      if (node.path === path) {
-        return !!node.isExpanded;
+  const isPathExpanded = useCallback(
+    (path: string, nodes: TreeNode[]): boolean => {
+      for (const node of nodes) {
+        if (node.path === path) {
+          return !!node.isExpanded;
+        }
+        if (node.children) {
+          const found = isPathExpanded(path, node.children);
+          if (found) return true;
+        }
       }
-      if (node.children) {
-        const found = isPathExpanded(path, node.children);
-        if (found) return true;
-      }
-    }
-    return false;
-  }, []);
+      return false;
+    },
+    []
+  );
 
   // Auto-expand to current path when it changes
   useEffect(() => {
@@ -346,7 +357,7 @@ export function LazyFileTree({
     }
 
     // Find which paths need expanding (not already loaded/expanded)
-    const needsExpanding = pathsToExpand.filter(p => {
+    const needsExpanding = pathsToExpand.filter((p) => {
       const findNode = (path: string, nodes: TreeNode[]): TreeNode | null => {
         for (const node of nodes) {
           if (node.path === path) return node;
@@ -379,7 +390,12 @@ export function LazyFileTree({
                 if (node.path === pathToExpand) {
                   // Only update if not already loaded, preserve existing expanded state
                   if (!node.isLoaded) {
-                    return { ...node, children, isLoaded: true, isExpanded: true };
+                    return {
+                      ...node,
+                      children,
+                      isLoaded: true,
+                      isExpanded: true,
+                    };
                   }
                   // If loaded but not expanded, just expand it
                   return { ...node, isExpanded: true };
@@ -433,7 +449,11 @@ export function LazyFileTree({
       if (isLoaded) {
         updateTree((prev) => ({
           ...prev,
-          rootNodes: updateNode(path, (n) => ({ ...n, isExpanded: true }), prev.rootNodes)
+          rootNodes: updateNode(
+            path,
+            (n) => ({ ...n, isExpanded: true }),
+            prev.rootNodes
+          ),
         }));
         return;
       }
@@ -441,7 +461,11 @@ export function LazyFileTree({
       // Set loading state
       updateTree((prev) => ({
         ...prev,
-        rootNodes: updateNode(path, (n) => ({ ...n, isLoading: true }), prev.rootNodes)
+        rootNodes: updateNode(
+          path,
+          (n) => ({ ...n, isLoading: true }),
+          prev.rootNodes
+        ),
       }));
 
       try {
@@ -460,13 +484,17 @@ export function LazyFileTree({
               isExpanded: true,
             }),
             prev.rootNodes
-          )
+          ),
         }));
       } catch (err) {
         console.error("Failed to load folder:", err);
         updateTree((prev) => ({
           ...prev,
-          rootNodes: updateNode(path, (n) => ({ ...n, isLoading: false }), prev.rootNodes)
+          rootNodes: updateNode(
+            path,
+            (n) => ({ ...n, isLoading: false }),
+            prev.rootNodes
+          ),
         }));
       }
     },
@@ -480,7 +508,11 @@ export function LazyFileTree({
         // Collapse
         updateTree((prev) => ({
           ...prev,
-          rootNodes: updateNode(path, (n) => ({ ...n, isExpanded: false }), prev.rootNodes)
+          rootNodes: updateNode(
+            path,
+            (n) => ({ ...n, isExpanded: false }),
+            prev.rootNodes
+          ),
         }));
       } else {
         // Expand (and load if needed)
@@ -492,17 +524,17 @@ export function LazyFileTree({
 
   // Refresh tree
   const handleRefresh = useCallback(async () => {
-    updateTree(prev => ({ ...prev, loading: true, error: null }));
+    updateTree((prev) => ({ ...prev, loading: true, error: null }));
 
     try {
       const tree = await api.getTree(repoId, undefined, currentRef);
       const nodes = entriesToNodes(tree.entries);
-      updateTree(prev => ({ ...prev, rootNodes: nodes, loading: false }));
+      updateTree((prev) => ({ ...prev, rootNodes: nodes, loading: false }));
     } catch (err) {
-      updateTree(prev => ({ 
-        ...prev, 
+      updateTree((prev) => ({
+        ...prev,
         error: err instanceof Error ? err.message : "Failed to load files",
-        loading: false 
+        loading: false,
       }));
     }
   }, [repoId, currentRef]);
@@ -510,7 +542,7 @@ export function LazyFileTree({
   if (loading && rootNodes.length === 0) {
     return (
       <div className={`flex items-center justify-center py-8 ${className}`}>
-        <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+        <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
       </div>
     );
   }
@@ -518,12 +550,14 @@ export function LazyFileTree({
   if (error) {
     return (
       <div className={`p-4 ${className}`}>
-        <div className="text-sm text-red-600 dark:text-red-400 mb-2">{error}</div>
+        <div className="mb-2 text-sm text-red-600 dark:text-red-400">
+          {error}
+        </div>
         <button
           onClick={handleRefresh}
-          className="flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 hover:underline"
+          className="flex items-center gap-1.5 text-xs text-blue-600 hover:underline dark:text-blue-400"
         >
-          <RefreshCw className="w-3 h-3" />
+          <RefreshCw className="h-3 w-3" />
           Retry
         </button>
       </div>
@@ -532,7 +566,9 @@ export function LazyFileTree({
 
   if (rootNodes.length === 0) {
     return (
-      <div className={`p-4 text-sm text-gray-500 dark:text-gray-400 ${className}`}>
+      <div
+        className={`p-4 text-sm text-gray-500 dark:text-gray-400 ${className}`}
+      >
         Empty repository
       </div>
     );

@@ -700,7 +700,16 @@ func (s *Service) cloneRepo(
 	defer cancel()
 
 	// Shallow clone — we only need the latest commit to apply changes and push a new branch
-	cmd := exec.CommandContext(cloneCtx, "git", "clone", "--depth", "1", "--single-branch", authURL, destDir)
+	cmd := exec.CommandContext(
+		cloneCtx,
+		"git",
+		"clone",
+		"--depth",
+		"1",
+		"--single-branch",
+		authURL,
+		destDir,
+	)
 	configureGitCmd(cmd)
 
 	output, err := cmd.CombinedOutput()

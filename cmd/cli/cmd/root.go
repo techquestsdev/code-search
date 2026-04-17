@@ -52,8 +52,10 @@ func init() {
 	rootCmd.PersistentFlags().
 		StringVar(&apiURL, "api-url", "http://localhost:8080", "API server URL")
 	rootCmd.PersistentFlags().String("output", "text", "Output format: text, json, table")
-	rootCmd.PersistentFlags().String("token", "", "Code host token for replace operations (GitHub/GitLab PAT)")
-	rootCmd.PersistentFlags().String("auth-token", "", "Authentication token (JWT or API token, env: CODE_SEARCH_AUTH_TOKEN)")
+	rootCmd.PersistentFlags().
+		String("token", "", "Code host token for replace operations (GitHub/GitLab PAT)")
+	rootCmd.PersistentFlags().
+		String("auth-token", "", "Authentication token (JWT or API token, env: CODE_SEARCH_AUTH_TOKEN)")
 	rootCmd.PersistentFlags().
 		StringVar(&iapClientID, "iap-client-id", "", "IAP OAuth client ID (for servers behind Google IAP)")
 

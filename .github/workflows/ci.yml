@@ -76,14 +76,16 @@ jobs:
       - name: Install golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
-          args: ./...
-      - name: Run go vet
+          install-only: true
+      - name: Lint
+        run: make lint-go
+      - name: Vet
         run: make vet
-      - name: Run tests
+      - name: Test
         env:
           CS_DATABASE_URL: postgres://codesearch:codesearch@localhost:5432/codesearch?sslmode=disable
           CS_REDIS_ADDR: localhost:6379
-        run: make test
+        run: make test-go
 
   web-checks:
     needs: changes
@@ -95,9 +97,9 @@ jobs:
       - name: Install dependencies
         run: cd web && bun install
       - name: Lint
-        run: cd web && bun lint
+        run: make lint-web
       - name: Test
-        run: cd web && bun run test:run
+        run: make test-web
 
   website-checks:
     needs: changes
@@ -109,7 +111,7 @@ jobs:
       - name: Install dependencies
         run: cd website && bun install
       - name: Build
-        run: cd website && bun run build
+        run: make build-website
 
   docker-build:
     needs: changes

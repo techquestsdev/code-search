@@ -95,6 +95,9 @@ func TestAuthTokenWhitespaceOnly(t *testing.T) {
 	_, _ = c.get(context.Background(), "/test")
 
 	if gotAuth != "" {
-		t.Errorf("Authorization header = %q, want empty (whitespace-only token should be treated as empty)", gotAuth)
+		t.Errorf(
+			"Authorization header = %q, want empty (whitespace-only token should be treated as empty)",
+			gotAuth,
+		)
 	}
 }

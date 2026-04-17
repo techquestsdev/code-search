@@ -922,6 +922,21 @@ func (s *Service) DeleteRepository(ctx context.Context, id int64) error {
 	return nil
 }
 
+// UpdateDefaultBranch updates the default branch for a repository.
+// Called when the indexer detects a branch rename (e.g. master → main).
+func (s *Service) UpdateDefaultBranch(ctx context.Context, id int64, branch string) error {
+	_, err := s.pool.Exec(
+		ctx,
+		`UPDATE repositories SET default_branch = $2, updated_at = NOW() WHERE id = $1`,
+		id, branch,
+	)
+	if err != nil {
+		return fmt.Errorf("update default branch: %w", err)
+	}
+
+	return nil
+}
+
 // ExcludeRepository marks a repository as excluded (soft delete)
 // Excluded repos are skipped during sync and should be removed from the index.
 func (s *Service) ExcludeRepository(ctx context.Context, id int64) error {
@@ -1092,7 +1107,10 @@ func (s *Service) SyncRepositories(
 					WHERE connection_id = $1 AND name = $2
 				`, connectionID, repo.FullName).Scan(&repoID, &currentExcluded)
 				if err == nil && !currentExcluded {
-					archivedRepos = append(archivedRepos, ArchivedRepo{ID: repoID, Name: repo.FullName})
+					archivedRepos = append(
+						archivedRepos,
+						ArchivedRepo{ID: repoID, Name: repo.FullName},
+					)
 				}
 			}
 
@@ -1136,7 +1154,8 @@ func (s *Service) SyncRepositories(
 
 		// Determine initial deleted/excluded state from config (only applies to NEW repos)
 		initialDeleted := hasConfig && repoConfig.Delete
-		initialExcluded := hasConfig && (repoConfig.Exclude || repoConfig.Delete) // deleted repos are also excluded
+		initialExcluded := hasConfig &&
+			(repoConfig.Exclude || repoConfig.Delete) // deleted repos are also excluded
 
 		if isMySQL {
 			// MySQL: use INSERT ... ON DUPLICATE KEY UPDATE

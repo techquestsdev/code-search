@@ -369,7 +369,9 @@ func (b *Builder) WithAuditLogger(al audit.AuditLogger) *Builder {
 // WithSearchResultFilter sets a function to filter search results based on
 // user access. This is a convenience that wraps authorizer-level filtering
 // into the search pipeline.
-func (b *Builder) WithSearchResultFilter(fn func(ctx context.Context, results []search.SearchResult) []search.SearchResult) *Builder {
+func (b *Builder) WithSearchResultFilter(
+	fn func(ctx context.Context, results []search.SearchResult) []search.SearchResult,
+) *Builder {
 	b.services.SearchResultFilter = fn
 	return b
 }

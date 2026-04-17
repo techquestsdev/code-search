@@ -430,7 +430,6 @@ export interface SCIPIndexersResponse {
   instructions: Record<string, string>;
 }
 
-
 // API Client
 class ApiClient {
   private baseUrl: string;

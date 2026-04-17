@@ -67,7 +67,11 @@ func (inv *Invalidator) Start(ctx context.Context) {
 
 			repoID, err := strconv.ParseInt(msg.Payload, 10, 64)
 			if err != nil {
-				inv.logger.Debug("Invalid reindex event payload", zap.String("payload", msg.Payload))
+				inv.logger.Debug(
+					"Invalid reindex event payload",
+					zap.String("payload", msg.Payload),
+				)
+
 				continue
 			}
 

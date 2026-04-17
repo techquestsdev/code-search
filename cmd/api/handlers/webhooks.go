@@ -70,7 +70,11 @@ func (h *Handler) HandleWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if repoName == "" {
-		http.Error(w, "Could not extract repository name from webhook payload", http.StatusBadRequest)
+		http.Error(
+			w,
+			"Could not extract repository name from webhook payload",
+			http.StatusBadRequest,
+		)
 		return
 	}
 

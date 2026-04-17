@@ -2,10 +2,36 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { api, SearchSuggestionsResponse, ReplaceMatch, PreviewMatch } from "@/lib/api";
+import {
+  api,
+  SearchSuggestionsResponse,
+  ReplaceMatch,
+  PreviewMatch,
+} from "@/lib/api";
 import { useActiveContext } from "@/hooks/useContexts";
 import { ContextSwitcher } from "@/components/ContextSwitcher";
-import { RefreshCw, FolderGit2, FileCode, ExternalLink, ChevronDown, ChevronRight, ChevronUp, Eye, Play, Loader2, Filter, GitBranch, Code, History, X, Clock, Search, Key, AlertCircle, AlertTriangle } from "lucide-react";
+import {
+  RefreshCw,
+  FolderGit2,
+  FileCode,
+  ExternalLink,
+  ChevronDown,
+  ChevronRight,
+  ChevronUp,
+  Eye,
+  Play,
+  Loader2,
+  Filter,
+  GitBranch,
+  Code,
+  History,
+  X,
+  Clock,
+  Search,
+  Key,
+  AlertCircle,
+  AlertTriangle,
+} from "lucide-react";
 
 interface FileGroup {
   repo: string;
@@ -42,7 +68,10 @@ function getSearchHistory(): SearchHistoryItem[] {
 function saveSearchHistory(history: SearchHistoryItem[]) {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(history.slice(0, MAX_HISTORY_ITEMS)));
+    localStorage.setItem(
+      SEARCH_HISTORY_KEY,
+      JSON.stringify(history.slice(0, MAX_HISTORY_ITEMS))
+    );
   } catch {
     // Ignore storage errors
   }
@@ -52,7 +81,7 @@ function addToSearchHistory(query: string) {
   if (!query.trim()) return;
   const history = getSearchHistory();
   // Remove duplicates
-  const filtered = history.filter(h => h.query !== query);
+  const filtered = history.filter((h) => h.query !== query);
   // Add new item at the beginning
   const newHistory = [{ query, timestamp: Date.now() }, ...filtered];
   saveSearchHistory(newHistory);
@@ -68,7 +97,10 @@ function HighlightedQuery({ query }: { query: string }) {
   const RED_500 = "#ef4444";
   const PURPLE_500 = "#a855f7";
 
-  const tokenRegex = new RegExp('(/[^/\\\\s]+/)|((repo:|file:|lang:|content:|case:|sym:|symbol:|branch:|rev:|path:|type:|-repo:|-file:|-lang:|-content:|-path:)([^\\\\s]*))', 'g');
+  const tokenRegex = new RegExp(
+    "(/[^/\\\\s]+/)|((repo:|file:|lang:|content:|case:|sym:|symbol:|branch:|rev:|path:|type:|-repo:|-file:|-lang:|-content:|-path:)([^\\\\s]*))",
+    "g"
+  );
 
   let lastIndex = 0;
   let match;
@@ -76,7 +108,10 @@ function HighlightedQuery({ query }: { query: string }) {
   while ((match = tokenRegex.exec(query)) !== null) {
     if (match.index > lastIndex) {
       parts.push(
-        <span key={`text-${lastIndex}`} className="text-gray-900 dark:text-white">
+        <span
+          key={`text-${lastIndex}`}
+          className="text-gray-900 dark:text-white"
+        >
           {query.slice(lastIndex, match.index)}
         </span>
       );
@@ -141,27 +176,34 @@ function PreviewResults({
   duration?: string;
   stats?: { files_searched: number; repos_searched: number } | null;
 }) {
-  const groupedResults = preview.reduce((acc, match) => {
-    const key = `${match.repo}:${match.file}`;
-    if (!acc[key]) {
-      acc[key] = {
-        repo: match.repo,
-        file: match.file,
-        language: match.language,
-        matches: [],
-      };
-    }
-    acc[key].matches.push(match);
-    return acc;
-  }, {} as Record<string, FileGroup>);
+  const groupedResults = preview.reduce(
+    (acc, match) => {
+      const key = `${match.repo}:${match.file}`;
+      if (!acc[key]) {
+        acc[key] = {
+          repo: match.repo,
+          file: match.file,
+          language: match.language,
+          matches: [],
+        };
+      }
+      acc[key].matches.push(match);
+      return acc;
+    },
+    {} as Record<string, FileGroup>
+  );
 
   const groupedList = Object.values(groupedResults);
-  const uniqueReposWithMatches = new Set(groupedList.map(g => g.repo)).size;
+  const uniqueReposWithMatches = new Set(groupedList.map((g) => g.repo)).size;
 
   const highlightReplacement = (match: PreviewMatch) => {
     const { content, match_start, match_end } = match;
 
-    if (match_start === undefined || match_end === undefined || match_start === match_end) {
+    if (
+      match_start === undefined ||
+      match_end === undefined ||
+      match_start === match_end
+    ) {
       return content;
     }
 
@@ -174,10 +216,10 @@ function PreviewResults({
     const matchedText = content.slice(match_start, match_end);
     parts.push(
       <span key={match_start}>
-        <del className="bg-red-200 dark:bg-red-900/50 text-red-800 dark:text-red-200 line-through">
+        <del className="bg-red-200 text-red-800 line-through dark:bg-red-900/50 dark:text-red-200">
           {matchedText}
         </del>
-        <ins className="bg-green-200 dark:bg-green-900/50 text-green-800 dark:text-green-200 no-underline">
+        <ins className="bg-green-200 text-green-800 no-underline dark:bg-green-900/50 dark:text-green-200">
           {replaceWith}
         </ins>
       </span>
@@ -192,36 +234,43 @@ function PreviewResults({
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-5 px-1">
+      <div className="mb-5 flex flex-col gap-2 px-1 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-          <span className="font-semibold text-gray-900 dark:text-white">{totalCount?.toLocaleString() || preview.length}</span>
+          <span className="font-semibold text-gray-900 dark:text-white">
+            {totalCount?.toLocaleString() || preview.length}
+          </span>
           <span>results in</span>
-          {duration && <span className="font-mono text-blue-600 dark:text-blue-400">{duration}</span>}
+          {duration && (
+            <span className="font-mono text-blue-600 dark:text-blue-400">
+              {duration}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
           <span className="flex items-center gap-1.5">
-            <FileCode className="w-4 h-4" />
+            <FileCode className="h-4 w-4" />
             {groupedList.length} files
           </span>
           <span className="flex items-center gap-1.5">
-            <FolderGit2 className="w-4 h-4" />
+            <FolderGit2 className="h-4 w-4" />
             {uniqueReposWithMatches} repos
           </span>
         </div>
       </div>
 
       {truncated && (
-        <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg flex items-center gap-2 text-sm text-amber-700 dark:text-amber-400">
-          <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+        <div className="mb-4 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-400">
+          <AlertTriangle className="h-4 w-4 flex-shrink-0" />
           <span>
-            Results truncated. Showing {preview.length.toLocaleString()} of {(totalCount || 0).toLocaleString()} matches.
-            Use filters or set a limit to narrow your search.
+            Results truncated. Showing {preview.length.toLocaleString()} of{" "}
+            {(totalCount || 0).toLocaleString()} matches. Use filters or set a
+            limit to narrow your search.
           </span>
         </div>
       )}
 
       {preview.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+        <div className="rounded-xl bg-gray-50 py-12 text-center dark:bg-gray-800/50">
           <p className="text-gray-500 dark:text-gray-400">No matches found</p>
         </div>
       ) : (
@@ -264,42 +313,49 @@ function FileReplaceCard({
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow">
-      <div className="flex flex-wrap items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 bg-gray-50 dark:bg-gray-800/80">
+    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-gray-700 dark:bg-gray-800">
+      <div className="flex flex-wrap items-center gap-2 bg-gray-50 px-3 py-3 dark:bg-gray-800/80 sm:gap-3 sm:px-4">
         <button
           type="button"
           onClick={() => setCollapsed(!collapsed)}
           className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
           title={collapsed ? "Expand" : "Collapse"}
         >
-          {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          {collapsed ? (
+            <ChevronRight className="h-4 w-4" />
+          ) : (
+            <ChevronDown className="h-4 w-4" />
+          )}
         </button>
-        <FolderGit2 className="w-4 h-4 text-blue-500 hidden sm:block" />
+        <FolderGit2 className="hidden h-4 w-4 text-blue-500 sm:block" />
         <a
           href={getFileUrl(sortedMatches[0]?.line || 1)}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-xs sm:text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline truncate max-w-[120px] sm:max-w-none"
+          className="max-w-[120px] truncate text-xs font-medium text-blue-600 hover:underline dark:text-blue-400 sm:max-w-none sm:text-sm"
           onClick={(e) => e.stopPropagation()}
         >
           {group.repo}
         </a>
-        <span className="text-gray-300 dark:text-gray-600 hidden sm:inline">/</span>
-        <FileCode className="w-4 h-4 text-gray-400 hidden sm:block" />
+        <span className="hidden text-gray-300 dark:text-gray-600 sm:inline">
+          /
+        </span>
+        <FileCode className="hidden h-4 w-4 text-gray-400 sm:block" />
         <a
           href={getFileUrl(sortedMatches[0]?.line || 1)}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:underline flex-1 truncate"
+          className="flex-1 truncate text-xs text-gray-700 hover:text-blue-600 hover:underline dark:text-gray-300 dark:hover:text-blue-400 sm:text-sm"
           onClick={(e) => e.stopPropagation()}
         >
           {group.file}
         </a>
-        <span className="text-xs px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-full font-medium whitespace-nowrap">
-          {sortedMatches.length} {sortedMatches.length === 1 ? 'replacement' : 'replacements'}
+        <span className="whitespace-nowrap rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+          {sortedMatches.length}{" "}
+          {sortedMatches.length === 1 ? "replacement" : "replacements"}
         </span>
         {group.language && (
-          <span className="text-xs px-2 py-0.5 bg-gray-200 dark:bg-gray-700 rounded-full font-medium hidden sm:inline">
+          <span className="hidden rounded-full bg-gray-200 px-2 py-0.5 text-xs font-medium dark:bg-gray-700 sm:inline">
             {group.language}
           </span>
         )}
@@ -307,21 +363,24 @@ function FileReplaceCard({
           href={getFileUrl(sortedMatches[0]?.line || 1)}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hidden sm:block"
+          className="hidden text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 sm:block"
           onClick={(e) => e.stopPropagation()}
           title="View on code host"
         >
-          <ExternalLink className="w-4 h-4" />
+          <ExternalLink className="h-4 w-4" />
         </a>
       </div>
 
       {!collapsed && (
-        <div className="border-t border-gray-100 dark:border-gray-700/50 overflow-x-auto">
-          <table className="w-full text-sm font-mono">
+        <div className="overflow-x-auto border-t border-gray-100 dark:border-gray-700/50">
+          <table className="w-full font-mono text-sm">
             <tbody>
               {sortedMatches.map((match) => (
-                <tr key={`${match.line}-${match.match_start}`} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 border-b border-gray-100 dark:border-gray-700/50 last:border-0">
-                  <td className="py-1 px-3 text-right text-gray-400 dark:text-gray-500 select-none w-12 bg-gray-50 dark:bg-gray-800/50">
+                <tr
+                  key={`${match.line}-${match.match_start}`}
+                  className="border-b border-gray-100 last:border-0 hover:bg-gray-50 dark:border-gray-700/50 dark:hover:bg-gray-700/30"
+                >
+                  <td className="w-12 select-none bg-gray-50 px-3 py-1 text-right text-gray-400 dark:bg-gray-800/50 dark:text-gray-500">
                     <a
                       href={getFileUrl(match.line)}
                       target="_blank"
@@ -331,7 +390,7 @@ function FileReplaceCard({
                       {match.line}
                     </a>
                   </td>
-                  <td className="py-1 px-4 whitespace-pre text-gray-800 dark:text-gray-200">
+                  <td className="whitespace-pre px-4 py-1 text-gray-800 dark:text-gray-200">
                     {highlightReplacement(match)}
                   </td>
                 </tr>
@@ -360,7 +419,10 @@ export default function ReplaceClient() {
     previewTruncated: false,
     previewTotalCount: 0,
     previewDuration: "",
-    previewStats: null as { files_searched: number; repos_searched: number } | null,
+    previewStats: null as {
+      files_searched: number;
+      repos_searched: number;
+    } | null,
     loading: false,
     executing: false,
     result: null as { job_id: string; message: string } | null,
@@ -381,8 +443,11 @@ export default function ReplaceClient() {
   const reposInputRef = useRef<HTMLInputElement>(null);
 
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [suggestions, setSuggestions] = useState<SearchSuggestionsResponse | null>(null);
-  const [filteredSuggestions, setFilteredSuggestions] = useState<Suggestion[]>([]);
+  const [suggestions, setSuggestions] =
+    useState<SearchSuggestionsResponse | null>(null);
+  const [filteredSuggestions, setFilteredSuggestions] = useState<Suggestion[]>(
+    []
+  );
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const highlightRef = useRef<HTMLDivElement>(null);
@@ -397,17 +462,23 @@ export default function ReplaceClient() {
 
   useEffect(() => {
     setSearchHistory(getSearchHistory());
-    api.getUISettings().then(settings => {
-      setState(prev => ({
-        ...prev,
-        reposReadOnly: settings.repos_readonly,
-        hideReadOnlyBanner: settings.hide_readonly_banner,
-      }));
-    }).catch(() => {
-      api.getReposStatus().then(status => 
-        setState(prev => ({ ...prev, reposReadOnly: status.readonly }))
-      ).catch(() => { });
-    });
+    api
+      .getUISettings()
+      .then((settings) => {
+        setState((prev) => ({
+          ...prev,
+          reposReadOnly: settings.repos_readonly,
+          hideReadOnlyBanner: settings.hide_readonly_banner,
+        }));
+      })
+      .catch(() => {
+        api
+          .getReposStatus()
+          .then((status) =>
+            setState((prev) => ({ ...prev, reposReadOnly: status.readonly }))
+          )
+          .catch(() => {});
+      });
 
     inputRef.current?.focus();
   }, []);
@@ -425,15 +496,15 @@ export default function ReplaceClient() {
 
     if (q) {
       const executePreview = async () => {
-        setState(prev => ({ 
-          ...prev, 
+        setState((prev) => ({
+          ...prev,
           searchPattern: q,
           replaceWith: replace,
           filePatterns: files,
           repos: reposParam,
           showOptions: !!(files || reposParam),
-          loading: true, 
-          error: null 
+          loading: true,
+          error: null,
         }));
 
         filePatternsRef.current = files;
@@ -443,25 +514,32 @@ export default function ReplaceClient() {
         let repoPatternForQuery = "";
         if (activeContext && activeContext.repos.length > 0) {
           if (reposParam) {
-            const userPatterns = reposParam.split(",").map(r => r.trim().toLowerCase());
-            const filtered = activeContext.repos.filter(repo =>
-              userPatterns.some(pattern => repo.name.toLowerCase().includes(pattern))
+            const userPatterns = reposParam
+              .split(",")
+              .map((r) => r.trim().toLowerCase());
+            const filtered = activeContext.repos.filter((repo) =>
+              userPatterns.some((pattern) =>
+                repo.name.toLowerCase().includes(pattern)
+              )
             );
             if (filtered.length > 0) {
-              effectiveRepos = filtered.map(r => r.name).join(",");
-              repoPatternForQuery = `(${filtered.map(r => r.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`;
+              effectiveRepos = filtered.map((r) => r.name).join(",");
+              repoPatternForQuery = `(${filtered.map((r) => r.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`;
             } else {
-              effectiveRepos = activeContext.repos.map(r => r.name).join(",");
-              repoPatternForQuery = `(${activeContext.repos.map(r => r.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`;
+              effectiveRepos = activeContext.repos.map((r) => r.name).join(",");
+              repoPatternForQuery = `(${activeContext.repos.map((r) => r.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`;
             }
           } else {
-            effectiveRepos = activeContext.repos.map(r => r.name).join(",");
-            repoPatternForQuery = `(${activeContext.repos.map(r => r.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`;
+            effectiveRepos = activeContext.repos.map((r) => r.name).join(",");
+            repoPatternForQuery = `(${activeContext.repos.map((r) => r.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`;
           }
         } else if (reposParam) {
-          const repoList = reposParam.split(",").map(r => r.trim()).filter(Boolean);
+          const repoList = reposParam
+            .split(",")
+            .map((r) => r.trim())
+            .filter(Boolean);
           if (repoList.length > 1) {
-            repoPatternForQuery = `(${repoList.map(r => r.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`;
+            repoPatternForQuery = `(${repoList.map((r) => r.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`;
           } else if (repoList.length === 1) {
             repoPatternForQuery = repoList[0];
           }
@@ -476,39 +554,49 @@ export default function ReplaceClient() {
           const response = await api.replacePreview({
             search_pattern: searchPatternWithFilter,
             replace_with: replace,
-            file_patterns: files ? files.split(",").map((p) => p.trim()) : undefined,
+            file_patterns: files
+              ? files.split(",").map((p) => p.trim())
+              : undefined,
             repos: undefined,
             limit: 0,
           });
 
           let filtered = response.matches;
           if (files) {
-            const patterns = files.split(",").map(p => p.trim()).filter(Boolean);
+            const patterns = files
+              .split(",")
+              .map((p) => p.trim())
+              .filter(Boolean);
             if (patterns.length > 0) {
-              filtered = filtered.filter(match => {
-                return patterns.some(pattern => {
+              filtered = filtered.filter((match) => {
+                return patterns.some((pattern) => {
                   const regexPattern = pattern
                     .replace(/\./g, "\\.")
                     .replace(/\*/g, ".*")
                     .replace(/\?/g, ".");
-                  const regex = new RegExp(regexPattern, 'i');
+                  const regex = new RegExp(regexPattern, "i");
                   return regex.test(match.file);
                 });
               });
             }
           }
           if (effectiveRepos) {
-            const repoPatterns = effectiveRepos.split(",").map(r => r.trim()).filter(Boolean);
+            const repoPatterns = effectiveRepos
+              .split(",")
+              .map((r) => r.trim())
+              .filter(Boolean);
             if (repoPatterns.length > 0) {
-              filtered = filtered.filter(match => {
-                return repoPatterns.some(pattern => {
-                  return match.repo.toLowerCase().includes(pattern.toLowerCase());
+              filtered = filtered.filter((match) => {
+                return repoPatterns.some((pattern) => {
+                  return match.repo
+                    .toLowerCase()
+                    .includes(pattern.toLowerCase());
                 });
               });
             }
           }
 
-          setState(prev => ({
+          setState((prev) => ({
             ...prev,
             preview: filtered,
             previewTruncated: response.truncated,
@@ -522,10 +610,10 @@ export default function ReplaceClient() {
           lastPreviewParams.current = JSON.stringify({
             searchPattern: q,
             filePatterns: files,
-            repos: reposParam
+            repos: reposParam,
           });
         } catch (err) {
-          setState(prev => ({
+          setState((prev) => ({
             ...prev,
             error: err instanceof Error ? err.message : "Preview failed",
             preview: null,
@@ -542,72 +630,85 @@ export default function ReplaceClient() {
     }
   }, [searchParams, activeContext, getRepoFilter]);
 
-  const filteredHistory = searchHistory.filter(h =>
+  const filteredHistory = searchHistory.filter((h) =>
     h.query.toLowerCase().includes(historyFilter.toLowerCase())
   );
 
   useEffect(() => {
-    api.getSearchSuggestions()
-      .then(setSuggestions)
-      .catch(console.error);
+    api.getSearchSuggestions().then(setSuggestions).catch(console.error);
   }, []);
 
-  const updateSuggestions = useCallback((value: string) => {
-    if (!suggestions) return;
+  const updateSuggestions = useCallback(
+    (value: string) => {
+      if (!suggestions) return;
 
-    const parts = value.split(/\s+/);
-    const lastPart = parts[parts.length - 1] || "";
-    const newSuggestions: Suggestion[] = [];
+      const parts = value.split(/\s+/);
+      const lastPart = parts[parts.length - 1] || "";
+      const newSuggestions: Suggestion[] = [];
 
-    if (lastPart.startsWith("repo:")) {
-      const search = lastPart.slice(5).toLowerCase();
-      suggestions.repos
-        .filter(r => r.display_name.toLowerCase().includes(search))
-        .slice(0, 8)
-        .forEach(r => newSuggestions.push({
-          type: "repo",
-          value: `repo:${r.name}`,
-          description: r.display_name,
-          icon: <GitBranch className="w-4 h-4 text-blue-500" />,
-        }));
-    } else if (lastPart.startsWith("lang:")) {
-      const search = lastPart.slice(5).toLowerCase();
-      suggestions.languages
-        .filter(l => l.name.toLowerCase().includes(search))
-        .slice(0, 8)
-        .forEach(l => newSuggestions.push({
-          type: "language",
-          value: `lang:${l.name}`,
-          icon: <Code className="w-4 h-4 text-green-500" />,
-        }));
-    } else if (lastPart === "" || !lastPart.includes(":")) {
-      const search = lastPart.toLowerCase();
-      suggestions.filters
-        .filter(f => f.keyword.toLowerCase().includes(search) || f.description.toLowerCase().includes(search))
-        .forEach(f => newSuggestions.push({
-          type: "filter",
-          value: f.keyword,
-          description: f.description,
-          icon: <Filter className="w-4 h-4 text-purple-500" />,
-        }));
-    }
+      if (lastPart.startsWith("repo:")) {
+        const search = lastPart.slice(5).toLowerCase();
+        suggestions.repos
+          .filter((r) => r.display_name.toLowerCase().includes(search))
+          .slice(0, 8)
+          .forEach((r) =>
+            newSuggestions.push({
+              type: "repo",
+              value: `repo:${r.name}`,
+              description: r.display_name,
+              icon: <GitBranch className="h-4 w-4 text-blue-500" />,
+            })
+          );
+      } else if (lastPart.startsWith("lang:")) {
+        const search = lastPart.slice(5).toLowerCase();
+        suggestions.languages
+          .filter((l) => l.name.toLowerCase().includes(search))
+          .slice(0, 8)
+          .forEach((l) =>
+            newSuggestions.push({
+              type: "language",
+              value: `lang:${l.name}`,
+              icon: <Code className="h-4 w-4 text-green-500" />,
+            })
+          );
+      } else if (lastPart === "" || !lastPart.includes(":")) {
+        const search = lastPart.toLowerCase();
+        suggestions.filters
+          .filter(
+            (f) =>
+              f.keyword.toLowerCase().includes(search) ||
+              f.description.toLowerCase().includes(search)
+          )
+          .forEach((f) =>
+            newSuggestions.push({
+              type: "filter",
+              value: f.keyword,
+              description: f.description,
+              icon: <Filter className="h-4 w-4 text-purple-500" />,
+            })
+          );
+      }
 
-    setFilteredSuggestions(newSuggestions);
-    setSelectedIndex(0);
-  }, [suggestions]);
+      setFilteredSuggestions(newSuggestions);
+      setSelectedIndex(0);
+    },
+    [suggestions]
+  );
 
   useEffect(() => {
     if (showSuggestions && filteredSuggestions.length > 0) {
-      const selectedElement = document.querySelector(`[data-replace-suggestion-index="${selectedIndex}"]`);
+      const selectedElement = document.querySelector(
+        `[data-replace-suggestion-index="${selectedIndex}"]`
+      );
       selectedElement?.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }
   }, [selectedIndex, showSuggestions, filteredSuggestions.length]);
 
   const handleInputChange = (value: string) => {
-    setState(prev => ({ 
-      ...prev, 
+    setState((prev) => ({
+      ...prev,
       searchPattern: value,
-      previewStale: !!prev.preview // Mark stale if we have a preview
+      previewStale: !!prev.preview, // Mark stale if we have a preview
     }));
     updateSuggestions(value);
     setShowSuggestions(true);
@@ -623,11 +724,15 @@ export default function ReplaceClient() {
     const parts = state.searchPattern.split(/\s+/);
     parts[parts.length - 1] = suggestion.value;
 
-    const newQuery = parts.join(" ") + (suggestion.type === "filter" && !suggestion.value.endsWith(":") ? " " : "");
-    setState(prev => ({ 
-      ...prev, 
+    const newQuery =
+      parts.join(" ") +
+      (suggestion.type === "filter" && !suggestion.value.endsWith(":")
+        ? " "
+        : "");
+    setState((prev) => ({
+      ...prev,
       searchPattern: newQuery,
-      previewStale: !!prev.preview
+      previewStale: !!prev.preview,
     }));
     setShowSuggestions(false);
     inputRef.current?.focus();
@@ -651,11 +756,13 @@ export default function ReplaceClient() {
     switch (e.key) {
       case "ArrowDown":
         e.preventDefault();
-        setSelectedIndex(i => Math.min(i + 1, filteredSuggestions.length - 1));
+        setSelectedIndex((i) =>
+          Math.min(i + 1, filteredSuggestions.length - 1)
+        );
         break;
       case "ArrowUp":
         e.preventDefault();
-        setSelectedIndex(i => Math.max(i - 1, 0));
+        setSelectedIndex((i) => Math.max(i - 1, 0));
         break;
       case "Tab":
         if (filteredSuggestions[selectedIndex]) {
@@ -708,15 +815,18 @@ export default function ReplaceClient() {
   }, [showSuggestions, showHistory]);
 
   const selectHistoryItem = (item: SearchHistoryItem) => {
-    setState(prev => ({ ...prev, searchPattern: item.query }));
+    setState((prev) => ({ ...prev, searchPattern: item.query }));
     setShowHistory(false);
     setHistoryFilter("");
     inputRef.current?.focus();
   };
 
-  const deleteHistoryItem = (e: React.SyntheticEvent, queryToDelete: string) => {
+  const deleteHistoryItem = (
+    e: React.SyntheticEvent,
+    queryToDelete: string
+  ) => {
     e.stopPropagation();
-    const newHistory = searchHistory.filter(h => h.query !== queryToDelete);
+    const newHistory = searchHistory.filter((h) => h.query !== queryToDelete);
     setSearchHistory(newHistory);
     saveSearchHistory(newHistory);
   };
@@ -731,11 +841,13 @@ export default function ReplaceClient() {
     switch (e.key) {
       case "ArrowDown":
         e.preventDefault();
-        setHistorySelectedIndex(i => Math.min(i + 1, filteredHistory.length - 1));
+        setHistorySelectedIndex((i) =>
+          Math.min(i + 1, filteredHistory.length - 1)
+        );
         break;
       case "ArrowUp":
         e.preventDefault();
-        setHistorySelectedIndex(i => Math.max(i - 1, 0));
+        setHistorySelectedIndex((i) => Math.max(i - 1, 0));
         break;
       case "Enter":
         e.preventDefault();
@@ -751,19 +863,26 @@ export default function ReplaceClient() {
     }
   };
 
-  const filterMatchesWithContext = (matches: PreviewMatch[], filePatterns: string, repoFilter: string): PreviewMatch[] => {
+  const filterMatchesWithContext = (
+    matches: PreviewMatch[],
+    filePatterns: string,
+    repoFilter: string
+  ): PreviewMatch[] => {
     let filtered = matches;
 
     if (filePatterns) {
-      const patterns = filePatterns.split(",").map(p => p.trim()).filter(Boolean);
+      const patterns = filePatterns
+        .split(",")
+        .map((p) => p.trim())
+        .filter(Boolean);
       if (patterns.length > 0) {
-        filtered = filtered.filter(match => {
-          return patterns.some(pattern => {
+        filtered = filtered.filter((match) => {
+          return patterns.some((pattern) => {
             const regexPattern = pattern
               .replace(/\./g, "\\.")
               .replace(/\*/g, ".*")
               .replace(/\?/g, ".");
-            const regex = new RegExp(regexPattern, 'i');
+            const regex = new RegExp(regexPattern, "i");
             return regex.test(match.file);
           });
         });
@@ -771,10 +890,13 @@ export default function ReplaceClient() {
     }
 
     if (repoFilter) {
-      const repoPatterns = repoFilter.split(",").map(r => r.trim()).filter(Boolean);
+      const repoPatterns = repoFilter
+        .split(",")
+        .map((r) => r.trim())
+        .filter(Boolean);
       if (repoPatterns.length > 0) {
-        filtered = filtered.filter(match => {
-          return repoPatterns.some(pattern => {
+        filtered = filtered.filter((match) => {
+          return repoPatterns.some((pattern) => {
             return match.repo.toLowerCase().includes(pattern.toLowerCase());
           });
         });
@@ -790,37 +912,45 @@ export default function ReplaceClient() {
 
     setShowSuggestions(false);
     setShowHistory(false);
-    setState(prev => ({ ...prev, loading: true, error: null, result: null }));
+    setState((prev) => ({ ...prev, loading: true, error: null, result: null }));
 
     addToSearchHistory(state.searchPattern);
     setSearchHistory(getSearchHistory());
 
-    const currentFilePatterns = filePatternsInputRef.current?.value ?? filePatternsRef.current;
+    const currentFilePatterns =
+      filePatternsInputRef.current?.value ?? filePatternsRef.current;
     const currentRepos = reposInputRef.current?.value ?? reposRef.current;
 
     let effectiveRepos = currentRepos;
-    let repoPatternForQuery = ""; 
+    let repoPatternForQuery = "";
     if (activeContext && activeContext.repos.length > 0) {
       if (currentRepos) {
-        const userPatterns = currentRepos.split(",").map(r => r.trim().toLowerCase());
-        const filtered = activeContext.repos.filter(repo =>
-          userPatterns.some(pattern => repo.name.toLowerCase().includes(pattern))
+        const userPatterns = currentRepos
+          .split(",")
+          .map((r) => r.trim().toLowerCase());
+        const filtered = activeContext.repos.filter((repo) =>
+          userPatterns.some((pattern) =>
+            repo.name.toLowerCase().includes(pattern)
+          )
         );
         if (filtered.length > 0) {
-          effectiveRepos = filtered.map(r => r.name).join(",");
-          repoPatternForQuery = `(${filtered.map(r => r.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`;
+          effectiveRepos = filtered.map((r) => r.name).join(",");
+          repoPatternForQuery = `(${filtered.map((r) => r.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`;
         } else {
-          effectiveRepos = activeContext.repos.map(r => r.name).join(",");
-          repoPatternForQuery = `(${activeContext.repos.map(r => r.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`;
+          effectiveRepos = activeContext.repos.map((r) => r.name).join(",");
+          repoPatternForQuery = `(${activeContext.repos.map((r) => r.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`;
         }
       } else {
-        effectiveRepos = activeContext.repos.map(r => r.name).join(",");
-        repoPatternForQuery = `(${activeContext.repos.map(r => r.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`;
+        effectiveRepos = activeContext.repos.map((r) => r.name).join(",");
+        repoPatternForQuery = `(${activeContext.repos.map((r) => r.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`;
       }
     } else if (currentRepos) {
-      const repoList = currentRepos.split(",").map(r => r.trim()).filter(Boolean);
+      const repoList = currentRepos
+        .split(",")
+        .map((r) => r.trim())
+        .filter(Boolean);
       if (repoList.length > 1) {
-        repoPatternForQuery = `(${repoList.map(r => r.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`;
+        repoPatternForQuery = `(${repoList.map((r) => r.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`;
       } else if (repoList.length === 1) {
         repoPatternForQuery = repoList[0];
       }
@@ -844,13 +974,19 @@ export default function ReplaceClient() {
       const response = await api.replacePreview({
         search_pattern: searchPatternWithFilter,
         replace_with: state.replaceWith,
-        file_patterns: currentFilePatterns ? currentFilePatterns.split(",").map((p) => p.trim()) : undefined,
+        file_patterns: currentFilePatterns
+          ? currentFilePatterns.split(",").map((p) => p.trim())
+          : undefined,
         repos: undefined,
         limit: 0,
       });
 
-      const filteredMatches = filterMatchesWithContext(response.matches, currentFilePatterns, effectiveRepos);
-      setState(prev => ({
+      const filteredMatches = filterMatchesWithContext(
+        response.matches,
+        currentFilePatterns,
+        effectiveRepos
+      );
+      setState((prev) => ({
         ...prev,
         preview: filteredMatches,
         previewTruncated: response.truncated,
@@ -863,10 +999,10 @@ export default function ReplaceClient() {
       lastPreviewParams.current = JSON.stringify({
         searchPattern: state.searchPattern,
         filePatterns: currentFilePatterns,
-        repos: currentRepos
+        repos: currentRepos,
       });
     } catch (err) {
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
         error: err instanceof Error ? err.message : "Preview failed",
         preview: null,
@@ -876,17 +1012,23 @@ export default function ReplaceClient() {
         previewStats: null,
       }));
     } finally {
-      setState(prev => ({ ...prev, loading: false }));
+      setState((prev) => ({ ...prev, loading: false }));
     }
   };
 
   const handleExecute = async () => {
     if (!state.preview || state.preview.length === 0) {
-      setState(prev => ({ ...prev, error: "No matches to execute. Run preview first." }));
+      setState((prev) => ({
+        ...prev,
+        error: "No matches to execute. Run preview first.",
+      }));
       return;
     }
 
-    const connectionsNeedingTokens = new Map<string, { name: string; repos: Set<string> }>();
+    const connectionsNeedingTokens = new Map<
+      string,
+      { name: string; repos: Set<string> }
+    >();
     for (const m of state.preview) {
       if (m.connection_has_token === false && m.connection_id !== undefined) {
         const connId = String(m.connection_id);
@@ -901,22 +1043,27 @@ export default function ReplaceClient() {
     }
 
     const missingTokens = [...connectionsNeedingTokens.keys()].filter(
-      connId => !state.userTokens[connId]?.trim()
+      (connId) => !state.userTokens[connId]?.trim()
     );
 
     if (missingTokens.length > 0) {
-      setState(prev => ({ ...prev, showTokenModal: true }));
+      setState((prev) => ({ ...prev, showTokenModal: true }));
       return;
     }
 
     if (state.reposReadOnly && Object.keys(state.userTokens).length === 0) {
-      setState(prev => ({ ...prev, showTokenModal: true }));
+      setState((prev) => ({ ...prev, showTokenModal: true }));
       return;
     }
 
-    if (!confirm("Are you sure you want to execute this replacement? This will create Merge Requests.")) return;
+    if (
+      !confirm(
+        "Are you sure you want to execute this replacement? This will create Merge Requests."
+      )
+    )
+      return;
 
-    setState(prev => ({ ...prev, executing: true, error: null }));
+    setState((prev) => ({ ...prev, executing: true, error: null }));
     try {
       const matchMap = new Map<string, ReplaceMatch>();
       for (const m of state.preview) {
@@ -942,74 +1089,88 @@ export default function ReplaceClient() {
         search_pattern: state.searchPattern,
         replace_with: state.replaceWith,
         matches: matches,
-        mr_title: state.mrTitle || `Replace "${state.searchPattern}" with "${state.replaceWith}"`,
+        mr_title:
+          state.mrTitle ||
+          `Replace "${state.searchPattern}" with "${state.replaceWith}"`,
         user_tokens: Object.keys(tokenMap).length > 0 ? tokenMap : undefined,
       });
-      setState(prev => ({ ...prev, result: response, preview: null }));
+      setState((prev) => ({ ...prev, result: response, preview: null }));
     } catch (err) {
-      setState(prev => ({ ...prev, error: err instanceof Error ? err.message : "Execution failed" }));
+      setState((prev) => ({
+        ...prev,
+        error: err instanceof Error ? err.message : "Execution failed",
+      }));
     } finally {
-      setState(prev => ({ ...prev, executing: false }));
+      setState((prev) => ({ ...prev, executing: false }));
     }
   };
 
   const connectionsWithoutToken = state.preview
-    ? [...state.preview
-      .filter(m => m.connection_has_token === false && m.connection_id !== undefined)
-      .reduce((acc, m) => {
-        const key = String(m.connection_id);
-        if (!acc.has(key)) {
-          acc.set(key, {
-            connectionId: String(m.connection_id),
-            connectionName: m.connection_name || `Connection ${m.connection_id}`,
-            repos: new Set<string>(),
-          });
-        }
-        acc.get(key)!.repos.add(m.repo);
-        return acc;
-      }, new Map<string, { connectionId: string; connectionName: string; repos: Set<string> }>())
-      .values()
-    ].map(c => ({ ...c, repos: [...c.repos] }))
+    ? [
+        ...state.preview
+          .filter(
+            (m) =>
+              m.connection_has_token === false && m.connection_id !== undefined
+          )
+          .reduce((acc, m) => {
+            const key = String(m.connection_id);
+            if (!acc.has(key)) {
+              acc.set(key, {
+                connectionId: String(m.connection_id),
+                connectionName:
+                  m.connection_name || `Connection ${m.connection_id}`,
+                repos: new Set<string>(),
+              });
+            }
+            acc.get(key)!.repos.add(m.repo);
+            return acc;
+          }, new Map<string, { connectionId: string; connectionName: string; repos: Set<string> }>())
+          .values(),
+      ].map((c) => ({ ...c, repos: [...c.repos] }))
     : [];
 
   const handleSaveTokens = () => {
-    setState(prev => ({ ...prev, showTokenModal: false }));
+    setState((prev) => ({ ...prev, showTokenModal: false }));
     handleExecute();
   };
 
-  const allTokensProvided = connectionsWithoutToken.every(
-    conn => state.userTokens[conn.connectionId]?.trim()
+  const allTokensProvided = connectionsWithoutToken.every((conn) =>
+    state.userTokens[conn.connectionId]?.trim()
   );
 
   return (
     <div className="h-full overflow-auto">
-      <div className="container mx-auto px-4 py-6 max-w-full">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex items-center justify-between mb-4 sm:mb-6">
+      <div className="container mx-auto max-w-full px-4 py-6">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-4 flex items-center justify-between sm:mb-6">
             <div className="flex items-center gap-2 sm:gap-3">
-              <RefreshCw className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600 dark:text-gray-400" />
-              <h1 className="text-xl sm:text-2xl font-bold">Search & Replace</h1>
+              <RefreshCw className="h-5 w-5 text-gray-600 dark:text-gray-400 sm:h-6 sm:w-6" />
+              <h1 className="text-xl font-bold sm:text-2xl">
+                Search & Replace
+              </h1>
             </div>
             <div
-              className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 text-sm font-medium rounded-lg opacity-0 pointer-events-none select-none"
+              className="pointer-events-none flex select-none items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm font-medium opacity-0 sm:px-3 sm:py-2"
               aria-hidden="true"
             >
-              <RefreshCw className="w-4 h-4" />
-              <span className="hidden sm:inline">Easter Egg! Ths is only meant to balance the layout. c:</span>
+              <RefreshCw className="h-4 w-4" />
+              <span className="hidden sm:inline">
+                Easter Egg! Ths is only meant to balance the layout. c:
+              </span>
             </div>
           </div>
 
           {state.reposReadOnly && !state.hideReadOnlyBanner && (
-            <div className="mb-4 p-3 sm:p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 rounded-lg">
+            <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-700 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-400 sm:p-4">
               <div className="flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 sm:w-5 sm:h-5 flex-shrink-0 mt-0.5" />
+                <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 sm:h-5 sm:w-5" />
                 <div>
-                  <p className="text-sm font-bold">
-                    Read-only mode enabled
-                  </p>
-                  <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
-                    Repositories are configured in read-only mode. To create Merge Requests, you&apos;ll need to provide your personal access token when executing replacements.
-                    The token will only be used for the current session and is not stored.
+                  <p className="text-sm font-bold">Read-only mode enabled</p>
+                  <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
+                    Repositories are configured in read-only mode. To create
+                    Merge Requests, you&apos;ll need to provide your personal
+                    access token when executing replacements. The token will
+                    only be used for the current session and is not stored.
                   </p>
                 </div>
               </div>
@@ -1018,71 +1179,92 @@ export default function ReplaceClient() {
 
           {state.showTokenModal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 max-w-lg w-full mx-4">
-                <div className="flex items-center gap-3 mb-4">
-                  <Key className="w-6 h-6 text-blue-500" />
-                  <h2 className="text-lg font-semibold">Personal Access Token{connectionsWithoutToken.length > 1 ? 's' : ''} Required</h2>
+              <div className="mx-4 w-full max-w-lg rounded-xl bg-white p-6 shadow-xl dark:bg-gray-800">
+                <div className="mb-4 flex items-center gap-3">
+                  <Key className="h-6 w-6 text-blue-500" />
+                  <h2 className="text-lg font-semibold">
+                    Personal Access Token
+                    {connectionsWithoutToken.length > 1 ? "s" : ""} Required
+                  </h2>
                 </div>
                 {connectionsWithoutToken.length > 0 ? (
                   <>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
                       {connectionsWithoutToken.length === 1
                         ? "The following code host doesn't have authentication configured. To create Merge Requests, please provide your personal access token:"
                         : "The following code hosts don't have authentication configured. To create Merge Requests, please provide a personal access token for each:"}
                     </p>
-                    <div className="space-y-4 max-h-80 overflow-auto">
-                      {connectionsWithoutToken.map(conn => (
-                        <div key={conn.connectionId} className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3">
-                          <div className="flex items-center gap-2 mb-2">
-                            <GitBranch className="w-4 h-4 text-blue-500" />
-                            <span className="font-medium text-sm">{conn.connectionName}</span>
-                            <span className="text-xs text-gray-500">({conn.repos.length} repo{conn.repos.length > 1 ? 's' : ''})</span>
+                    <div className="max-h-80 space-y-4 overflow-auto">
+                      {connectionsWithoutToken.map((conn) => (
+                        <div
+                          key={conn.connectionId}
+                          className="rounded-lg bg-gray-50 p-3 dark:bg-gray-900"
+                        >
+                          <div className="mb-2 flex items-center gap-2">
+                            <GitBranch className="h-4 w-4 text-blue-500" />
+                            <span className="text-sm font-medium">
+                              {conn.connectionName}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              ({conn.repos.length} repo
+                              {conn.repos.length > 1 ? "s" : ""})
+                            </span>
                           </div>
-                          <ul className="mb-2 text-xs text-gray-500 dark:text-gray-400 pl-6 max-h-16 overflow-auto">
-                            {conn.repos.slice(0, 3).map(repo => (
-                              <li key={repo} className="truncate">• {repo}</li>
+                          <ul className="mb-2 max-h-16 overflow-auto pl-6 text-xs text-gray-500 dark:text-gray-400">
+                            {conn.repos.slice(0, 3).map((repo) => (
+                              <li key={repo} className="truncate">
+                                • {repo}
+                              </li>
                             ))}
                             {conn.repos.length > 3 && (
-                              <li className="text-gray-400">... and {conn.repos.length - 3} more</li>
+                              <li className="text-gray-400">
+                                ... and {conn.repos.length - 3} more
+                              </li>
                             )}
                           </ul>
                           <input
                             type="password"
-                            value={state.userTokens[conn.connectionId] || ''}
-                            onChange={(e) => setState(prev => ({
-                              ...prev,
-                              userTokens: {
-                                ...prev.userTokens,
-                                [conn.connectionId]: e.target.value
-                              }
-                            }))}
+                            value={state.userTokens[conn.connectionId] || ""}
+                            onChange={(e) =>
+                              setState((prev) => ({
+                                ...prev,
+                                userTokens: {
+                                  ...prev.userTokens,
+                                  [conn.connectionId]: e.target.value,
+                                },
+                              }))
+                            }
                             placeholder={`Token for ${conn.connectionName}`}
                             aria-label={`Access token for ${conn.connectionName}`}
-                            className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:outline-none focus:border-blue-500 dark:focus:border-blue-500"
+                            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:focus:border-blue-500"
                           />
                         </div>
                       ))}
                     </div>
                   </>
                 ) : (
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                    Repositories are in read-only mode. To create Merge Requests, please provide your personal access token.
+                  <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+                    Repositories are in read-only mode. To create Merge
+                    Requests, please provide your personal access token.
                   </p>
                 )}
-                <p className="text-xs text-gray-500 dark:text-gray-500 mt-3 mb-3">
-                  These tokens are used for the current session only and are not stored in your browser.
+                <p className="mb-3 mt-3 text-xs text-gray-500 dark:text-gray-500">
+                  These tokens are used for the current session only and are not
+                  stored in your browser.
                 </p>
                 <div className="flex justify-end gap-2">
                   <button
-                    onClick={() => setState(prev => ({ ...prev, showTokenModal: false }))}
-                    className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                    onClick={() =>
+                      setState((prev) => ({ ...prev, showTokenModal: false }))
+                    }
+                    className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleSaveTokens}
                     disabled={!allTokensProvided}
-                    className="px-4 py-2 text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50"
+                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
                   >
                     Continue
                   </button>
@@ -1096,10 +1278,10 @@ export default function ReplaceClient() {
               <ContextSwitcher labelPrefix="Replacing in" />
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-2 mb-2">
-              <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <div className="mb-2 flex flex-col gap-2 sm:flex-row">
+              <div className="grid flex-1 grid-cols-1 gap-2 sm:grid-cols-3">
                 <div className="relative sm:col-span-2">
-                  <div className="relative bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent">
+                  <div className="relative rounded-lg border border-gray-200 bg-white shadow-sm transition-shadow focus-within:border-transparent focus-within:ring-2 focus-within:ring-blue-500 hover:shadow-md dark:border-gray-700 dark:bg-gray-800">
                     <button
                       ref={historyButtonRef}
                       type="button"
@@ -1109,23 +1291,24 @@ export default function ReplaceClient() {
                         setHistoryFilter("");
                         setHistorySelectedIndex(0);
                       }}
-                      className={`absolute left-2 top-1/2 -translate-y-1/2 p-1 rounded transition-colors z-10 ${showHistory
-                        ? "text-blue-500 bg-blue-50 dark:bg-blue-900/30"
-                        : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                        }`}
+                      className={`absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded p-1 transition-colors ${
+                        showHistory
+                          ? "bg-blue-50 text-blue-500 dark:bg-blue-900/30"
+                          : "text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+                      }`}
                       title="Search history"
                     >
-                      <History className="w-4 h-4" />
+                      <History className="h-4 w-4" />
                     </button>
 
                     {showHistory && (
                       <div
                         ref={historyRef}
-                        className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg z-50 overflow-hidden"
+                        className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800"
                       >
-                        <div className="p-2 border-b border-gray-100 dark:border-gray-700">
+                        <div className="border-b border-gray-100 p-2 dark:border-gray-700">
                           <div className="relative">
-                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
                             <input
                               type="text"
                               value={historyFilter}
@@ -1136,14 +1319,16 @@ export default function ReplaceClient() {
                               onKeyDown={handleHistoryKeyDown}
                               placeholder="Filter history..."
                               aria-label="Filter search history"
-                              className="w-full pl-8 pr-3 py-1.5 text-sm bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              className="w-full rounded-lg border border-gray-200 bg-gray-50 py-1.5 pl-8 pr-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700/50"
                             />
                           </div>
                         </div>
 
                         {filteredHistory.length === 0 ? (
                           <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                            {searchHistory.length === 0 ? "No search history yet" : "No matching searches"}
+                            {searchHistory.length === 0
+                              ? "No search history yet"
+                              : "No matching searches"}
                           </div>
                         ) : (
                           <>
@@ -1154,35 +1339,45 @@ export default function ReplaceClient() {
                                   type="button"
                                   onClick={() => selectHistoryItem(item)}
                                   onKeyDown={(e) => {
-                                    if (e.key === 'Enter' || e.key === ' ') {
+                                    if (e.key === "Enter" || e.key === " ") {
                                       selectHistoryItem(item);
                                     }
                                   }}
-                                  className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors group ${index === historySelectedIndex
-                                    ? "bg-blue-50 dark:bg-blue-900/30"
-                                    : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                                    }`}
+                                  className={`group flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors ${
+                                    index === historySelectedIndex
+                                      ? "bg-blue-50 dark:bg-blue-900/30"
+                                      : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                                  }`}
                                 >
-                                  <Clock className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                                  <span className="font-mono text-sm text-gray-700 dark:text-gray-300 truncate flex-1">
+                                  <Clock className="h-4 w-4 flex-shrink-0 text-gray-400" />
+                                  <span className="flex-1 truncate font-mono text-sm text-gray-700 dark:text-gray-300">
                                     {item.query}
                                   </span>
                                   <span
                                     role="button"
                                     tabIndex={-1}
-                                    onClick={(e) => { e.stopPropagation(); deleteHistoryItem(e, item.query); }}
-                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); deleteHistoryItem(e, item.query); } }}
-                                    className="p-1 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 cursor-pointer"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      deleteHistoryItem(e, item.query);
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter" || e.key === " ") {
+                                        e.stopPropagation();
+                                        deleteHistoryItem(e, item.query);
+                                      }
+                                    }}
+                                    className="flex-shrink-0 cursor-pointer p-1 text-gray-400 opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100"
                                     title="Remove from history"
                                   >
-                                    <X className="w-3.5 h-3.5" />
+                                    <X className="h-3.5 w-3.5" />
                                   </span>
                                 </button>
                               ))}
                             </div>
-                            <div className="p-2 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                            <div className="flex items-center justify-between border-t border-gray-100 p-2 dark:border-gray-700">
                               <span className="text-xs text-gray-400">
-                                {filteredHistory.length} of {searchHistory.length} searches
+                                {filteredHistory.length} of{" "}
+                                {searchHistory.length} searches
                               </span>
                               <button
                                 type="button"
@@ -1214,21 +1409,26 @@ export default function ReplaceClient() {
                           highlightRef.current.style.transform = `translateX(-${e.currentTarget.scrollLeft}px)`;
                         }
                       }}
-                      className="w-full pl-9 pr-3 py-2 text-sm rounded-lg bg-transparent font-mono text-transparent caret-gray-900 dark:caret-white outline-none"
+                      className="w-full rounded-lg bg-transparent py-2 pl-9 pr-3 font-mono text-sm text-transparent caret-gray-900 outline-none dark:caret-white"
                       autoComplete="off"
                       aria-label="Search pattern"
                     />
 
-                    <div className="absolute inset-y-0 left-9 right-3 overflow-hidden pointer-events-none rounded-lg">
+                    <div className="pointer-events-none absolute inset-y-0 left-9 right-3 overflow-hidden rounded-lg">
                       <div
                         ref={highlightRef}
-                        className="py-2 text-sm font-mono flex items-center whitespace-pre h-full"
-                        style={{ width: 'max-content', minWidth: '100%' }}
+                        className="flex h-full items-center whitespace-pre py-2 font-mono text-sm"
+                        style={{ width: "max-content", minWidth: "100%" }}
                       >
-                        {state.searchPattern ? <HighlightedQuery query={state.searchPattern} /> : (
+                        {state.searchPattern ? (
+                          <HighlightedQuery query={state.searchPattern} />
+                        ) : (
                           <span className="text-gray-400">
                             <span className="sm:hidden">Search code...</span>
-                            <span className="hidden sm:inline">Search code... (type repo:, lang:, file: for filters)</span>
+                            <span className="hidden sm:inline">
+                              Search code... (type repo:, lang:, file: for
+                              filters)
+                            </span>
                           </span>
                         )}
                       </div>
@@ -1237,11 +1437,11 @@ export default function ReplaceClient() {
                     {showSuggestions && filteredSuggestions.length > 0 && (
                       <div
                         ref={suggestionsRef}
-                        className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg z-50 overflow-hidden"
+                        className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800"
                         role="listbox"
                       >
-                        <div className="p-2 border-b border-gray-100 dark:border-gray-700">
-                          <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                        <div className="border-b border-gray-100 p-2 dark:border-gray-700">
+                          <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
                             Narrow your search
                           </span>
                         </div>
@@ -1254,10 +1454,11 @@ export default function ReplaceClient() {
                               aria-selected={index === selectedIndex}
                               data-replace-suggestion-index={index}
                               onClick={() => selectSuggestion(suggestion)}
-                              className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${index === selectedIndex
-                                ? "bg-blue-50 dark:bg-blue-900/30"
-                                : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                                }`}
+                              className={`flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors ${
+                                index === selectedIndex
+                                  ? "bg-blue-50 dark:bg-blue-900/30"
+                                  : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                              }`}
                             >
                               {suggestion.icon}
                               <span className="font-mono text-sm text-cyan-600 dark:text-cyan-400">
@@ -1269,15 +1470,32 @@ export default function ReplaceClient() {
                                 </span>
                               )}
                               {index === selectedIndex && (
-                                <span className="ml-auto text-xs text-gray-400">Add</span>
+                                <span className="ml-auto text-xs text-gray-400">
+                                  Add
+                                </span>
                               )}
                             </button>
                           ))}
                         </div>
-                        <div className="p-2 border-t border-gray-100 dark:border-gray-700 text-xs text-gray-400 flex items-center gap-4">
-                          <span><kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">↑↓</kbd> navigate</span>
-                          <span><kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">Tab</kbd> select</span>
-                          <span><kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">Esc</kbd> close</span>
+                        <div className="flex items-center gap-4 border-t border-gray-100 p-2 text-xs text-gray-400 dark:border-gray-700">
+                          <span>
+                            <kbd className="rounded bg-gray-100 px-1.5 py-0.5 dark:bg-gray-700">
+                              ↑↓
+                            </kbd>{" "}
+                            navigate
+                          </span>
+                          <span>
+                            <kbd className="rounded bg-gray-100 px-1.5 py-0.5 dark:bg-gray-700">
+                              Tab
+                            </kbd>{" "}
+                            select
+                          </span>
+                          <span>
+                            <kbd className="rounded bg-gray-100 px-1.5 py-0.5 dark:bg-gray-700">
+                              Esc
+                            </kbd>{" "}
+                            close
+                          </span>
                         </div>
                       </div>
                     )}
@@ -1286,48 +1504,69 @@ export default function ReplaceClient() {
                 <input
                   type="text"
                   value={state.replaceWith}
-                  onChange={(e) => setState(prev => ({ ...prev, replaceWith: e.target.value }))}
+                  onChange={(e) =>
+                    setState((prev) => ({
+                      ...prev,
+                      replaceWith: e.target.value,
+                    }))
+                  }
                   placeholder="Replace with..."
-                  className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow focus:outline-none focus:border-blue-500 dark:focus:border-blue-500 font-mono"
+                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 font-mono text-sm shadow-sm transition-shadow hover:shadow-md focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:focus:border-blue-500"
                   aria-label="Replace with"
                 />
               </div>
               <button
                 type="submit"
                 disabled={state.loading || !state.searchPattern.trim()}
-                className="hidden sm:flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium border border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors disabled:opacity-50"
+                className="hidden items-center justify-center gap-2 rounded-lg border border-blue-500 px-4 py-2 text-sm font-medium text-blue-600 transition-colors hover:bg-blue-50 disabled:opacity-50 dark:border-blue-400 dark:text-blue-400 dark:hover:bg-blue-900/30 sm:flex"
               >
-                <Eye className="w-4 h-4" />
+                <Eye className="h-4 w-4" />
                 {state.loading ? "Loading..." : "Preview"}
               </button>
             </div>
 
-            <div className="flex items-center justify-between gap-3 sm:gap-4 text-sm pl-1">
+            <div className="flex items-center justify-between gap-3 pl-1 text-sm sm:gap-4">
               <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                 <button
                   type="button"
-                  onClick={() => setState(prev => ({ ...prev, showOptions: !prev.showOptions }))}
-                  className="flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
+                  onClick={() =>
+                    setState((prev) => ({
+                      ...prev,
+                      showOptions: !prev.showOptions,
+                    }))
+                  }
+                  className="flex items-center gap-1 text-blue-600 transition-colors hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
                 >
-                  <span className="sm:hidden">{state.showOptions ? "Less" : "More"}</span>
-                  <span className="hidden sm:inline">{state.showOptions ? "Hide options" : "More options"}</span>
-                  {state.showOptions ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  <span className="sm:hidden">
+                    {state.showOptions ? "Less" : "More"}
+                  </span>
+                  <span className="hidden sm:inline">
+                    {state.showOptions ? "Hide options" : "More options"}
+                  </span>
+                  {state.showOptions ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
                 </button>
               </div>
               <button
                 type="submit"
                 disabled={state.loading || !state.searchPattern.trim()}
-                className="sm:hidden flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors disabled:opacity-50"
+                className="flex items-center gap-1.5 rounded-lg border border-blue-500 px-3 py-1.5 text-sm font-medium text-blue-600 transition-colors hover:bg-blue-50 disabled:opacity-50 dark:border-blue-400 dark:text-blue-400 dark:hover:bg-blue-900/30 sm:hidden"
               >
-                <Eye className="w-4 h-4" />
+                <Eye className="h-4 w-4" />
                 Preview
               </button>
             </div>
 
             {state.showOptions && (
-              <div className="mt-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-700 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="mt-3 grid grid-cols-1 gap-4 rounded-lg border border-gray-100 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50 sm:grid-cols-2 lg:grid-cols-3">
                 <div>
-                  <label htmlFor="replace-file-patterns" className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label
+                    htmlFor="replace-file-patterns"
+                    className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300"
+                  >
                     File patterns
                   </label>
                   <input
@@ -1337,15 +1576,18 @@ export default function ReplaceClient() {
                     value={state.filePatterns}
                     onChange={(e) => {
                       const val = e.target.value;
-                      setState(prev => ({ ...prev, filePatterns: val }));
+                      setState((prev) => ({ ...prev, filePatterns: val }));
                       filePatternsRef.current = val;
                     }}
                     placeholder="*.go, *.ts"
-                    className="w-full px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:outline-none focus:border-blue-500 dark:focus:border-blue-500"
+                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:focus:border-blue-500"
                   />
                 </div>
                 <div>
-                  <label htmlFor="replace-repos" className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label
+                    htmlFor="replace-repos"
+                    className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300"
+                  >
                     Repositories
                   </label>
                   <input
@@ -1355,51 +1597,65 @@ export default function ReplaceClient() {
                     value={state.repos}
                     onChange={(e) => {
                       const val = e.target.value;
-                      setState(prev => ({ ...prev, repos: val }));
+                      setState((prev) => ({ ...prev, repos: val }));
                       reposRef.current = val;
                     }}
                     placeholder="org/repo1, org/repo2"
-                    className="w-full px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:outline-none focus:border-blue-500 dark:focus:border-blue-500"
+                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:focus:border-blue-500"
                   />
                 </div>
                 <div>
-                  <label htmlFor="mr-title" className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label
+                    htmlFor="mr-title"
+                    className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300"
+                  >
                     MR/PR title
                   </label>
                   <input
                     id="mr-title"
                     type="text"
                     value={state.mrTitle}
-                    onChange={(e) => setState(prev => ({ ...prev, mrTitle: e.target.value }))}
+                    onChange={(e) =>
+                      setState((prev) => ({ ...prev, mrTitle: e.target.value }))
+                    }
                     placeholder="Auto-generated if empty"
-                    className="w-full px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:outline-none focus:border-blue-500 dark:focus:border-blue-500"
+                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:focus:border-blue-500"
                   />
                 </div>
               </div>
             )}
 
             {state.preview && state.preview.length > 0 && (
-              <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+              <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
                 <button
                   type="button"
                   onClick={handleExecute}
-                  disabled={state.executing || state.previewStale || state.previewTruncated}
-                  className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 text-sm font-medium border border-green-500 dark:border-green-500 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={
+                    state.executing ||
+                    state.previewStale ||
+                    state.previewTruncated
+                  }
+                  className="flex items-center justify-center gap-2 rounded-lg border border-green-500 px-3 py-2 text-sm font-medium text-green-600 transition-colors hover:bg-green-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-green-500 dark:text-green-400 dark:hover:bg-green-900/20 sm:px-4"
                 >
                   {state.executing ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <Play className="w-4 h-4" />
+                    <Play className="h-4 w-4" />
                   )}
-                  <span>{state.executing ? "Executing..." : `Execute (${state.preview.length} matches)`}</span>
+                  <span>
+                    {state.executing
+                      ? "Executing..."
+                      : `Execute (${state.preview.length} matches)`}
+                  </span>
                 </button>
                 {state.previewTruncated && (
-                  <span className="text-xs sm:text-sm text-red-600 dark:text-red-400">
-                    Cannot execute — results are truncated. Use filters to narrow your search.
+                  <span className="text-xs text-red-600 dark:text-red-400 sm:text-sm">
+                    Cannot execute — results are truncated. Use filters to
+                    narrow your search.
                   </span>
                 )}
                 {state.previewStale && !state.previewTruncated && (
-                  <span className="text-xs sm:text-sm text-amber-600 dark:text-amber-400">
+                  <span className="text-xs text-amber-600 dark:text-amber-400 sm:text-sm">
                     Search/options changed — preview again
                   </span>
                 )}
@@ -1408,20 +1664,22 @@ export default function ReplaceClient() {
           </form>
 
           {state.error && (
-            <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-400">
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
               {state.error}
             </div>
           )}
 
           {state.loading && (
-            <div className="text-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto" />
-              <p className="mt-3 text-gray-500 dark:text-gray-400">Searching...</p>
+            <div className="py-12 text-center">
+              <Loader2 className="mx-auto h-8 w-8 animate-spin text-blue-600" />
+              <p className="mt-3 text-gray-500 dark:text-gray-400">
+                Searching...
+              </p>
             </div>
           )}
 
           {state.result && (
-            <div className="mb-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-green-700 dark:text-green-400">
+            <div className="mb-4 rounded-lg border border-green-200 bg-green-50 p-4 text-green-700 dark:border-green-800 dark:bg-green-900/20 dark:text-green-400">
               <p className="font-medium">{state.result.message}</p>
               <p className="text-sm">Job ID: {state.result.job_id}</p>
             </div>

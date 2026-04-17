@@ -1,6 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef, useReducer } from "react";
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+  useReducer,
+} from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   api,
@@ -63,8 +70,8 @@ import Image from "next/image";
 const CodeViewer = dynamic(() => import("@/components/CodeViewer"), {
   ssr: false,
   loading: () => (
-    <div className="flex-1 flex items-center justify-center h-full">
-      <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+    <div className="flex h-full flex-1 items-center justify-center">
+      <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
     </div>
   ),
 });
@@ -73,12 +80,11 @@ const CodeViewer = dynamic(() => import("@/components/CodeViewer"), {
 const MOBILE_BREAKPOINT = 768;
 const TABLET_BREAKPOINT = 1024;
 
-  // Split pane direction type
-  type SplitDirection = "vertical" | "horizontal";
+// Split pane direction type
+type SplitDirection = "vertical" | "horizontal";
 
-  // Split pane state
-  interface SplitPaneState {
-
+// Split pane state
+interface SplitPaneState {
   enabled: boolean;
   direction: SplitDirection;
   ratio: number; // 0-1, percentage of first pane
@@ -107,7 +113,8 @@ export default function BrowseClient() {
   const repoId = Number(params.id);
   const pathSegments = params.path as string[] | undefined;
   // Decode each segment to handle special characters like + (encoded as %2B)
-  const currentPath = pathSegments?.map(segment => decodeURIComponent(segment)).join("/") || "";
+  const currentPath =
+    pathSegments?.map((segment) => decodeURIComponent(segment)).join("/") || "";
   const ref = searchParams.get("ref") || "";
 
   // Parse line number from ?line= query param
@@ -120,7 +127,9 @@ export default function BrowseClient() {
   }, [searchParams]);
 
   // Parse line number from #L{line} hash (GitHub style) - needs useEffect for client-side
-  const [lineFromHash, setLineFromHash] = useState<number | undefined>(undefined);
+  const [lineFromHash, setLineFromHash] = useState<number | undefined>(
+    undefined
+  );
   useEffect(() => {
     const hash = window.location.hash;
     const match = hash.match(/^#L(\d+)$/);
@@ -134,7 +143,10 @@ export default function BrowseClient() {
   const highlightLine = lineFromQuery ?? lineFromHash;
 
   // State for access control
-  const [settings, setSettings] = useState({ browseDisabled: false, settingsLoaded: false });
+  const [settings, setSettings] = useState({
+    browseDisabled: false,
+    settingsLoaded: false,
+  });
   const { browseDisabled, settingsLoaded } = settings;
 
   // State - browse data (grouped via useReducer with merge pattern)
@@ -149,11 +161,29 @@ export default function BrowseClient() {
     error: null as string | null,
     isFile: false,
   });
-  const { repo, entries, blob, refs, displayRepo, displayRefs, loading, error, isFile } = browseData;
-  const [scrollToLine, setScrollToLine] = useState<number | undefined>(highlightLine);
+  const {
+    repo,
+    entries,
+    blob,
+    refs,
+    displayRepo,
+    displayRefs,
+    loading,
+    error,
+    isFile,
+  } = browseData;
+  const [scrollToLine, setScrollToLine] = useState<number | undefined>(
+    highlightLine
+  );
   // Scroll state for split panes (use object with counter to force re-render on same line click)
-  const [primaryScrollToLine, setPrimaryScrollToLine] = useState<{ line: number; key: number } | null>(null);
-  const [secondaryScrollToLine, setSecondaryScrollToLine] = useState<{ line: number; key: number } | null>(null);
+  const [primaryScrollToLine, setPrimaryScrollToLine] = useState<{
+    line: number;
+    key: number;
+  } | null>(null);
+  const [secondaryScrollToLine, setSecondaryScrollToLine] = useState<{
+    line: number;
+    key: number;
+  } | null>(null);
   const scrollKeyRef = useRef(0);
   // Pending scroll line for after navigation (applied when content loads)
   const pendingScrollRef = useRef<number | null>(null);
@@ -175,7 +205,15 @@ export default function BrowseClient() {
     showQuickPicker: false,
     showShortcutsHelp: false,
   });
-  const { showFileTree, showSymbols, isMobile, _isTablet, copied, showQuickPicker, showShortcutsHelp } = uiState;
+  const {
+    showFileTree,
+    showSymbols,
+    isMobile,
+    _isTablet,
+    copied,
+    showQuickPicker,
+    showShortcutsHelp,
+  } = uiState;
   const [fileTreeWidth, setFileTreeWidth] = useState(280); // Default width in pixels
   const [symbolsWidth, setSymbolsWidth] = useState(224); // Default 56 * 4 = 224px (w-56)
   const [referencePanelHeight, setReferencePanelHeight] = useState(256); // Default h-64 = 256px
@@ -195,7 +233,11 @@ export default function BrowseClient() {
         try {
           const parsed = JSON.parse(saved);
           // Validate that it has the expected structure
-          if (parsed && Array.isArray(parsed.primaryTabs) && Array.isArray(parsed.secondaryTabs)) {
+          if (
+            parsed &&
+            Array.isArray(parsed.primaryTabs) &&
+            Array.isArray(parsed.secondaryTabs)
+          ) {
             return parsed;
           }
         } catch {
@@ -223,15 +265,23 @@ export default function BrowseClient() {
   // Get active file for each pane
   const primaryActiveFile = useMemo(() => {
     if (!splitPane.enabled) return null;
-    const tab = splitPane.primaryTabs.find(t => t.id === splitPane.primaryActiveTabId);
+    const tab = splitPane.primaryTabs.find(
+      (t) => t.id === splitPane.primaryActiveTabId
+    );
     return tab?.file || null;
   }, [splitPane.enabled, splitPane.primaryTabs, splitPane.primaryActiveTabId]);
 
   const secondaryActiveFile = useMemo(() => {
     if (!splitPane.enabled) return null;
-    const tab = splitPane.secondaryTabs.find(t => t.id === splitPane.secondaryActiveTabId);
+    const tab = splitPane.secondaryTabs.find(
+      (t) => t.id === splitPane.secondaryActiveTabId
+    );
     return tab?.file || null;
-  }, [splitPane.enabled, splitPane.secondaryTabs, splitPane.secondaryActiveTabId]);
+  }, [
+    splitPane.enabled,
+    splitPane.secondaryTabs,
+    splitPane.secondaryActiveTabId,
+  ]);
 
   // Compute the active file for the symbols sidebar based on split pane state
   const symbolsFile = useMemo(() => {
@@ -248,7 +298,15 @@ export default function BrowseClient() {
     }
     // Fallback to URL path
     return { repoId, path: currentPath, ref: ref || undefined };
-  }, [splitPane.enabled, splitPane.activePane, primaryActiveFile, secondaryActiveFile, repoId, currentPath, ref]);
+  }, [
+    splitPane.enabled,
+    splitPane.activePane,
+    primaryActiveFile,
+    secondaryActiveFile,
+    repoId,
+    currentPath,
+    ref,
+  ]);
 
   // Blobs for split panes (when files differ from URL)
   const [splitBlobs, setSplitBlobs] = useState({
@@ -257,7 +315,12 @@ export default function BrowseClient() {
     secondaryBlob: null as BlobResponse | null,
     secondaryBlobLoading: false,
   });
-  const { primaryBlob, primaryBlobLoading, secondaryBlob, secondaryBlobLoading } = splitBlobs;
+  const {
+    primaryBlob,
+    primaryBlobLoading,
+    secondaryBlob,
+    secondaryBlobLoading,
+  } = splitBlobs;
   const splitResizing = useRef(false);
   const splitContainerRef = useRef<HTMLDivElement>(null);
 
@@ -265,9 +328,16 @@ export default function BrowseClient() {
   const symbolsBlob = useMemo(() => {
     if (!splitPane.enabled) return blob;
     if (splitPane.activePane === "primary" && primaryBlob) return primaryBlob;
-    if (splitPane.activePane === "secondary" && secondaryBlob) return secondaryBlob;
+    if (splitPane.activePane === "secondary" && secondaryBlob)
+      return secondaryBlob;
     return blob;
-  }, [splitPane.enabled, splitPane.activePane, primaryBlob, secondaryBlob, blob]);
+  }, [
+    splitPane.enabled,
+    splitPane.activePane,
+    primaryBlob,
+    secondaryBlob,
+    blob,
+  ]);
 
   // Context for filtering
   const { activeContext } = useActiveContext();
@@ -277,13 +347,17 @@ export default function BrowseClient() {
 
   // Check if browse API is disabled
   useEffect(() => {
-    api.getUISettings()
-      .then(uiSettings => {
-        setSettings({ browseDisabled: uiSettings.disable_browse_api, settingsLoaded: true });
+    api
+      .getUISettings()
+      .then((uiSettings) => {
+        setSettings({
+          browseDisabled: uiSettings.disable_browse_api,
+          settingsLoaded: true,
+        });
       })
       .catch(() => {
         // If settings fail to load, allow access (API might just be down)
-        setSettings(prev => ({ ...prev, settingsLoaded: true }));
+        setSettings((prev) => ({ ...prev, settingsLoaded: true }));
       });
   }, []);
 
@@ -307,9 +381,19 @@ export default function BrowseClient() {
       const tablet = width >= MOBILE_BREAKPOINT && width < TABLET_BREAKPOINT;
 
       if (mobile) {
-        updateUI({ isMobile: mobile, _isTablet: tablet, showFileTree: false, showSymbols: false });
+        updateUI({
+          isMobile: mobile,
+          _isTablet: tablet,
+          showFileTree: false,
+          showSymbols: false,
+        });
       } else if (tablet) {
-        updateUI({ isMobile: mobile, _isTablet: tablet, showFileTree: false, showSymbols: false });
+        updateUI({
+          isMobile: mobile,
+          _isTablet: tablet,
+          showFileTree: false,
+          showSymbols: false,
+        });
       } else {
         updateUI({ isMobile: mobile, _isTablet: tablet });
       }
@@ -325,8 +409,8 @@ export default function BrowseClient() {
   // Handle sidebar resize with mouse drag - event listeners attached on mousedown
   const startResizing = useCallback(() => {
     isResizing.current = true;
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
 
     const handleMouseMove = (e: MouseEvent) => {
       const newWidth = e.clientX;
@@ -336,14 +420,14 @@ export default function BrowseClient() {
 
     const handleMouseUp = () => {
       isResizing.current = false;
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
     };
 
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
   }, []);
 
   // Split pane resize handling
@@ -368,25 +452,26 @@ export default function BrowseClient() {
 
     const handleSplitMouseUp = () => {
       splitResizing.current = false;
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
     };
 
     if (splitPane.enabled) {
-      document.addEventListener('mousemove', handleSplitMouseMove);
-      document.addEventListener('mouseup', handleSplitMouseUp);
+      document.addEventListener("mousemove", handleSplitMouseMove);
+      document.addEventListener("mouseup", handleSplitMouseUp);
     }
 
     return () => {
-      document.removeEventListener('mousemove', handleSplitMouseMove);
-      document.removeEventListener('mouseup', handleSplitMouseUp);
+      document.removeEventListener("mousemove", handleSplitMouseMove);
+      document.removeEventListener("mouseup", handleSplitMouseUp);
     };
   }, [splitPane.enabled, splitPane.direction]);
 
   const startSplitResizing = useCallback(() => {
     splitResizing.current = true;
-    document.body.style.cursor = splitPane.direction === 'vertical' ? 'col-resize' : 'row-resize';
-    document.body.style.userSelect = 'none';
+    document.body.style.cursor =
+      splitPane.direction === "vertical" ? "col-resize" : "row-resize";
+    document.body.style.userSelect = "none";
   }, [splitPane.direction]);
 
   // Handle symbols sidebar resize with mouse drag
@@ -403,23 +488,23 @@ export default function BrowseClient() {
 
     const handleMouseUp = () => {
       isResizingSymbols.current = false;
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
     };
 
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
 
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
     };
   }, []);
 
   const startResizingSymbols = useCallback(() => {
     isResizingSymbols.current = true;
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
   }, []);
 
   // Handle references panel resize with mouse drag
@@ -436,44 +521,52 @@ export default function BrowseClient() {
 
     const handleMouseUp = () => {
       isResizingReferences.current = false;
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
     };
 
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
 
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
     };
   }, []);
 
   const startResizingReferences = useCallback(() => {
     isResizingReferences.current = true;
-    document.body.style.cursor = 'row-resize';
-    document.body.style.userSelect = 'none';
+    document.body.style.cursor = "row-resize";
+    document.body.style.userSelect = "none";
   }, []);
 
   // Load primary blob when split is active and primaryActiveFile is set
   useEffect(() => {
     if (!splitPane.enabled || !primaryActiveFile) {
-      setSplitBlobs(prev => ({ ...prev, primaryBlob: null }));
+      setSplitBlobs((prev) => ({ ...prev, primaryBlob: null }));
       return;
     }
 
     const loadPrimaryBlob = async () => {
-      setSplitBlobs(prev => ({ ...prev, primaryBlobLoading: true }));
+      setSplitBlobs((prev) => ({ ...prev, primaryBlobLoading: true }));
       try {
         const blobData = await api.getBlob(
           primaryActiveFile.repoId,
           primaryActiveFile.path,
           primaryActiveFile.ref
         );
-        setSplitBlobs(prev => ({ ...prev, primaryBlob: blobData, primaryBlobLoading: false }));
+        setSplitBlobs((prev) => ({
+          ...prev,
+          primaryBlob: blobData,
+          primaryBlobLoading: false,
+        }));
       } catch (err) {
         console.error("Failed to load primary file:", err);
-        setSplitBlobs(prev => ({ ...prev, primaryBlob: null, primaryBlobLoading: false }));
+        setSplitBlobs((prev) => ({
+          ...prev,
+          primaryBlob: null,
+          primaryBlobLoading: false,
+        }));
       }
     };
 
@@ -483,22 +576,30 @@ export default function BrowseClient() {
   // Load secondary blob when split is active
   useEffect(() => {
     if (!splitPane.enabled || !secondaryActiveFile) {
-      setSplitBlobs(prev => ({ ...prev, secondaryBlob: null }));
+      setSplitBlobs((prev) => ({ ...prev, secondaryBlob: null }));
       return;
     }
 
     const loadSecondaryBlob = async () => {
-      setSplitBlobs(prev => ({ ...prev, secondaryBlobLoading: true }));
+      setSplitBlobs((prev) => ({ ...prev, secondaryBlobLoading: true }));
       try {
         const blobData = await api.getBlob(
           secondaryActiveFile.repoId,
           secondaryActiveFile.path,
           secondaryActiveFile.ref
         );
-        setSplitBlobs(prev => ({ ...prev, secondaryBlob: blobData, secondaryBlobLoading: false }));
+        setSplitBlobs((prev) => ({
+          ...prev,
+          secondaryBlob: blobData,
+          secondaryBlobLoading: false,
+        }));
       } catch (err) {
         console.error("Failed to load secondary file:", err);
-        setSplitBlobs(prev => ({ ...prev, secondaryBlob: null, secondaryBlobLoading: false }));
+        setSplitBlobs((prev) => ({
+          ...prev,
+          secondaryBlob: null,
+          secondaryBlobLoading: false,
+        }));
       }
     };
 
@@ -508,23 +609,29 @@ export default function BrowseClient() {
   // Split handlers
   const handleSplitVertical = useCallback(() => {
     if (isFile && blob) {
-      const currentFile: PaneFile = { repoId, path: currentPath, ref: ref || undefined };
+      const currentFile: PaneFile = {
+        repoId,
+        path: currentPath,
+        ref: ref || undefined,
+      };
       const currentTabId = generateTabId(currentFile);
       const currentTab: PaneTab = { id: currentTabId, file: currentFile };
 
       // Convert existing tabs to pane tabs for the primary pane
-      const primaryPaneTabs: PaneTab[] = tabs.map(tab => ({
+      const primaryPaneTabs: PaneTab[] = tabs.map((tab) => ({
         id: tab.id,
-        file: { repoId: tab.repoId, path: tab.filePath, ref: tab.ref }
+        file: { repoId: tab.repoId, path: tab.filePath, ref: tab.ref },
       }));
 
       // Check if current file is already in tabs
-      const existingTab = primaryPaneTabs.find(t =>
-        t.file.repoId === repoId && t.file.path === currentPath
+      const existingTab = primaryPaneTabs.find(
+        (t) => t.file.repoId === repoId && t.file.path === currentPath
       );
 
       // Keep existing tabs in primary, add current file if not already there
-      const finalPrimaryTabs = existingTab ? primaryPaneTabs : [...primaryPaneTabs, currentTab];
+      const finalPrimaryTabs = existingTab
+        ? primaryPaneTabs
+        : [...primaryPaneTabs, currentTab];
       const primaryActiveId = existingTab ? existingTab.id : currentTabId;
 
       // Secondary pane starts with only the current file
@@ -543,23 +650,29 @@ export default function BrowseClient() {
 
   const handleSplitHorizontal = useCallback(() => {
     if (isFile && blob) {
-      const currentFile: PaneFile = { repoId, path: currentPath, ref: ref || undefined };
+      const currentFile: PaneFile = {
+        repoId,
+        path: currentPath,
+        ref: ref || undefined,
+      };
       const currentTabId = generateTabId(currentFile);
       const currentTab: PaneTab = { id: currentTabId, file: currentFile };
 
       // Convert existing tabs to pane tabs for the primary pane
-      const primaryPaneTabs: PaneTab[] = tabs.map(tab => ({
+      const primaryPaneTabs: PaneTab[] = tabs.map((tab) => ({
         id: tab.id,
-        file: { repoId: tab.repoId, path: tab.filePath, ref: tab.ref }
+        file: { repoId: tab.repoId, path: tab.filePath, ref: tab.ref },
       }));
 
       // Check if current file is already in tabs
-      const existingTab = primaryPaneTabs.find(t =>
-        t.file.repoId === repoId && t.file.path === currentPath
+      const existingTab = primaryPaneTabs.find(
+        (t) => t.file.repoId === repoId && t.file.path === currentPath
       );
 
       // Keep existing tabs in primary, add current file if not already there
-      const finalPrimaryTabs = existingTab ? primaryPaneTabs : [...primaryPaneTabs, currentTab];
+      const finalPrimaryTabs = existingTab
+        ? primaryPaneTabs
+        : [...primaryPaneTabs, currentTab];
       const primaryActiveId = existingTab ? existingTab.id : currentTabId;
 
       // Secondary pane starts with only the current file
@@ -577,49 +690,73 @@ export default function BrowseClient() {
   }, [isFile, blob, repoId, currentPath, ref, tabs]);
 
   // Close split and keep the tabs from the pane that's NOT being closed
-  const handleCloseSplit = useCallback((closingPane: "primary" | "secondary") => {
-    // Get the tabs from the pane that will remain
-    const remainingPane = closingPane === "primary" ? "secondary" : "primary";
-    const remainingTabs = remainingPane === "primary" ? splitPane.primaryTabs : splitPane.secondaryTabs;
-    const remainingActiveTabId = remainingPane === "primary" ? splitPane.primaryActiveTabId : splitPane.secondaryActiveTabId;
+  const handleCloseSplit = useCallback(
+    (closingPane: "primary" | "secondary") => {
+      // Get the tabs from the pane that will remain
+      const remainingPane = closingPane === "primary" ? "secondary" : "primary";
+      const remainingTabs =
+        remainingPane === "primary"
+          ? splitPane.primaryTabs
+          : splitPane.secondaryTabs;
+      const remainingActiveTabId =
+        remainingPane === "primary"
+          ? splitPane.primaryActiveTabId
+          : splitPane.secondaryActiveTabId;
 
-    // Find the active file in the remaining pane
-    const activeTab = remainingTabs.find(t => t.id === remainingActiveTabId);
+      // Find the active file in the remaining pane
+      const activeTab = remainingTabs.find(
+        (t) => t.id === remainingActiveTabId
+      );
 
-    // Convert split pane tabs to regular tabs
-    const newTabs: BrowseTab[] = remainingTabs.map(paneTab => ({
-      id: paneTab.id,
-      repoId: paneTab.file.repoId,
-      repoName: repo?.name || "",
-      filePath: paneTab.file.path,
-      ref: paneTab.file.ref,
-    }));
+      // Convert split pane tabs to regular tabs
+      const newTabs: BrowseTab[] = remainingTabs.map((paneTab) => ({
+        id: paneTab.id,
+        repoId: paneTab.file.repoId,
+        repoName: repo?.name || "",
+        filePath: paneTab.file.path,
+        ref: paneTab.file.ref,
+      }));
 
-    // Reset split state
-    setSplitPane({
-      enabled: false,
-      direction: "vertical",
-      ratio: 0.5,
-      activePane: "primary",
-      primaryTabs: [],
-      primaryActiveTabId: null,
-      secondaryTabs: [],
-      secondaryActiveTabId: null,
-    });
-    setSplitBlobs({ primaryBlob: null, primaryBlobLoading: false, secondaryBlob: null, secondaryBlobLoading: false });
+      // Reset split state
+      setSplitPane({
+        enabled: false,
+        direction: "vertical",
+        ratio: 0.5,
+        activePane: "primary",
+        primaryTabs: [],
+        primaryActiveTabId: null,
+        secondaryTabs: [],
+        secondaryActiveTabId: null,
+      });
+      setSplitBlobs({
+        primaryBlob: null,
+        primaryBlobLoading: false,
+        secondaryBlob: null,
+        secondaryBlobLoading: false,
+      });
 
-    // Update the main tabs with the remaining pane's tabs
-    replaceTabs(newTabs, remainingActiveTabId);
+      // Update the main tabs with the remaining pane's tabs
+      replaceTabs(newTabs, remainingActiveTabId);
 
-    // Navigate to the active file from the remaining pane
-    if (activeTab) {
-      router.push(buildBrowseUrl(activeTab.file.repoId, activeTab.file.path, { ref: activeTab.file.ref }));
-    } else if (remainingTabs.length > 0) {
-      // No active tab, navigate to the first tab
-      const firstTab = remainingTabs[0];
-      router.push(buildBrowseUrl(firstTab.file.repoId, firstTab.file.path, { ref: firstTab.file.ref }));
-    }
-  }, [splitPane, router, repo?.name, replaceTabs]);
+      // Navigate to the active file from the remaining pane
+      if (activeTab) {
+        router.push(
+          buildBrowseUrl(activeTab.file.repoId, activeTab.file.path, {
+            ref: activeTab.file.ref,
+          })
+        );
+      } else if (remainingTabs.length > 0) {
+        // No active tab, navigate to the first tab
+        const firstTab = remainingTabs[0];
+        router.push(
+          buildBrowseUrl(firstTab.file.repoId, firstTab.file.path, {
+            ref: firstTab.file.ref,
+          })
+        );
+      }
+    },
+    [splitPane, router, repo?.name, replaceTabs]
+  );
 
   // Set active pane when clicking on it and update URL
   const handleSetActivePane = useCallback((pane: ActivePane) => {
@@ -630,30 +767,44 @@ export default function BrowseClient() {
 
   // Update URL when active pane or active tab changes
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
 
-    const tabs = splitPane.activePane === "primary" ? splitPane.primaryTabs : splitPane.secondaryTabs;
-    const activeTabId = splitPane.activePane === "primary" ? splitPane.primaryActiveTabId : splitPane.secondaryActiveTabId;
-    const activeTab = tabs.find(t => t.id === activeTabId);
+    const tabs =
+      splitPane.activePane === "primary"
+        ? splitPane.primaryTabs
+        : splitPane.secondaryTabs;
+    const activeTabId =
+      splitPane.activePane === "primary"
+        ? splitPane.primaryActiveTabId
+        : splitPane.secondaryActiveTabId;
+    const activeTab = tabs.find((t) => t.id === activeTabId);
 
     if (activeTab) {
       const file = activeTab.file;
-      const newUrl = buildBrowseUrl(file.repoId, file.path) + window.location.hash;
+      const newUrl =
+        buildBrowseUrl(file.repoId, file.path) + window.location.hash;
       // Only update if URL is different to avoid unnecessary history entries
       if (window.location.pathname + window.location.hash !== newUrl) {
-        window.history.replaceState(null, '', newUrl);
+        window.history.replaceState(null, "", newUrl);
       }
     }
-  }, [splitPane.activePane, splitPane.primaryActiveTabId, splitPane.secondaryActiveTabId, splitPane.primaryTabs, splitPane.secondaryTabs]);
+  }, [
+    splitPane.activePane,
+    splitPane.primaryActiveTabId,
+    splitPane.secondaryActiveTabId,
+    splitPane.primaryTabs,
+    splitPane.secondaryTabs,
+  ]);
 
   // Open file in a specific pane's tabs
   const openFileInPane = useCallback((pane: ActivePane, file: PaneFile) => {
     const tabId = generateTabId(file);
     setSplitPane((prev) => {
       const tabsKey = pane === "primary" ? "primaryTabs" : "secondaryTabs";
-      const activeTabKey = pane === "primary" ? "primaryActiveTabId" : "secondaryActiveTabId";
+      const activeTabKey =
+        pane === "primary" ? "primaryActiveTabId" : "secondaryActiveTabId";
       const existingTabs = prev[tabsKey];
-      const existingTab = existingTabs.find(t => t.id === tabId);
+      const existingTab = existingTabs.find((t) => t.id === tabId);
 
       if (existingTab) {
         // Tab already exists, just make it active
@@ -675,14 +826,15 @@ export default function BrowseClient() {
   const closeTabInPane = useCallback((pane: ActivePane, tabId: string) => {
     setSplitPane((prev) => {
       const tabsKey = pane === "primary" ? "primaryTabs" : "secondaryTabs";
-      const activeTabKey = pane === "primary" ? "primaryActiveTabId" : "secondaryActiveTabId";
+      const activeTabKey =
+        pane === "primary" ? "primaryActiveTabId" : "secondaryActiveTabId";
       const tabs = prev[tabsKey];
-      const newTabs = tabs.filter(t => t.id !== tabId);
+      const newTabs = tabs.filter((t) => t.id !== tabId);
 
       // If closing the active tab, select another one
       let newActiveTabId = prev[activeTabKey];
       if (newActiveTabId === tabId) {
-        const closedIndex = tabs.findIndex(t => t.id === tabId);
+        const closedIndex = tabs.findIndex((t) => t.id === tabId);
         const newActiveTab = newTabs[Math.min(closedIndex, newTabs.length - 1)];
         newActiveTabId = newActiveTab?.id || null;
       }
@@ -698,7 +850,8 @@ export default function BrowseClient() {
   // Select tab in a specific pane
   const selectTabInPane = useCallback((pane: ActivePane, tabId: string) => {
     setSplitPane((prev) => {
-      const activeTabKey = pane === "primary" ? "primaryActiveTabId" : "secondaryActiveTabId";
+      const activeTabKey =
+        pane === "primary" ? "primaryActiveTabId" : "secondaryActiveTabId";
       return { ...prev, [activeTabKey]: tabId, activePane: pane };
     });
   }, []);
@@ -710,7 +863,10 @@ export default function BrowseClient() {
       // Also set primary scroll if split pane is enabled
       if (splitPane.enabled) {
         scrollKeyRef.current += 1;
-        setPrimaryScrollToLine({ line: highlightLine, key: scrollKeyRef.current });
+        setPrimaryScrollToLine({
+          line: highlightLine,
+          key: scrollKeyRef.current,
+        });
       }
     }
   }, [highlightLine, splitPane.enabled]);
@@ -719,18 +875,30 @@ export default function BrowseClient() {
   useEffect(() => {
     if (!splitPane.enabled) return;
 
-    const activeFile = splitPane.activePane === "primary" ? primaryActiveFile : secondaryActiveFile;
+    const activeFile =
+      splitPane.activePane === "primary"
+        ? primaryActiveFile
+        : secondaryActiveFile;
     if (!activeFile) return;
 
     // Only update if the path is different from current URL
     if (activeFile.repoId === repoId && activeFile.path === currentPath) return;
 
     // Build the URL without ?line= - we don't want line in URL during browsing
-    const url = buildBrowseUrl(activeFile.repoId, activeFile.path, { ref: activeFile.ref });
+    const url = buildBrowseUrl(activeFile.repoId, activeFile.path, {
+      ref: activeFile.ref,
+    });
 
     // Use replaceState to update URL without adding history entry
-    window.history.replaceState(null, '', url);
-  }, [splitPane.enabled, splitPane.activePane, primaryActiveFile, secondaryActiveFile, repoId, currentPath]);
+    window.history.replaceState(null, "", url);
+  }, [
+    splitPane.enabled,
+    splitPane.activePane,
+    primaryActiveFile,
+    secondaryActiveFile,
+    repoId,
+    currentPath,
+  ]);
 
   // Compute the display path based on active pane when in split mode
   const displayPath = useMemo(() => {
@@ -745,7 +913,13 @@ export default function BrowseClient() {
       return secondaryActiveFile.path;
     }
     return currentPath;
-  }, [splitPane.enabled, splitPane.activePane, primaryActiveFile, secondaryActiveFile, currentPath]);
+  }, [
+    splitPane.enabled,
+    splitPane.activePane,
+    primaryActiveFile,
+    secondaryActiveFile,
+    currentPath,
+  ]);
 
   // Compute the display repo ID for tree and breadcrumbs when in split mode
   const displayRepoId = useMemo(() => {
@@ -759,7 +933,13 @@ export default function BrowseClient() {
       return secondaryActiveFile.repoId;
     }
     return repoId;
-  }, [splitPane.enabled, splitPane.activePane, primaryActiveFile, secondaryActiveFile, repoId]);
+  }, [
+    splitPane.enabled,
+    splitPane.activePane,
+    primaryActiveFile,
+    secondaryActiveFile,
+    repoId,
+  ]);
 
   // Compute the display ref for the active pane
   const displayRef = useMemo(() => {
@@ -773,10 +953,20 @@ export default function BrowseClient() {
       return secondaryActiveFile.ref || "";
     }
     return ref;
-  }, [splitPane.enabled, splitPane.activePane, primaryActiveFile, secondaryActiveFile, ref]);
+  }, [
+    splitPane.enabled,
+    splitPane.activePane,
+    primaryActiveFile,
+    secondaryActiveFile,
+    ref,
+  ]);
 
   // Current ref to display (use displayRef if available, fallback to default branch)
-  const currentDisplayRef = displayRef || displayRepo?.default_branch || displayRefs?.default_branch || "HEAD";
+  const currentDisplayRef =
+    displayRef ||
+    displayRepo?.default_branch ||
+    displayRefs?.default_branch ||
+    "HEAD";
 
   // Breadcrumb path parts
   const pathParts = useMemo(() => {
@@ -795,7 +985,10 @@ export default function BrowseClient() {
           updateTabRepoName(activeTabId, repoData.name);
         }
       } catch (err) {
-        updateBrowse({ error: err instanceof Error ? err.message : "Failed to load repository" });
+        updateBrowse({
+          error:
+            err instanceof Error ? err.message : "Failed to load repository",
+        });
       }
     };
     loadRepo();
@@ -851,7 +1044,11 @@ export default function BrowseClient() {
         currentPath || undefined,
         ref || undefined
       );
-      updateBrowse({ entries: treeData.entries, isFile: false, loading: false });
+      updateBrowse({
+        entries: treeData.entries,
+        isFile: false,
+        loading: false,
+      });
     } catch {
       // If tree fails, try to load as file
       try {
@@ -860,12 +1057,18 @@ export default function BrowseClient() {
           currentPath,
           ref || undefined
         );
-        updateBrowse({ blob: blobData, isFile: true, entries: [], loading: false });
+        updateBrowse({
+          blob: blobData,
+          isFile: true,
+          entries: [],
+          loading: false,
+        });
       } catch (blobErr) {
         updateBrowse({
-          error: blobErr instanceof Error
-            ? blobErr.message
-            : "Failed to load content",
+          error:
+            blobErr instanceof Error
+              ? blobErr.message
+              : "Failed to load content",
           loading: false,
         });
       }
@@ -883,15 +1086,27 @@ export default function BrowseClient() {
   useEffect(() => {
     if (!splitPane.enabled || !isFile || !currentPath) return;
 
-    const urlFile: PaneFile = { repoId, path: currentPath, ref: ref || undefined };
+    const urlFile: PaneFile = {
+      repoId,
+      path: currentPath,
+      ref: ref || undefined,
+    };
     const urlTabId = generateTabId(urlFile);
 
     // Check if this file is already the active tab in either pane
-    if (splitPane.primaryActiveTabId === urlTabId || splitPane.secondaryActiveTabId === urlTabId) return;
+    if (
+      splitPane.primaryActiveTabId === urlTabId ||
+      splitPane.secondaryActiveTabId === urlTabId
+    )
+      return;
 
     // Check if this file already exists in either pane
-    const existsInPrimary = splitPane.primaryTabs.some(t => t.id === urlTabId);
-    const existsInSecondary = splitPane.secondaryTabs.some(t => t.id === urlTabId);
+    const existsInPrimary = splitPane.primaryTabs.some(
+      (t) => t.id === urlTabId
+    );
+    const existsInSecondary = splitPane.secondaryTabs.some(
+      (t) => t.id === urlTabId
+    );
 
     // Determine which pane to use - respect the current active pane
     const targetPane = splitPane.activePane || "primary";
@@ -903,7 +1118,11 @@ export default function BrowseClient() {
           return { ...prev, secondaryActiveTabId: urlTabId };
         } else if (existsInPrimary) {
           // File exists in primary, switch to primary
-          return { ...prev, primaryActiveTabId: urlTabId, activePane: "primary" };
+          return {
+            ...prev,
+            primaryActiveTabId: urlTabId,
+            activePane: "primary",
+          };
         } else {
           // Add new tab to secondary pane
           const newTab: PaneTab = { id: urlTabId, file: urlFile };
@@ -919,7 +1138,11 @@ export default function BrowseClient() {
           return { ...prev, primaryActiveTabId: urlTabId };
         } else if (existsInSecondary) {
           // File exists in secondary, switch to secondary
-          return { ...prev, secondaryActiveTabId: urlTabId, activePane: "secondary" };
+          return {
+            ...prev,
+            secondaryActiveTabId: urlTabId,
+            activePane: "secondary",
+          };
         } else {
           // Add new tab to primary pane
           const newTab: PaneTab = { id: urlTabId, file: urlFile };
@@ -950,14 +1173,24 @@ export default function BrowseClient() {
   const handleHistoryBack = useCallback(() => {
     const entry = navHistory.goBack();
     if (entry) {
-      router.push(buildBrowseUrl(entry.repoId, entry.path || "", { ref: entry.ref, line: entry.line }));
+      router.push(
+        buildBrowseUrl(entry.repoId, entry.path || "", {
+          ref: entry.ref,
+          line: entry.line,
+        })
+      );
     }
   }, [navHistory, router]);
 
   const handleHistoryForward = useCallback(() => {
     const entry = navHistory.goForward();
     if (entry) {
-      router.push(buildBrowseUrl(entry.repoId, entry.path || "", { ref: entry.ref, line: entry.line }));
+      router.push(
+        buildBrowseUrl(entry.repoId, entry.path || "", {
+          ref: entry.ref,
+          line: entry.line,
+        })
+      );
     }
   }, [navHistory, router]);
 
@@ -987,7 +1220,14 @@ export default function BrowseClient() {
         navigateTo(path, true);
       }
     },
-    [navigateTo, splitPane.enabled, splitPane.activePane, repoId, ref, openFileInPane]
+    [
+      navigateTo,
+      splitPane.enabled,
+      splitPane.activePane,
+      repoId,
+      ref,
+      openFileInPane,
+    ]
   );
 
   // Handle ref change
@@ -1006,118 +1246,166 @@ export default function BrowseClient() {
   }, [currentPath]);
 
   // Handle find references - show panel with references from SCIP or Zoekt
-  const handleFindReferences = useCallback((symbolName: string, line?: number, col?: number, fileRepoId?: number, filePath?: string, language?: string) => {
-    console.log("handleFindReferences called:", { symbolName, line, col, fileRepoId, filePath, language });
-    setReferenceSearch({
-      symbolName,
-      language: language || blob?.language,
-      // Pass position info for SCIP lookup (API accepts 1-indexed lines)
-      line: line,
-      col: col,
-      filePath: filePath || currentPath,
-      repoId: fileRepoId ?? repoId,
-    });
-  }, [blob?.language, currentPath, repoId]);
+  const handleFindReferences = useCallback(
+    (
+      symbolName: string,
+      line?: number,
+      col?: number,
+      fileRepoId?: number,
+      filePath?: string,
+      language?: string
+    ) => {
+      console.log("handleFindReferences called:", {
+        symbolName,
+        line,
+        col,
+        fileRepoId,
+        filePath,
+        language,
+      });
+      setReferenceSearch({
+        symbolName,
+        language: language || blob?.language,
+        // Pass position info for SCIP lookup (API accepts 1-indexed lines)
+        line: line,
+        col: col,
+        filePath: filePath || currentPath,
+        repoId: fileRepoId ?? repoId,
+      });
+    },
+    [blob?.language, currentPath, repoId]
+  );
 
   // Handle go to definition - try SCIP first, then fall back to Zoekt symbol search
-  const handleGoToDefinition = useCallback(async (symbolName: string, line?: number, col?: number, fileRepoId?: number, filePath?: string, language?: string) => {
-    const targetRepoId = fileRepoId || repoId;
-    const targetFilePath = filePath || currentPath;
-    const targetLanguage = language || blob?.language;
+  const handleGoToDefinition = useCallback(
+    async (
+      symbolName: string,
+      line?: number,
+      col?: number,
+      fileRepoId?: number,
+      filePath?: string,
+      language?: string
+    ) => {
+      const targetRepoId = fileRepoId || repoId;
+      const targetFilePath = filePath || currentPath;
+      const targetLanguage = language || blob?.language;
 
-    try {
-      // First try SCIP-based precise navigation
-      if (line !== undefined && targetFilePath) {
-        try {
-          const scipResult = await api.getSCIPDefinition(
-            targetRepoId,
-            targetFilePath,
-            line, // API accepts 1-indexed lines
-            col ?? 0
-          );
-
-          if (scipResult.found && scipResult.definition) {
-            const def = scipResult.definition;
-            // Navigate within same repo
-            router.push(
-              buildBrowseUrl(targetRepoId, def.filePath, { line: def.startLine + 1 })
+      try {
+        // First try SCIP-based precise navigation
+        if (line !== undefined && targetFilePath) {
+          try {
+            const scipResult = await api.getSCIPDefinition(
+              targetRepoId,
+              targetFilePath,
+              line, // API accepts 1-indexed lines
+              col ?? 0
             );
-            return;
+
+            if (scipResult.found && scipResult.definition) {
+              const def = scipResult.definition;
+              // Navigate within same repo
+              router.push(
+                buildBrowseUrl(targetRepoId, def.filePath, {
+                  line: def.startLine + 1,
+                })
+              );
+              return;
+            }
+
+            // If external symbol, show info but can't navigate
+            if (scipResult.external) {
+              console.log("External symbol:", scipResult.symbol);
+              // Fall through to regular search
+            }
+          } catch (scipErr) {
+            // SCIP not available or error - fall through to regular search
+            console.debug(
+              "SCIP lookup failed, falling back to symbol search:",
+              scipErr
+            );
           }
-
-          // If external symbol, show info but can't navigate
-          if (scipResult.external) {
-            console.log("External symbol:", scipResult.symbol);
-            // Fall through to regular search
-          }
-        } catch (scipErr) {
-          // SCIP not available or error - fall through to regular search
-          console.debug("SCIP lookup failed, falling back to symbol search:", scipErr);
-
         }
-      }
 
-      // Fall back to Zoekt-based symbol search
-      const definitions = await api.findSymbols({
-        name: symbolName,
-        language: targetLanguage,
-        limit: 1,
-      });
+        // Fall back to Zoekt-based symbol search
+        const definitions = await api.findSymbols({
+          name: symbolName,
+          language: targetLanguage,
+          limit: 1,
+        });
 
-      if (definitions.length > 0) {
-        const def = definitions[0];
-        // Look up repo ID and navigate
-        const lookupResult = await api.lookupRepoByName(def.repo);
-        if (lookupResult) {
-          router.push(buildBrowseUrl(lookupResult.id, def.file, { line: def.line }));
-        }
-      } else {
-        // No definition found - show references panel instead
-        setReferenceSearch({ symbolName, language: blob?.language });
-      }
-    } catch (err) {
-      console.error("Failed to go to definition:", err);
-      // Fall back to showing references
-      setReferenceSearch({ symbolName, language: blob?.language });
-    }
-  }, [router, repoId, currentPath, blob?.language]);
-
-  // Handle reference navigation (navigate to a different file/repo)
-  const handleReferenceNavigate = useCallback(async (repoName: string, file: string, line: number) => {
-    // Try to look up the repo by name to get its ID
-    try {
-      const lookupResult = await api.lookupRepoByName(repoName);
-      if (lookupResult) {
-        const targetRepoId = lookupResult.id;
-
-        if (splitPane.enabled) {
-          // Open in active pane when split mode is enabled
-          const newFile: PaneFile = { repoId: targetRepoId, path: file, ref: ref || undefined };
-          openFileInPane(splitPane.activePane, newFile);
-          // Set scroll to line for the target pane
-          scrollKeyRef.current += 1;
-          const scrollData = { line, key: scrollKeyRef.current };
-          if (splitPane.activePane === "primary") {
-            setPrimaryScrollToLine(scrollData);
-          } else {
-            setSecondaryScrollToLine(scrollData);
+        if (definitions.length > 0) {
+          const def = definitions[0];
+          // Look up repo ID and navigate
+          const lookupResult = await api.lookupRepoByName(def.repo);
+          if (lookupResult) {
+            router.push(
+              buildBrowseUrl(lookupResult.id, def.file, { line: def.line })
+            );
           }
         } else {
-          // Check if it's the same file in the same repo
-          if (targetRepoId === repoId && file === currentPath) {
-            // Same file - just scroll to the line (no URL change needed)
-            setScrollToLine(line);
+          // No definition found - show references panel instead
+          setReferenceSearch({ symbolName, language: blob?.language });
+        }
+      } catch (err) {
+        console.error("Failed to go to definition:", err);
+        // Fall back to showing references
+        setReferenceSearch({ symbolName, language: blob?.language });
+      }
+    },
+    [router, repoId, currentPath, blob?.language]
+  );
+
+  // Handle reference navigation (navigate to a different file/repo)
+  const handleReferenceNavigate = useCallback(
+    async (repoName: string, file: string, line: number) => {
+      // Try to look up the repo by name to get its ID
+      try {
+        const lookupResult = await api.lookupRepoByName(repoName);
+        if (lookupResult) {
+          const targetRepoId = lookupResult.id;
+
+          if (splitPane.enabled) {
+            // Open in active pane when split mode is enabled
+            const newFile: PaneFile = {
+              repoId: targetRepoId,
+              path: file,
+              ref: ref || undefined,
+            };
+            openFileInPane(splitPane.activePane, newFile);
+            // Set scroll to line for the target pane
+            scrollKeyRef.current += 1;
+            const scrollData = { line, key: scrollKeyRef.current };
+            if (splitPane.activePane === "primary") {
+              setPrimaryScrollToLine(scrollData);
+            } else {
+              setSecondaryScrollToLine(scrollData);
+            }
           } else {
-            // Different file or repo - use ?line= query param for reliable scroll
-            // Query params are parsed via searchParams and synced to scrollToLine via useEffect
-            router.push(buildBrowseUrl(targetRepoId, file, { line }));
+            // Check if it's the same file in the same repo
+            if (targetRepoId === repoId && file === currentPath) {
+              // Same file - just scroll to the line (no URL change needed)
+              setScrollToLine(line);
+            } else {
+              // Different file or repo - use ?line= query param for reliable scroll
+              // Query params are parsed via searchParams and synced to scrollToLine via useEffect
+              router.push(buildBrowseUrl(targetRepoId, file, { line }));
+            }
           }
         }
+      } catch (err) {
+        console.error("Failed to navigate to reference:", err);
       }
-    } catch (err) {
-      console.error("Failed to navigate to reference:", err);
-    }
-  }, [router, repoId, currentPath, splitPane.enabled, splitPane.activePane, ref, openFileInPane]);
+    },
+    [
+      router,
+      repoId,
+      currentPath,
+      splitPane.enabled,
+      splitPane.activePane,
+      ref,
+      openFileInPane,
+    ]
+  );
 
   // Apply pending scroll when content (blob) loads
   useEffect(() => {
@@ -1129,62 +1417,87 @@ export default function BrowseClient() {
   }, [blob]);
 
   // Handle quick file picker selection
-  const handleQuickPickerSelect = useCallback((path: string) => {
-    if (splitPane.enabled) {
-      // Open in active pane when split mode is enabled
-      const newFile: PaneFile = { repoId, path, ref: ref || undefined };
-      openFileInPane(splitPane.activePane, newFile);
-    } else {
-      navigateTo(path, true);
-    }
-  }, [navigateTo, splitPane.enabled, splitPane.activePane, repoId, ref, openFileInPane]);
+  const handleQuickPickerSelect = useCallback(
+    (path: string) => {
+      if (splitPane.enabled) {
+        // Open in active pane when split mode is enabled
+        const newFile: PaneFile = { repoId, path, ref: ref || undefined };
+        openFileInPane(splitPane.activePane, newFile);
+      } else {
+        navigateTo(path, true);
+      }
+    },
+    [
+      navigateTo,
+      splitPane.enabled,
+      splitPane.activePane,
+      repoId,
+      ref,
+      openFileInPane,
+    ]
+  );
 
   // Handle line number click - copy shareable link to clipboard and update URL
-  const handleLineClick = useCallback((line: number, fileRepoId?: number, filePath?: string) => {
-    const targetRepoId = fileRepoId ?? repoId;
-    const targetPath = filePath ?? currentPath;
-    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-    const url = `${baseUrl}${buildBrowseUrl(targetRepoId, targetPath)}#L${line}`;
+  const handleLineClick = useCallback(
+    (line: number, fileRepoId?: number, filePath?: string) => {
+      const targetRepoId = fileRepoId ?? repoId;
+      const targetPath = filePath ?? currentPath;
+      const baseUrl =
+        typeof window !== "undefined" ? window.location.origin : "";
+      const url = `${baseUrl}${buildBrowseUrl(targetRepoId, targetPath)}#L${line}`;
 
-    // Update the URL to match the clicked file and line
-    if (typeof window !== 'undefined') {
-      const newUrl = `${buildBrowseUrl(targetRepoId, targetPath)}#L${line}`;
-      window.history.replaceState(null, '', newUrl);
-    }
-
-    // Highlight the line in the correct pane ONLY
-    if (splitPane.enabled) {
-      // Determine which pane this file belongs to based on the file path
-      const isInPrimaryPane = primaryActiveFile &&
-        primaryActiveFile.repoId === targetRepoId &&
-        primaryActiveFile.path === targetPath;
-
-      const isInSecondaryPane = secondaryActiveFile &&
-        secondaryActiveFile.repoId === targetRepoId &&
-        secondaryActiveFile.path === targetPath;
-
-      if (isInPrimaryPane) {
-        scrollKeyRef.current += 1;
-        setPrimaryScrollToLine({ line, key: scrollKeyRef.current });
-        // Set primary as active pane
-        setSplitPane(prev => ({ ...prev, activePane: 'primary' }));
-      } else if (isInSecondaryPane) {
-        scrollKeyRef.current += 1;
-        setSecondaryScrollToLine({ line, key: scrollKeyRef.current });
-        // Set secondary as active pane
-        setSplitPane(prev => ({ ...prev, activePane: 'secondary' }));
+      // Update the URL to match the clicked file and line
+      if (typeof window !== "undefined") {
+        const newUrl = `${buildBrowseUrl(targetRepoId, targetPath)}#L${line}`;
+        window.history.replaceState(null, "", newUrl);
       }
-    } else {
-      setScrollToLine(line);
-    }
 
-    // Copy to clipboard
-    navigator.clipboard.writeText(url).then(() => {
-      // Successfully copied
-    }).catch((err) => {
-      console.error('Failed to copy link:', err);
-    });
-  }, [repoId, currentPath, splitPane.enabled, primaryActiveFile, secondaryActiveFile]);  // Global keyboard shortcuts
+      // Highlight the line in the correct pane ONLY
+      if (splitPane.enabled) {
+        // Determine which pane this file belongs to based on the file path
+        const isInPrimaryPane =
+          primaryActiveFile &&
+          primaryActiveFile.repoId === targetRepoId &&
+          primaryActiveFile.path === targetPath;
+
+        const isInSecondaryPane =
+          secondaryActiveFile &&
+          secondaryActiveFile.repoId === targetRepoId &&
+          secondaryActiveFile.path === targetPath;
+
+        if (isInPrimaryPane) {
+          scrollKeyRef.current += 1;
+          setPrimaryScrollToLine({ line, key: scrollKeyRef.current });
+          // Set primary as active pane
+          setSplitPane((prev) => ({ ...prev, activePane: "primary" }));
+        } else if (isInSecondaryPane) {
+          scrollKeyRef.current += 1;
+          setSecondaryScrollToLine({ line, key: scrollKeyRef.current });
+          // Set secondary as active pane
+          setSplitPane((prev) => ({ ...prev, activePane: "secondary" }));
+        }
+      } else {
+        setScrollToLine(line);
+      }
+
+      // Copy to clipboard
+      navigator.clipboard
+        .writeText(url)
+        .then(() => {
+          // Successfully copied
+        })
+        .catch((err) => {
+          console.error("Failed to copy link:", err);
+        });
+    },
+    [
+      repoId,
+      currentPath,
+      splitPane.enabled,
+      primaryActiveFile,
+      secondaryActiveFile,
+    ]
+  ); // Global keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Cmd/Ctrl + P - Quick file picker
@@ -1241,10 +1554,18 @@ export default function BrowseClient() {
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [showQuickPicker, showShortcutsHelp, referenceSearch, showFileTree, handleHistoryBack, handleHistoryForward]);
+  }, [
+    showQuickPicker,
+    showShortcutsHelp,
+    referenceSearch,
+    showFileTree,
+    handleHistoryBack,
+    handleHistoryForward,
+  ]);
 
   // Current ref display
-  const currentRef = ref || repo?.default_branch || refs?.default_branch || "HEAD";
+  const currentRef =
+    ref || repo?.default_branch || refs?.default_branch || "HEAD";
 
   // Get repo names from active context for reference filtering
   // Always include the current repo even if not in context
@@ -1261,9 +1582,9 @@ export default function BrowseClient() {
   // Show loading state while checking settings
   if (!settingsLoaded) {
     return (
-      <div className="h-full flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="flex h-full items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="flex items-center gap-3 text-gray-500 dark:text-gray-400">
-          <Loader2 className="w-5 h-5 animate-spin" />
+          <Loader2 className="h-5 w-5 animate-spin" />
           <span>Loading...</span>
         </div>
       </div>
@@ -1273,23 +1594,23 @@ export default function BrowseClient() {
   // Block access when browse API is disabled
   if (browseDisabled) {
     return (
-      <div className="h-full flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="text-center max-w-md mx-auto p-8">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-            <EyeOff className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+      <div className="flex h-full items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="mx-auto max-w-md p-8 text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
+            <EyeOff className="h-8 w-8 text-gray-400 dark:text-gray-500" />
           </div>
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+          <h2 className="mb-2 text-xl font-semibold text-gray-900 dark:text-white">
             File Browser Disabled
           </h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
-            The file browser has been disabled by your administrator.
-            You can still use code search to find files and content.
+          <p className="mb-6 text-gray-600 dark:text-gray-400">
+            The file browser has been disabled by your administrator. You can
+            still use code search to find files and content.
           </p>
           <Link
             href="/"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
           >
-            <Home className="w-4 h-4" />
+            <Home className="h-4 w-4" />
             Go to Search
           </Link>
         </div>
@@ -1298,23 +1619,24 @@ export default function BrowseClient() {
   }
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
+    <div className="flex h-full flex-col overflow-hidden">
       {/* Top Bar with Search */}
-      <div className="flex-shrink-0 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-1.5">
+      <div className="flex-shrink-0 border-b border-gray-200 bg-white px-3 py-1.5 dark:border-gray-700 dark:bg-gray-800">
         <div className="flex items-center gap-3">
           {/* File tree toggle */}
           <button
             onClick={() => updateUI({ showFileTree: !showFileTree })}
-            className={`p-1.5 rounded-lg transition-colors ${showFileTree
-              ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-              : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-              }`}
+            className={`rounded-lg p-1.5 transition-colors ${
+              showFileTree
+                ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
+                : "text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+            }`}
             title={showFileTree ? "Hide file tree" : "Show file tree"}
           >
             {showFileTree ? (
-              <PanelLeftClose className="w-4 h-4" />
+              <PanelLeftClose className="h-4 w-4" />
             ) : (
-              <PanelLeftOpen className="w-4 h-4" />
+              <PanelLeftOpen className="h-4 w-4" />
             )}
           </button>
 
@@ -1322,67 +1644,73 @@ export default function BrowseClient() {
           <SearchDropdown
             repoId={repoId}
             repoName={repo?.name}
-            className="flex-1 max-w-xl"
+            className="max-w-xl flex-1"
           />
 
           {/* Back/Forward navigation */}
-          <div className="flex items-center gap-1 border-l border-gray-200 dark:border-gray-700 pl-3">
+          <div className="flex items-center gap-1 border-l border-gray-200 pl-3 dark:border-gray-700">
             <button
               onClick={handleHistoryBack}
               disabled={!navHistory.canGoBack}
-              className={`p-1.5 rounded transition-colors ${navHistory.canGoBack
-                ? "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                : "text-gray-300 dark:text-gray-600 cursor-not-allowed"
-                }`}
+              className={`rounded p-1.5 transition-colors ${
+                navHistory.canGoBack
+                  ? "text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+                  : "cursor-not-allowed text-gray-300 dark:text-gray-600"
+              }`}
               title="Go back (⌘[)"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="h-4 w-4" />
             </button>
             <button
               onClick={handleHistoryForward}
               disabled={!navHistory.canGoForward}
-              className={`p-1.5 rounded transition-colors ${navHistory.canGoForward
-                ? "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                : "text-gray-300 dark:text-gray-600 cursor-not-allowed"
-                }`}
+              className={`rounded p-1.5 transition-colors ${
+                navHistory.canGoForward
+                  ? "text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+                  : "cursor-not-allowed text-gray-300 dark:text-gray-600"
+              }`}
               title="Go forward (⌘])"
             >
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="h-4 w-4" />
             </button>
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-1 border-l border-gray-200 dark:border-gray-700 pl-3">
+          <div className="flex items-center gap-1 border-l border-gray-200 pl-3 dark:border-gray-700">
             <button
               onClick={() => updateUI({ showQuickPicker: true })}
-              className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+              className="rounded p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
               title="Quick open file (⌘P)"
             >
-              <Search className="w-4 h-4" />
+              <Search className="h-4 w-4" />
             </button>
             <button
-              onClick={() => updateUI({ showShortcutsHelp: !showShortcutsHelp })}
-              className={`p-1.5 rounded transition-colors ${showShortcutsHelp
-                ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-                : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                }`}
+              onClick={() =>
+                updateUI({ showShortcutsHelp: !showShortcutsHelp })
+              }
+              className={`rounded p-1.5 transition-colors ${
+                showShortcutsHelp
+                  ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
+                  : "text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+              }`}
               title="Keyboard shortcuts"
             >
-              <Keyboard className="w-4 h-4" />
+              <Keyboard className="h-4 w-4" />
             </button>
             {isFile && (
               <button
                 onClick={() => updateUI({ showSymbols: !showSymbols })}
-                className={`p-1.5 rounded transition-colors ${showSymbols
-                  ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-                  : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  }`}
+                className={`rounded p-1.5 transition-colors ${
+                  showSymbols
+                    ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
+                    : "text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+                }`}
                 title={showSymbols ? "Hide symbols" : "Show symbols"}
               >
                 {showSymbols ? (
-                  <PanelRightClose className="w-4 h-4" />
+                  <PanelRightClose className="h-4 w-4" />
                 ) : (
-                  <ListTree className="w-4 h-4" />
+                  <ListTree className="h-4 w-4" />
                 )}
               </button>
             )}
@@ -1391,20 +1719,20 @@ export default function BrowseClient() {
       </div>
 
       {/* Secondary toolbar with repo info and breadcrumbs */}
-      <div className="flex-shrink-0 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80 px-3 py-1">
+      <div className="flex-shrink-0 border-b border-gray-200 bg-gray-50 px-3 py-1 dark:border-gray-700 dark:bg-gray-800/80">
         <div className="flex flex-wrap items-center gap-3">
           {/* Back to repos */}
           <Link
             href="/repos"
-            className="flex items-center gap-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+            className="flex items-center gap-1 text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
           >
-            <ArrowLeft className="w-4 h-4" />
-            <span className="text-sm hidden sm:inline">Repos</span>
+            <ArrowLeft className="h-4 w-4" />
+            <span className="hidden text-sm sm:inline">Repos</span>
           </Link>
           <span className="text-gray-300 dark:text-gray-600">/</span>
 
           {/* Repo name - shows active pane's repo in split mode */}
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate max-w-[150px]">
+          <span className="max-w-[150px] truncate text-sm font-medium text-gray-700 dark:text-gray-300">
             {displayRepo?.name || repo?.name || "Loading..."}
           </span>
 
@@ -1413,7 +1741,7 @@ export default function BrowseClient() {
             <select
               value={currentDisplayRef}
               onChange={(e) => handleRefChange(e.target.value)}
-              className="appearance-none pl-6 pr-4 py-0.5 text-xs border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800 focus:outline-none focus:border-blue-500 cursor-pointer"
+              className="cursor-pointer appearance-none rounded border border-gray-200 bg-white py-0.5 pl-6 pr-4 text-xs focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800"
             >
               {(displayRefs || refs)?.branches?.length ? (
                 <optgroup label="Branches">
@@ -1433,26 +1761,34 @@ export default function BrowseClient() {
                   ))}
                 </optgroup>
               ) : null}
-              {!(displayRefs || refs)?.branches?.length && !(displayRefs || refs)?.tags?.length && (
-                <option value={currentDisplayRef}>{currentDisplayRef}</option>
-              )}
+              {!(displayRefs || refs)?.branches?.length &&
+                !(displayRefs || refs)?.tags?.length && (
+                  <option value={currentDisplayRef}>{currentDisplayRef}</option>
+                )}
             </select>
             {(displayRefs || refs)?.tags?.includes(currentDisplayRef) ? (
-              <Tag className="absolute left-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
+              <Tag className="pointer-events-none absolute left-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-gray-400" />
             ) : (
-              <GitBranch className="absolute left-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
+              <GitBranch className="pointer-events-none absolute left-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-gray-400" />
             )}
           </div>
 
           {/* Breadcrumbs */}
-          <nav className="flex items-center gap-1 text-sm overflow-x-auto flex-1">
+          <nav className="flex flex-1 items-center gap-1 overflow-x-auto text-sm">
             <button
               onClick={() => !splitPane.enabled && navigateTo("")}
-              className={`flex items-center gap-1 px-1.5 py-0.5 rounded transition-colors ${splitPane.enabled ? "cursor-default" : "hover:bg-gray-200 dark:hover:bg-gray-700"
-                }`}
+              className={`flex items-center gap-1 rounded px-1.5 py-0.5 transition-colors ${
+                splitPane.enabled
+                  ? "cursor-default"
+                  : "hover:bg-gray-200 dark:hover:bg-gray-700"
+              }`}
             >
-              <Home className="w-3.5 h-3.5 text-gray-400" />
-              <span className="text-xs font-medium">{displayRepo?.name?.split("/").pop() || repo?.name?.split("/").pop() || "root"}</span>
+              <Home className="h-3.5 w-3.5 text-gray-400" />
+              <span className="text-xs font-medium">
+                {displayRepo?.name?.split("/").pop() ||
+                  repo?.name?.split("/").pop() ||
+                  "root"}
+              </span>
             </button>
 
             {pathParts.map((part, index) => {
@@ -1461,11 +1797,14 @@ export default function BrowseClient() {
 
               return (
                 <span key={pathUpTo} className="flex items-center">
-                  <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
+                  <ChevronRight className="h-3.5 w-3.5 text-gray-400" />
                   <button
                     onClick={() => !splitPane.enabled && navigateTo(pathUpTo)}
-                    className={`px-1.5 py-0.5 rounded transition-colors text-xs ${isLast ? "font-medium text-blue-600 dark:text-blue-400" : ""} ${splitPane.enabled ? "cursor-default" : "hover:bg-gray-200 dark:hover:bg-gray-700"
-                      }`}
+                    className={`rounded px-1.5 py-0.5 text-xs transition-colors ${isLast ? "font-medium text-blue-600 dark:text-blue-400" : ""} ${
+                      splitPane.enabled
+                        ? "cursor-default"
+                        : "hover:bg-gray-200 dark:hover:bg-gray-700"
+                    }`}
                   >
                     {part}
                   </button>
@@ -1476,13 +1815,17 @@ export default function BrowseClient() {
 
           {/* File actions */}
           {isFile && currentPath && (
-            <div className="flex items-center gap-1 ml-auto">
+            <div className="ml-auto flex items-center gap-1">
               <button
                 onClick={copyPath}
-                className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                className="p-1 text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                 title="Copy path"
               >
-                {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                {copied ? (
+                  <Check className="h-4 w-4 text-green-500" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
               </button>
               {repo && (
                 <a
@@ -1500,10 +1843,10 @@ export default function BrowseClient() {
                   })()}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                  className="p-1 text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                   title="View on code host"
                 >
-                  <ExternalLink className="w-4 h-4" />
+                  <ExternalLink className="h-4 w-4" />
                 </a>
               )}
             </div>
@@ -1512,37 +1855,40 @@ export default function BrowseClient() {
       </div>
 
       {/* Main content area with sidebars */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex flex-1 overflow-hidden">
         {/* File Tree Sidebar (Left) */}
         {showFileTree && (
           <>
             {/* Overlay for mobile */}
             {isMobile && (
               <button
-                className="fixed inset-0 bg-black/50 z-40 w-full h-full border-0 cursor-default"
+                className="fixed inset-0 z-40 h-full w-full cursor-default border-0 bg-black/50"
                 onClick={() => updateUI({ showFileTree: false })}
                 aria-label="Close file tree"
               />
             )}
             <div
               ref={fileTreeRef}
-              className={`${isMobile
-                ? "fixed left-0 top-0 bottom-0 z-50 w-72"
-                : "flex-shrink-0 relative"
-                } bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col`}
+              className={`${
+                isMobile
+                  ? "fixed bottom-0 left-0 top-0 z-50 w-72"
+                  : "relative flex-shrink-0"
+              } flex flex-col border-r border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800`}
               style={!isMobile ? { width: fileTreeWidth } : undefined}
             >
-              <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80">
+              <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-800/80">
                 <div className="flex items-center gap-2">
-                  <FolderTree className="w-4 h-4 text-gray-400" />
-                  <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Files</span>
+                  <FolderTree className="h-4 w-4 text-gray-400" />
+                  <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                    Files
+                  </span>
                 </div>
                 {isMobile && (
                   <button
                     onClick={() => updateUI({ showFileTree: false })}
                     className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="h-4 w-4" />
                   </button>
                 )}
               </div>
@@ -1560,9 +1906,9 @@ export default function BrowseClient() {
               {!isMobile && (
                 <div
                   onMouseDown={startResizing}
-                  className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500/50 transition-colors group"
+                  className="group absolute bottom-0 right-0 top-0 w-1 cursor-col-resize transition-colors hover:bg-blue-500/50"
                 >
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gray-300 dark:bg-gray-600 rounded opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="absolute right-0 top-1/2 h-8 w-1 -translate-y-1/2 rounded bg-gray-300 opacity-0 transition-opacity group-hover:opacity-100 dark:bg-gray-600" />
                 </div>
               )}
             </div>
@@ -1570,30 +1916,32 @@ export default function BrowseClient() {
         )}
 
         {/* Main Content Area */}
-        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
           {/* Error state */}
           {error && (
-            <div className="m-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-400 flex items-center gap-3">
-              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <div className="m-4 flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
+              <AlertCircle className="h-5 w-5 flex-shrink-0" />
               {error}
             </div>
           )}
 
           {/* Loading state */}
           {loading && (
-            <div className="flex-1 flex items-center justify-center">
+            <div className="flex flex-1 items-center justify-center">
               <div className="text-center">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto" />
-                <p className="mt-3 text-gray-500 dark:text-gray-400">Loading...</p>
+                <Loader2 className="mx-auto h-8 w-8 animate-spin text-blue-600" />
+                <p className="mt-3 text-gray-500 dark:text-gray-400">
+                  Loading...
+                </p>
               </div>
             </div>
           )}
 
           {/* File/Directory content */}
           {!loading && !error && (
-            <div className="flex-1 flex overflow-hidden">
+            <div className="flex flex-1 overflow-hidden">
               {/* Code viewer or directory listing */}
-              <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-gray-800">
+              <div className="flex flex-1 flex-col overflow-hidden bg-white dark:bg-gray-800">
                 {/* Tab bar - only show when viewing files and NOT in split mode (split mode has its own tabs per pane) */}
                 {isFile && tabs.length > 0 && !splitPane.enabled && (
                   <BrowseTabBar
@@ -1601,16 +1949,31 @@ export default function BrowseClient() {
                     activeTabId={activeTabId}
                     onTabSelect={(tab) => {
                       // Navigate to the tab's file
-                      router.push(buildBrowseUrl(tab.repoId, tab.filePath, { ref: tab.ref }));
+                      router.push(
+                        buildBrowseUrl(tab.repoId, tab.filePath, {
+                          ref: tab.ref,
+                        })
+                      );
                     }}
                     onTabClose={(tabId) => {
                       closeTab(tabId);
                       // If closing the active tab, navigate to the new active tab or directory
-                      const remainingTabs = tabs.filter(t => t.id !== tabId);
+                      const remainingTabs = tabs.filter((t) => t.id !== tabId);
                       if (tabId === activeTabId && remainingTabs.length > 0) {
-                        const closedTabIndex = tabs.findIndex(t => t.id === tabId);
-                        const newActiveTab = remainingTabs[Math.min(closedTabIndex, remainingTabs.length - 1)];
-                        router.push(buildBrowseUrl(newActiveTab.repoId, newActiveTab.filePath, { ref: newActiveTab.ref }));
+                        const closedTabIndex = tabs.findIndex(
+                          (t) => t.id === tabId
+                        );
+                        const newActiveTab =
+                          remainingTabs[
+                            Math.min(closedTabIndex, remainingTabs.length - 1)
+                          ];
+                        router.push(
+                          buildBrowseUrl(
+                            newActiveTab.repoId,
+                            newActiveTab.filePath,
+                            { ref: newActiveTab.ref }
+                          )
+                        );
                       } else if (remainingTabs.length === 0) {
                         // No more tabs, go to repo root
                         router.push(buildBrowseUrl(repoId, ""));
@@ -1626,133 +1989,228 @@ export default function BrowseClient() {
                   // File view - with optional split
                   <div
                     ref={splitContainerRef}
-                    className={`flex-1 flex ${splitPane.enabled ? (splitPane.direction === "vertical" ? "flex-row" : "flex-col") : "flex-col"} overflow-hidden`}
+                    className={`flex flex-1 ${splitPane.enabled ? (splitPane.direction === "vertical" ? "flex-row" : "flex-col") : "flex-col"} overflow-hidden`}
                   >
                     {/* Primary file pane */}
                     {(() => {
                       // Determine which blob/file to show in primary pane
-                      const pFile = splitPane.enabled && primaryActiveFile ? primaryActiveFile : { repoId, path: currentPath, ref: ref || undefined };
-                      const pBlob = splitPane.enabled && primaryActiveFile ? primaryBlob : blob;
-                      const pLoading = splitPane.enabled && primaryActiveFile ? primaryBlobLoading : false;
+                      const pFile =
+                        splitPane.enabled && primaryActiveFile
+                          ? primaryActiveFile
+                          : {
+                              repoId,
+                              path: currentPath,
+                              ref: ref || undefined,
+                            };
+                      const pBlob =
+                        splitPane.enabled && primaryActiveFile
+                          ? primaryBlob
+                          : blob;
+                      const pLoading =
+                        splitPane.enabled && primaryActiveFile
+                          ? primaryBlobLoading
+                          : false;
 
                       return (
                         <div
                           role={splitPane.enabled ? "button" : undefined}
                           tabIndex={splitPane.enabled ? 0 : undefined}
-                          onClick={() => splitPane.enabled && handleSetActivePane("primary")}
-                          onKeyDown={(e) => { if (splitPane.enabled && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); handleSetActivePane("primary"); } }}
-                          className={`flex flex-col min-w-0 min-h-0 overflow-hidden ${splitPane.enabled && splitPane.activePane === "primary"
-                            ? "border-2 border-blue-400/40"
-                            : splitPane.enabled ? "border-2 border-transparent" : ""
-                            }`}
-                          style={splitPane.enabled ? {
-                            [splitPane.direction === "vertical" ? "width" : "height"]: `${splitPane.ratio * 100}%`
-                          } : { flex: 1 }}
+                          onClick={() =>
+                            splitPane.enabled && handleSetActivePane("primary")
+                          }
+                          onKeyDown={(e) => {
+                            if (
+                              splitPane.enabled &&
+                              (e.key === "Enter" || e.key === " ")
+                            ) {
+                              e.preventDefault();
+                              handleSetActivePane("primary");
+                            }
+                          }}
+                          className={`flex min-h-0 min-w-0 flex-col overflow-hidden ${
+                            splitPane.enabled &&
+                            splitPane.activePane === "primary"
+                              ? "border-2 border-blue-400/40"
+                              : splitPane.enabled
+                                ? "border-2 border-transparent"
+                                : ""
+                          }`}
+                          style={
+                            splitPane.enabled
+                              ? {
+                                  [splitPane.direction === "vertical"
+                                    ? "width"
+                                    : "height"]: `${splitPane.ratio * 100}%`,
+                                }
+                              : { flex: 1 }
+                          }
                         >
                           {/* Pane tabs - VS Code style */}
-                          {splitPane.enabled && splitPane.primaryTabs.length > 0 && (
-                            <div className={`flex items-center border-b border-gray-200 dark:border-gray-700 ${splitPane.activePane === "primary"
-                              ? "bg-blue-50/30 dark:bg-blue-900/5"
-                              : "bg-gray-50 dark:bg-gray-800/80"
-                              }`}>
-                              <div className="flex-1 flex items-center overflow-x-auto scrollbar-thin">
-                                {splitPane.primaryTabs.map((tab) => (
-                                  <div
-                                    key={tab.id}
-                                    role="tab"
-                                    tabIndex={0}
-                                    aria-selected={tab.id === splitPane.primaryActiveTabId}
-                                    onClick={(e) => { e.stopPropagation(); selectTabInPane("primary", tab.id); }}
-                                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); selectTabInPane("primary", tab.id); } }}
-                                    onAuxClick={(e) => { if (e.button === 1) { e.preventDefault(); closeTabInPane("primary", tab.id); } }}
-                                    className={`group flex items-center gap-1.5 px-3 py-1.5 text-xs border-r border-gray-200 dark:border-gray-700 cursor-pointer ${tab.id === splitPane.primaryActiveTabId
-                                      ? "bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200"
-                                      : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/50"
-                                      }`}
-                                  >
-                                    {getFileIcon(undefined, tab.file.path.split("/").pop())}
-                                    <span className="truncate max-w-[120px]">{tab.file.path.split("/").pop()}</span>
-                                    <button
-                                      onClick={(e) => { e.stopPropagation(); closeTabInPane("primary", tab.id); }}
-                                      className="p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-gray-200 dark:hover:bg-gray-600 transition-opacity"
-                                    >
-                                      <X className="w-3 h-3" />
-                                    </button>
-                                  </div>
-                                ))}
-                              </div>
-                              <button
-                                onClick={(e) => { e.stopPropagation(); handleCloseSplit("primary"); }}
-                                className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors flex-shrink-0"
-                                title="Close this pane"
+                          {splitPane.enabled &&
+                            splitPane.primaryTabs.length > 0 && (
+                              <div
+                                className={`flex items-center border-b border-gray-200 dark:border-gray-700 ${
+                                  splitPane.activePane === "primary"
+                                    ? "bg-blue-50/30 dark:bg-blue-900/5"
+                                    : "bg-gray-50 dark:bg-gray-800/80"
+                                }`}
                               >
-                                <X className="w-4 h-4" />
-                              </button>
-                            </div>
-                          )}
+                                <div className="scrollbar-thin flex flex-1 items-center overflow-x-auto">
+                                  {splitPane.primaryTabs.map((tab) => (
+                                    <div
+                                      key={tab.id}
+                                      role="tab"
+                                      tabIndex={0}
+                                      aria-selected={
+                                        tab.id === splitPane.primaryActiveTabId
+                                      }
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        selectTabInPane("primary", tab.id);
+                                      }}
+                                      onKeyDown={(e) => {
+                                        if (
+                                          e.key === "Enter" ||
+                                          e.key === " "
+                                        ) {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          selectTabInPane("primary", tab.id);
+                                        }
+                                      }}
+                                      onAuxClick={(e) => {
+                                        if (e.button === 1) {
+                                          e.preventDefault();
+                                          closeTabInPane("primary", tab.id);
+                                        }
+                                      }}
+                                      className={`group flex cursor-pointer items-center gap-1.5 border-r border-gray-200 px-3 py-1.5 text-xs dark:border-gray-700 ${
+                                        tab.id === splitPane.primaryActiveTabId
+                                          ? "bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-200"
+                                          : "text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700/50"
+                                      }`}
+                                    >
+                                      {getFileIcon(
+                                        undefined,
+                                        tab.file.path.split("/").pop()
+                                      )}
+                                      <span className="max-w-[120px] truncate">
+                                        {tab.file.path.split("/").pop()}
+                                      </span>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          closeTabInPane("primary", tab.id);
+                                        }}
+                                        className="rounded p-0.5 opacity-0 transition-opacity hover:bg-gray-200 group-hover:opacity-100 dark:hover:bg-gray-600"
+                                      >
+                                        <X className="h-3 w-3" />
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleCloseSplit("primary");
+                                  }}
+                                  className="flex-shrink-0 p-1.5 text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-300"
+                                  title="Close this pane"
+                                >
+                                  <X className="h-4 w-4" />
+                                </button>
+                              </div>
+                            )}
 
                           {/* Code content */}
-                          <div className="flex-1 overflow-auto min-h-0">
+                          <div className="min-h-0 flex-1 overflow-auto">
                             {pLoading ? (
-                              <div className="flex-1 flex items-center justify-center h-full">
-                                <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                              <div className="flex h-full flex-1 items-center justify-center">
+                                <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
                               </div>
                             ) : pBlob?.binary ? (
-                              <div className="flex-1 flex flex-col items-center p-8 overflow-auto">
-                                                                  {isImageFile(pFile.path) ? (
-                                                                    <div className="flex flex-col items-center gap-4 w-full h-full min-h-[400px]">
-                                                                      <FileImage className="w-16 h-16 text-gray-400 flex-shrink-0" />
-                                                                      <div className="relative w-full flex-1">
-                                                                        <Image
-                                                                          src={getRawFileUrl(pFile.repoId, pFile.path, pFile.ref)}
-                                                                          alt={pFile.path.split("/").pop() || "Image"}
-                                                                          fill
-                                                                          sizes="100vw"
-                                                                          className="object-contain"
-                                                                          unoptimized={true}
-                                                                        />
-                                                                      </div>
-                                                                    </div>
-                                                                  ) : isPdfFile(pFile.path) ? (
-                                
+                              <div className="flex flex-1 flex-col items-center overflow-auto p-8">
+                                {isImageFile(pFile.path) ? (
+                                  <div className="flex h-full min-h-[400px] w-full flex-col items-center gap-4">
+                                    <FileImage className="h-16 w-16 flex-shrink-0 text-gray-400" />
+                                    <div className="relative w-full flex-1">
+                                      <Image
+                                        src={getRawFileUrl(
+                                          pFile.repoId,
+                                          pFile.path,
+                                          pFile.ref
+                                        )}
+                                        alt={
+                                          pFile.path.split("/").pop() || "Image"
+                                        }
+                                        fill
+                                        sizes="100vw"
+                                        className="object-contain"
+                                        unoptimized={true}
+                                      />
+                                    </div>
+                                  </div>
+                                ) : isPdfFile(pFile.path) ? (
                                   <div className="flex flex-col items-center gap-4">
-                                    <FileText className="w-16 h-16 text-gray-400" />
+                                    <FileText className="h-16 w-16 text-gray-400" />
                                     <iframe
-                                      src={getRawFileUrl(pFile.repoId, pFile.path, pFile.ref)}
-                                      className="w-full h-full border-0"
-                                      title={pFile.path.split("/").pop() || "PDF"}
+                                      src={getRawFileUrl(
+                                        pFile.repoId,
+                                        pFile.path,
+                                        pFile.ref
+                                      )}
+                                      className="h-full w-full border-0"
+                                      title={
+                                        pFile.path.split("/").pop() || "PDF"
+                                      }
                                     />
                                   </div>
                                 ) : isVideoFile(pFile.path) ? (
                                   <div className="flex flex-col items-center gap-4">
-                                    <FileVideo className="w-16 h-16 text-gray-400" />
+                                    <FileVideo className="h-16 w-16 text-gray-400" />
                                     <video
-                                      src={getRawFileUrl(pFile.repoId, pFile.path, pFile.ref)}
+                                      src={getRawFileUrl(
+                                        pFile.repoId,
+                                        pFile.path,
+                                        pFile.ref
+                                      )}
                                       controls
-                                      className="max-w-full max-h-full"
+                                      className="max-h-full max-w-full"
                                     >
-                                      Your browser does not support the video tag.
+                                      Your browser does not support the video
+                                      tag.
                                     </video>
                                   </div>
                                 ) : isAudioFile(pFile.path) ? (
                                   <div className="flex flex-col items-center gap-4">
-                                    <FileAudio className="w-16 h-16 text-gray-400" />
+                                    <FileAudio className="h-16 w-16 text-gray-400" />
                                     <audio
-                                      src={getRawFileUrl(pFile.repoId, pFile.path, pFile.ref)}
+                                      src={getRawFileUrl(
+                                        pFile.repoId,
+                                        pFile.path,
+                                        pFile.ref
+                                      )}
                                       controls
                                       className="w-full max-w-md"
                                     >
-                                      Your browser does not support the audio tag.
+                                      Your browser does not support the audio
+                                      tag.
                                     </audio>
                                   </div>
                                 ) : (
                                   <div className="text-center text-gray-500 dark:text-gray-400">
-                                    <FileText className="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
-                                    <p className="mb-4">Binary file cannot be displayed</p>
+                                    <FileText className="mx-auto mb-4 h-16 w-16 text-gray-300 dark:text-gray-600" />
+                                    <p className="mb-4">
+                                      Binary file cannot be displayed
+                                    </p>
                                     <a
-                                      href={getRawFileUrl(pFile.repoId, pFile.path, pFile.ref)}
+                                      href={getRawFileUrl(
+                                        pFile.repoId,
+                                        pFile.path,
+                                        pFile.ref
+                                      )}
                                       download
-                                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+                                      className="inline-flex items-center gap-2 rounded-md bg-blue-500 px-4 py-2 text-white transition-colors hover:bg-blue-600"
                                     >
                                       Download file
                                     </a>
@@ -1761,7 +2219,11 @@ export default function BrowseClient() {
                               </div>
                             ) : pBlob ? (
                               <CodeViewer
-                                key={splitPane.enabled ? `primary-${primaryScrollToLine?.key}` : undefined}
+                                key={
+                                  splitPane.enabled
+                                    ? `primary-${primaryScrollToLine?.key}`
+                                    : undefined
+                                }
                                 content={pBlob.content}
                                 languageMode={pBlob.language_mode}
                                 language={pBlob.language}
@@ -1769,17 +2231,53 @@ export default function BrowseClient() {
                                 filePath={pFile.path}
                                 highlightLines={
                                   splitPane.enabled
-                                    ? (primaryScrollToLine ? [primaryScrollToLine.line] : [])
-                                    : (scrollToLine ? [scrollToLine] : (highlightLine ? [highlightLine] : []))
+                                    ? primaryScrollToLine
+                                      ? [primaryScrollToLine.line]
+                                      : []
+                                    : scrollToLine
+                                      ? [scrollToLine]
+                                      : highlightLine
+                                        ? [highlightLine]
+                                        : []
                                 }
-                                scrollToLine={splitPane.enabled ? primaryScrollToLine?.line : scrollToLine}
-                                onWordClick={(word, line, col) => handleFindReferences(word, line, col, pFile.repoId, pFile.path, pBlob.language)}
-                                onGoToDefinition={(word, line, col) => handleGoToDefinition(word, line, col, pFile.repoId, pFile.path, pBlob.language)}
-                                onLineClick={(line) => handleLineClick(line, pFile.repoId, pFile.path)}
+                                scrollToLine={
+                                  splitPane.enabled
+                                    ? primaryScrollToLine?.line
+                                    : scrollToLine
+                                }
+                                onWordClick={(word, line, col) =>
+                                  handleFindReferences(
+                                    word,
+                                    line,
+                                    col,
+                                    pFile.repoId,
+                                    pFile.path,
+                                    pBlob.language
+                                  )
+                                }
+                                onGoToDefinition={(word, line, col) =>
+                                  handleGoToDefinition(
+                                    word,
+                                    line,
+                                    col,
+                                    pFile.repoId,
+                                    pFile.path,
+                                    pBlob.language
+                                  )
+                                }
+                                onLineClick={(line) =>
+                                  handleLineClick(
+                                    line,
+                                    pFile.repoId,
+                                    pFile.path
+                                  )
+                                }
                               />
                             ) : (
                               <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-                                {splitPane.enabled ? "Select a file to view" : "Failed to load file"}
+                                {splitPane.enabled
+                                  ? "Select a file to view"
+                                  : "Failed to load file"}
                               </div>
                             )}
                           </div>
@@ -1791,14 +2289,14 @@ export default function BrowseClient() {
                     {splitPane.enabled && (
                       <div
                         role="separator"
-                        aria-orientation={splitPane.direction === "vertical" ? "vertical" : "horizontal"}
+                        aria-orientation={
+                          splitPane.direction === "vertical"
+                            ? "vertical"
+                            : "horizontal"
+                        }
                         tabIndex={0}
                         onMouseDown={startSplitResizing}
-                        className={`
-                          ${splitPane.direction === "vertical" ? "w-1 cursor-col-resize" : "h-1 cursor-row-resize"}
-                          bg-gray-200 dark:bg-gray-700 hover:bg-blue-400 dark:hover:bg-blue-500
-                          transition-colors flex-shrink-0
-                        `}
+                        className={` ${splitPane.direction === "vertical" ? "w-1 cursor-col-resize" : "h-1 cursor-row-resize"} flex-shrink-0 bg-gray-200 transition-colors hover:bg-blue-400 dark:bg-gray-700 dark:hover:bg-blue-500`}
                       />
                     )}
 
@@ -1808,103 +2306,169 @@ export default function BrowseClient() {
                         role="button"
                         tabIndex={0}
                         onClick={() => handleSetActivePane("secondary")}
-                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleSetActivePane("secondary"); } }}
-                        className={`flex flex-col min-w-0 min-h-0 overflow-hidden ${splitPane.activePane === "secondary"
-                          ? "border-2 border-blue-400/40"
-                          : "border-2 border-transparent"
-                          }`}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            handleSetActivePane("secondary");
+                          }
+                        }}
+                        className={`flex min-h-0 min-w-0 flex-col overflow-hidden ${
+                          splitPane.activePane === "secondary"
+                            ? "border-2 border-blue-400/40"
+                            : "border-2 border-transparent"
+                        }`}
                         style={{
-                          [splitPane.direction === "vertical" ? "width" : "height"]: `${(1 - splitPane.ratio) * 100}%`
+                          [splitPane.direction === "vertical"
+                            ? "width"
+                            : "height"]: `${(1 - splitPane.ratio) * 100}%`,
                         }}
                       >
                         {/* Secondary pane tabs - VS Code style */}
-                        <div className={`flex items-center border-b border-gray-200 dark:border-gray-700 ${splitPane.activePane === "secondary"
-                          ? "bg-blue-50/30 dark:bg-blue-900/5"
-                          : "bg-gray-50 dark:bg-gray-800/80"
-                          }`}>
-                          <div className="flex-1 flex items-center overflow-x-auto scrollbar-thin">
+                        <div
+                          className={`flex items-center border-b border-gray-200 dark:border-gray-700 ${
+                            splitPane.activePane === "secondary"
+                              ? "bg-blue-50/30 dark:bg-blue-900/5"
+                              : "bg-gray-50 dark:bg-gray-800/80"
+                          }`}
+                        >
+                          <div className="scrollbar-thin flex flex-1 items-center overflow-x-auto">
                             {splitPane.secondaryTabs.map((tab) => (
                               <div
                                 key={tab.id}
                                 role="tab"
                                 tabIndex={0}
-                                aria-selected={tab.id === splitPane.secondaryActiveTabId}
-                                onClick={(e) => { e.stopPropagation(); selectTabInPane("secondary", tab.id); }}
-                                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); selectTabInPane("secondary", tab.id); } }}
-                                onAuxClick={(e) => { if (e.button === 1) { e.preventDefault(); closeTabInPane("secondary", tab.id); } }}
-                                className={`group flex items-center gap-1.5 px-3 py-1.5 text-xs border-r border-gray-200 dark:border-gray-700 cursor-pointer ${tab.id === splitPane.secondaryActiveTabId
-                                  ? "bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200"
-                                  : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/50"
-                                  }`}
+                                aria-selected={
+                                  tab.id === splitPane.secondaryActiveTabId
+                                }
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  selectTabInPane("secondary", tab.id);
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    selectTabInPane("secondary", tab.id);
+                                  }
+                                }}
+                                onAuxClick={(e) => {
+                                  if (e.button === 1) {
+                                    e.preventDefault();
+                                    closeTabInPane("secondary", tab.id);
+                                  }
+                                }}
+                                className={`group flex cursor-pointer items-center gap-1.5 border-r border-gray-200 px-3 py-1.5 text-xs dark:border-gray-700 ${
+                                  tab.id === splitPane.secondaryActiveTabId
+                                    ? "bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-200"
+                                    : "text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700/50"
+                                }`}
                               >
-                                {getFileIcon(undefined, tab.file.path.split("/").pop())}
-                                <span className="truncate max-w-[120px]">{tab.file.path.split("/").pop()}</span>
+                                {getFileIcon(
+                                  undefined,
+                                  tab.file.path.split("/").pop()
+                                )}
+                                <span className="max-w-[120px] truncate">
+                                  {tab.file.path.split("/").pop()}
+                                </span>
                                 <button
-                                  onClick={(e) => { e.stopPropagation(); closeTabInPane("secondary", tab.id); }}
-                                  className="p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-gray-200 dark:hover:bg-gray-600 transition-opacity"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    closeTabInPane("secondary", tab.id);
+                                  }}
+                                  className="rounded p-0.5 opacity-0 transition-opacity hover:bg-gray-200 group-hover:opacity-100 dark:hover:bg-gray-600"
                                 >
-                                  <X className="w-3 h-3" />
+                                  <X className="h-3 w-3" />
                                 </button>
                               </div>
                             ))}
                           </div>
                           <button
-                            onClick={(e) => { e.stopPropagation(); handleCloseSplit("secondary"); }}
-                            className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors flex-shrink-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCloseSplit("secondary");
+                            }}
+                            className="flex-shrink-0 p-1.5 text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-300"
                             title="Close this pane"
                           >
-                            <X className="w-4 h-4" />
+                            <X className="h-4 w-4" />
                           </button>
                         </div>
 
                         {/* Secondary code content */}
-                        <div className="flex-1 overflow-auto min-h-0">
+                        <div className="min-h-0 flex-1 overflow-auto">
                           {secondaryBlobLoading ? (
-                            <div className="flex-1 flex items-center justify-center h-full">
-                              <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                            <div className="flex h-full flex-1 items-center justify-center">
+                              <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
                             </div>
                           ) : secondaryBlob?.binary ? (
-                            <div className="flex-1 flex flex-col items-center p-8 overflow-auto">
-                                                              {secondaryActiveFile && isImageFile(secondaryActiveFile.path) ? (
-                                                                <div className="flex flex-col items-center gap-4 w-full h-full min-h-[400px]">
-                                                                  <FileImage className="w-16 h-16 text-gray-400 flex-shrink-0" />
-                                                                  <div className="relative w-full flex-1">
-                                                                    <Image
-                                                                      src={getRawFileUrl(secondaryActiveFile.repoId, secondaryActiveFile.path, secondaryActiveFile.ref)}
-                                                                      alt={secondaryActiveFile.path.split("/").pop() || "Image"}
-                                                                      fill
-                                                                      sizes="100vw"
-                                                                      className="object-contain"
-                                                                      unoptimized={true}
-                                                                    />
-                                                                  </div>
-                                                                </div>
-                                                              ) : secondaryActiveFile && isPdfFile(secondaryActiveFile.path) ? (
-                              
+                            <div className="flex flex-1 flex-col items-center overflow-auto p-8">
+                              {secondaryActiveFile &&
+                              isImageFile(secondaryActiveFile.path) ? (
+                                <div className="flex h-full min-h-[400px] w-full flex-col items-center gap-4">
+                                  <FileImage className="h-16 w-16 flex-shrink-0 text-gray-400" />
+                                  <div className="relative w-full flex-1">
+                                    <Image
+                                      src={getRawFileUrl(
+                                        secondaryActiveFile.repoId,
+                                        secondaryActiveFile.path,
+                                        secondaryActiveFile.ref
+                                      )}
+                                      alt={
+                                        secondaryActiveFile.path
+                                          .split("/")
+                                          .pop() || "Image"
+                                      }
+                                      fill
+                                      sizes="100vw"
+                                      className="object-contain"
+                                      unoptimized={true}
+                                    />
+                                  </div>
+                                </div>
+                              ) : secondaryActiveFile &&
+                                isPdfFile(secondaryActiveFile.path) ? (
                                 <div className="flex flex-col items-center gap-4">
-                                  <FileText className="w-16 h-16 text-gray-400" />
+                                  <FileText className="h-16 w-16 text-gray-400" />
                                   <iframe
-                                    src={getRawFileUrl(secondaryActiveFile.repoId, secondaryActiveFile.path, secondaryActiveFile.ref)}
-                                    className="w-full h-full border-0"
-                                    title={secondaryActiveFile.path.split("/").pop() || "PDF"}
+                                    src={getRawFileUrl(
+                                      secondaryActiveFile.repoId,
+                                      secondaryActiveFile.path,
+                                      secondaryActiveFile.ref
+                                    )}
+                                    className="h-full w-full border-0"
+                                    title={
+                                      secondaryActiveFile.path
+                                        .split("/")
+                                        .pop() || "PDF"
+                                    }
                                   />
                                 </div>
-                              ) : secondaryActiveFile && isVideoFile(secondaryActiveFile.path) ? (
+                              ) : secondaryActiveFile &&
+                                isVideoFile(secondaryActiveFile.path) ? (
                                 <div className="flex flex-col items-center gap-4">
-                                  <FileVideo className="w-16 h-16 text-gray-400" />
+                                  <FileVideo className="h-16 w-16 text-gray-400" />
                                   <video
-                                    src={getRawFileUrl(secondaryActiveFile.repoId, secondaryActiveFile.path, secondaryActiveFile.ref)}
+                                    src={getRawFileUrl(
+                                      secondaryActiveFile.repoId,
+                                      secondaryActiveFile.path,
+                                      secondaryActiveFile.ref
+                                    )}
                                     controls
-                                    className="max-w-full max-h-full"
+                                    className="max-h-full max-w-full"
                                   >
                                     Your browser does not support the video tag.
                                   </video>
                                 </div>
-                              ) : secondaryActiveFile && isAudioFile(secondaryActiveFile.path) ? (
+                              ) : secondaryActiveFile &&
+                                isAudioFile(secondaryActiveFile.path) ? (
                                 <div className="flex flex-col items-center gap-4">
-                                  <FileAudio className="w-16 h-16 text-gray-400" />
+                                  <FileAudio className="h-16 w-16 text-gray-400" />
                                   <audio
-                                    src={getRawFileUrl(secondaryActiveFile.repoId, secondaryActiveFile.path, secondaryActiveFile.ref)}
+                                    src={getRawFileUrl(
+                                      secondaryActiveFile.repoId,
+                                      secondaryActiveFile.path,
+                                      secondaryActiveFile.ref
+                                    )}
                                     controls
                                     className="w-full max-w-md"
                                   >
@@ -1913,13 +2477,19 @@ export default function BrowseClient() {
                                 </div>
                               ) : (
                                 <div className="text-center text-gray-500 dark:text-gray-400">
-                                  <FileText className="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
-                                  <p className="mb-4">Binary file cannot be displayed</p>
+                                  <FileText className="mx-auto mb-4 h-16 w-16 text-gray-300 dark:text-gray-600" />
+                                  <p className="mb-4">
+                                    Binary file cannot be displayed
+                                  </p>
                                   {secondaryActiveFile && (
                                     <a
-                                      href={getRawFileUrl(secondaryActiveFile.repoId, secondaryActiveFile.path, secondaryActiveFile.ref)}
+                                      href={getRawFileUrl(
+                                        secondaryActiveFile.repoId,
+                                        secondaryActiveFile.path,
+                                        secondaryActiveFile.ref
+                                      )}
                                       download
-                                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+                                      className="inline-flex items-center gap-2 rounded-md bg-blue-500 px-4 py-2 text-white transition-colors hover:bg-blue-600"
                                     >
                                       Download file
                                     </a>
@@ -1935,11 +2505,39 @@ export default function BrowseClient() {
                               language={secondaryBlob.language}
                               repoId={secondaryActiveFile.repoId}
                               filePath={secondaryActiveFile.path}
-                              highlightLines={secondaryScrollToLine ? [secondaryScrollToLine.line] : []}
+                              highlightLines={
+                                secondaryScrollToLine
+                                  ? [secondaryScrollToLine.line]
+                                  : []
+                              }
                               scrollToLine={secondaryScrollToLine?.line}
-                              onWordClick={(word, line, col) => handleFindReferences(word, line, col, secondaryActiveFile.repoId, secondaryActiveFile.path, secondaryBlob.language)}
-                              onGoToDefinition={(word, line, col) => handleGoToDefinition(word, line, col, secondaryActiveFile.repoId, secondaryActiveFile.path, secondaryBlob.language)}
-                              onLineClick={(line) => handleLineClick(line, secondaryActiveFile.repoId, secondaryActiveFile.path)}
+                              onWordClick={(word, line, col) =>
+                                handleFindReferences(
+                                  word,
+                                  line,
+                                  col,
+                                  secondaryActiveFile.repoId,
+                                  secondaryActiveFile.path,
+                                  secondaryBlob.language
+                                )
+                              }
+                              onGoToDefinition={(word, line, col) =>
+                                handleGoToDefinition(
+                                  word,
+                                  line,
+                                  col,
+                                  secondaryActiveFile.repoId,
+                                  secondaryActiveFile.path,
+                                  secondaryBlob.language
+                                )
+                              }
+                              onLineClick={(line) =>
+                                handleLineClick(
+                                  line,
+                                  secondaryActiveFile.repoId,
+                                  secondaryActiveFile.path
+                                )
+                              }
                             />
                           ) : (
                             <div className="p-8 text-center text-gray-500 dark:text-gray-400">
@@ -1961,17 +2559,18 @@ export default function BrowseClient() {
                           if (splitPane.enabled && entry.type === "dir") return;
                           handleTreeSelect(entry.path, entry.type === "dir");
                         }}
-                        className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${splitPane.enabled && entry.type === "dir"
-                          ? "cursor-default"
-                          : "hover:bg-gray-50 dark:hover:bg-gray-700/30"
-                          }`}
+                        className={`flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors ${
+                          splitPane.enabled && entry.type === "dir"
+                            ? "cursor-default"
+                            : "hover:bg-gray-50 dark:hover:bg-gray-700/30"
+                        }`}
                       >
                         {entry.type === "dir" ? (
-                          <Folder className="w-5 h-5 text-blue-500 flex-shrink-0" />
+                          <Folder className="h-5 w-5 flex-shrink-0 text-blue-500" />
                         ) : (
-                          <FileCode className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                          <FileCode className="h-5 w-5 flex-shrink-0 text-gray-400" />
                         )}
-                        <span className="text-sm truncate">{entry.name}</span>
+                        <span className="truncate text-sm">{entry.name}</span>
                         {entry.language && (
                           <span className="ml-auto text-xs text-gray-400 dark:text-gray-500">
                             {entry.language}
@@ -1995,34 +2594,37 @@ export default function BrowseClient() {
                   {/* Overlay for mobile */}
                   {isMobile && (
                     <button
-                      className="fixed inset-0 bg-black/50 z-40 w-full h-full border-0 cursor-default"
+                      className="fixed inset-0 z-40 h-full w-full cursor-default border-0 bg-black/50"
                       onClick={() => updateUI({ showSymbols: false })}
                       aria-label="Close symbols"
                     />
                   )}
                   <div
                     ref={symbolsRef}
-                    className={`${isMobile
-                      ? "fixed right-0 top-0 bottom-0 z-50 w-64"
-                      : "flex-shrink-0 relative"
-                      } bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 flex flex-col`}
+                    className={`${
+                      isMobile
+                        ? "fixed bottom-0 right-0 top-0 z-50 w-64"
+                        : "relative flex-shrink-0"
+                    } flex flex-col border-l border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800`}
                     style={!isMobile ? { width: symbolsWidth } : undefined}
                   >
                     {/* Resize handle */}
                     {!isMobile && (
                       <div
                         onMouseDown={startResizingSymbols}
-                        className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500/50 transition-colors group"
+                        className="group absolute bottom-0 left-0 top-0 w-1 cursor-col-resize transition-colors hover:bg-blue-500/50"
                       >
-                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gray-300 dark:bg-gray-600 rounded opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <div className="absolute left-0 top-1/2 h-8 w-1 -translate-y-1/2 rounded bg-gray-300 opacity-0 transition-opacity group-hover:opacity-100 dark:bg-gray-600" />
                       </div>
                     )}
-                    <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80">
+                    <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-800/80">
                       <div className="flex items-center gap-2">
-                        <ListTree className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Symbols</span>
+                        <ListTree className="h-4 w-4 text-gray-400" />
+                        <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                          Symbols
+                        </span>
                         {splitPane.enabled && symbolsFile.path && (
-                          <span className="text-xs text-gray-400 truncate max-w-[100px]">
+                          <span className="max-w-[100px] truncate text-xs text-gray-400">
                             ({symbolsFile.path.split("/").pop()})
                           </span>
                         )}
@@ -2032,7 +2634,7 @@ export default function BrowseClient() {
                           onClick={() => updateUI({ showSymbols: false })}
                           className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                         >
-                          <X className="w-4 h-4" />
+                          <X className="h-4 w-4" />
                         </button>
                       )}
                     </div>
@@ -2043,7 +2645,10 @@ export default function BrowseClient() {
                         language={symbolsBlob?.language}
                         onSymbolClick={(line) => {
                           scrollKeyRef.current += 1;
-                          const scrollData = { line, key: scrollKeyRef.current };
+                          const scrollData = {
+                            line,
+                            key: scrollKeyRef.current,
+                          };
                           if (!splitPane.enabled) {
                             setScrollToLine(line);
                           } else if (splitPane.activePane === "primary") {
@@ -2066,13 +2671,13 @@ export default function BrowseClient() {
       {/* Reference Panel */}
       {referenceSearch && (
         <div
-          className="fixed bottom-0 left-0 right-0 z-50 shadow-lg flex flex-col"
+          className="fixed bottom-0 left-0 right-0 z-50 flex flex-col shadow-lg"
           style={{ height: referencePanelHeight }}
         >
           {/* Resize handle */}
           <div
             onMouseDown={startResizingReferences}
-            className="h-1 cursor-row-resize hover:bg-blue-500/50 bg-gray-200 dark:bg-gray-700 transition-colors flex-shrink-0"
+            className="h-1 flex-shrink-0 cursor-row-resize bg-gray-200 transition-colors hover:bg-blue-500/50 dark:bg-gray-700"
           />
           <div className="flex-1 overflow-hidden">
             <ReferencePanel
@@ -2106,78 +2711,94 @@ export default function BrowseClient() {
           aria-modal="true"
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
           onClick={() => updateUI({ showShortcutsHelp: false })}
-          onKeyDown={(e) => { if (e.key === "Escape") updateUI({ showShortcutsHelp: false }); }}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") updateUI({ showShortcutsHelp: false });
+          }}
         >
           <div
-            className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full max-w-md overflow-hidden"
+            className="w-full max-w-md overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-800"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 dark:border-gray-700">
               <h2 className="font-semibold">Keyboard Shortcuts</h2>
               <button
                 onClick={() => updateUI({ showShortcutsHelp: false })}
-                className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                className="p-1 text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-300"
               >
-                <X className="w-4 h-4" />
+                <X className="h-4 w-4" />
               </button>
             </div>
-            <div className="p-4 space-y-3">
+            <div className="space-y-3 p-4">
               <div className="flex items-center justify-between py-2">
-                <span className="text-sm text-gray-600 dark:text-gray-300">Quick open file</span>
-                <kbd className="px-2 py-1 text-xs font-mono bg-gray-100 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600">
+                <span className="text-sm text-gray-600 dark:text-gray-300">
+                  Quick open file
+                </span>
+                <kbd className="rounded border border-gray-200 bg-gray-100 px-2 py-1 font-mono text-xs dark:border-gray-600 dark:bg-gray-700">
                   ⌘P
                 </kbd>
               </div>
-              <div className="flex items-center justify-between py-2 border-t border-gray-100 dark:border-gray-700">
-                <span className="text-sm text-gray-600 dark:text-gray-300">Go to definition</span>
+              <div className="flex items-center justify-between border-t border-gray-100 py-2 dark:border-gray-700">
+                <span className="text-sm text-gray-600 dark:text-gray-300">
+                  Go to definition
+                </span>
                 <div className="flex items-center gap-2">
-                  <kbd className="px-2 py-1 text-xs font-mono bg-gray-100 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600">
+                  <kbd className="rounded border border-gray-200 bg-gray-100 px-2 py-1 font-mono text-xs dark:border-gray-600 dark:bg-gray-700">
                     F12
                   </kbd>
                   <span className="text-xs text-gray-400">or</span>
-                  <kbd className="px-2 py-1 text-xs font-mono bg-gray-100 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600">
+                  <kbd className="rounded border border-gray-200 bg-gray-100 px-2 py-1 font-mono text-xs dark:border-gray-600 dark:bg-gray-700">
                     ⌘+click
                   </kbd>
                 </div>
               </div>
-              <div className="flex items-center justify-between py-2 border-t border-gray-100 dark:border-gray-700">
-                <span className="text-sm text-gray-600 dark:text-gray-300">Find references</span>
+              <div className="flex items-center justify-between border-t border-gray-100 py-2 dark:border-gray-700">
+                <span className="text-sm text-gray-600 dark:text-gray-300">
+                  Find references
+                </span>
                 <div className="flex items-center gap-2">
-                  <kbd className="px-2 py-1 text-xs font-mono bg-gray-100 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600">
+                  <kbd className="rounded border border-gray-200 bg-gray-100 px-2 py-1 font-mono text-xs dark:border-gray-600 dark:bg-gray-700">
                     ⇧F12
                   </kbd>
                   <span className="text-xs text-gray-400">or</span>
-                  <kbd className="px-2 py-1 text-xs font-mono bg-gray-100 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600">
+                  <kbd className="rounded border border-gray-200 bg-gray-100 px-2 py-1 font-mono text-xs dark:border-gray-600 dark:bg-gray-700">
                     ⌘+hover
                   </kbd>
                 </div>
               </div>
-              <div className="flex items-center justify-between py-2 border-t border-gray-100 dark:border-gray-700">
-                <span className="text-sm text-gray-600 dark:text-gray-300">Toggle file tree</span>
-                <kbd className="px-2 py-1 text-xs font-mono bg-gray-100 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600">
+              <div className="flex items-center justify-between border-t border-gray-100 py-2 dark:border-gray-700">
+                <span className="text-sm text-gray-600 dark:text-gray-300">
+                  Toggle file tree
+                </span>
+                <kbd className="rounded border border-gray-200 bg-gray-100 px-2 py-1 font-mono text-xs dark:border-gray-600 dark:bg-gray-700">
                   ⌘B
                 </kbd>
               </div>
-              <div className="flex items-center justify-between py-2 border-t border-gray-100 dark:border-gray-700">
-                <span className="text-sm text-gray-600 dark:text-gray-300">Go back</span>
-                <kbd className="px-2 py-1 text-xs font-mono bg-gray-100 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600">
+              <div className="flex items-center justify-between border-t border-gray-100 py-2 dark:border-gray-700">
+                <span className="text-sm text-gray-600 dark:text-gray-300">
+                  Go back
+                </span>
+                <kbd className="rounded border border-gray-200 bg-gray-100 px-2 py-1 font-mono text-xs dark:border-gray-600 dark:bg-gray-700">
                   ⌘[
                 </kbd>
               </div>
-              <div className="flex items-center justify-between py-2 border-t border-gray-100 dark:border-gray-700">
-                <span className="text-sm text-gray-600 dark:text-gray-300">Go forward</span>
-                <kbd className="px-2 py-1 text-xs font-mono bg-gray-100 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600">
+              <div className="flex items-center justify-between border-t border-gray-100 py-2 dark:border-gray-700">
+                <span className="text-sm text-gray-600 dark:text-gray-300">
+                  Go forward
+                </span>
+                <kbd className="rounded border border-gray-200 bg-gray-100 px-2 py-1 font-mono text-xs dark:border-gray-600 dark:bg-gray-700">
                   ⌘]
                 </kbd>
               </div>
-              <div className="flex items-center justify-between py-2 border-t border-gray-100 dark:border-gray-700">
-                <span className="text-sm text-gray-600 dark:text-gray-300">Close panels</span>
-                <kbd className="px-2 py-1 text-xs font-mono bg-gray-100 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600">
+              <div className="flex items-center justify-between border-t border-gray-100 py-2 dark:border-gray-700">
+                <span className="text-sm text-gray-600 dark:text-gray-300">
+                  Close panels
+                </span>
+                <kbd className="rounded border border-gray-200 bg-gray-100 px-2 py-1 font-mono text-xs dark:border-gray-600 dark:bg-gray-700">
                   Esc
                 </kbd>
               </div>
             </div>
-            <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80">
+            <div className="border-t border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-800/80">
               <p className="text-xs text-gray-500 dark:text-gray-400">
                 Tip: Position cursor on a symbol before using F12 or Shift+F12
               </p>

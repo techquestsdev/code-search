@@ -2,11 +2,7 @@
 
 import { useEffect, useRef, useCallback, useMemo, useReducer } from "react";
 import { api } from "@/lib/api";
-import {
-  Search,
-  X,
-  Loader2,
-} from "lucide-react";
+import { Search, X, Loader2 } from "lucide-react";
 import { QuickFilePickerList } from "./QuickFilePickerList";
 
 interface QuickFilePickerProps {
@@ -32,20 +28,39 @@ export function QuickFilePicker({
   onSelect,
 }: QuickFilePickerProps) {
   const [pickerState, updatePicker] = useReducer(
-    (state: { query: string; files: FileEntry[]; selectedIndex: number; loading: boolean }, update: Partial<{ query: string; files: FileEntry[]; selectedIndex: number; loading: boolean }>) => ({ ...state, ...update }),
+    (
+      state: {
+        query: string;
+        files: FileEntry[];
+        selectedIndex: number;
+        loading: boolean;
+      },
+      update: Partial<{
+        query: string;
+        files: FileEntry[];
+        selectedIndex: number;
+        loading: boolean;
+      }>
+    ) => ({ ...state, ...update }),
     { query: "", files: [] as FileEntry[], selectedIndex: 0, loading: false }
   );
 
   const { query, files, selectedIndex, loading } = pickerState;
 
-  const setQuery = useCallback((q: string | ((prev: string) => string)) => {
-    const newQ = typeof q === 'function' ? q(query) : q;
-    updatePicker({ query: newQ, selectedIndex: 0 });
-  }, [query]);
-  const setSelectedIndex = useCallback((i: number | ((prev: number) => number)) => {
-    const newI = typeof i === 'function' ? i(selectedIndex) : i;
-    updatePicker({ selectedIndex: newI });
-  }, [selectedIndex]);
+  const setQuery = useCallback(
+    (q: string | ((prev: string) => string)) => {
+      const newQ = typeof q === "function" ? q(query) : q;
+      updatePicker({ query: newQ, selectedIndex: 0 });
+    },
+    [query]
+  );
+  const setSelectedIndex = useCallback(
+    (i: number | ((prev: number) => number)) => {
+      const newI = typeof i === "function" ? i(selectedIndex) : i;
+      updatePicker({ selectedIndex: newI });
+    },
+    [selectedIndex]
+  );
 
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -63,7 +78,11 @@ export function QuickFilePicker({
         while (queue.length > 0 && allFiles.length < 5000) {
           const currentPath = queue.shift()!;
           try {
-            const tree = await api.getTree(repoId, currentPath || undefined, currentRef);
+            const tree = await api.getTree(
+              repoId,
+              currentPath || undefined,
+              currentRef
+            );
             for (const entry of tree.entries) {
               if (entry.type === "dir") {
                 queue.push(entry.path);
@@ -205,22 +224,22 @@ export function QuickFilePicker({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] bg-black/50 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 pt-[15vh] backdrop-blur-sm"
     >
       {/* Backdrop button for closing */}
       <button
-        className="absolute inset-0 w-full h-full cursor-default"
+        className="absolute inset-0 h-full w-full cursor-default"
         onClick={handleBackdropClick}
         onKeyDown={(e) => {
-          if (e.key === 'Escape') onClose();
+          if (e.key === "Escape") onClose();
         }}
         aria-label="Close file picker"
         tabIndex={-1}
       />
-      <div className="relative w-full max-w-xl bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="relative w-full max-w-xl overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-800">
         {/* Search input */}
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-          <Search className="w-5 h-5 text-gray-400" />
+        <div className="flex items-center gap-3 border-b border-gray-200 px-4 py-3 dark:border-gray-700">
+          <Search className="h-5 w-5 text-gray-400" />
           <input
             ref={inputRef}
             type="text"
@@ -234,12 +253,14 @@ export function QuickFilePicker({
             autoCapitalize="off"
             spellCheck={false}
           />
-          {loading && <Loader2 className="w-4 h-4 animate-spin text-gray-400" />}
+          {loading && (
+            <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+          )}
           <button
             onClick={onClose}
-            className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            className="p-1 text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-300"
           >
-            <X className="w-4 h-4" />
+            <X className="h-4 w-4" />
           </button>
         </div>
 
@@ -255,21 +276,28 @@ export function QuickFilePicker({
         />
 
         {/* Footer hints */}
-        <div className="flex items-center gap-4 px-4 py-2 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-400">
+        <div className="flex items-center gap-4 border-t border-gray-200 px-4 py-2 text-xs text-gray-400 dark:border-gray-700">
           <span>
-            <kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">↑↓</kbd>{" "}
+            <kbd className="rounded bg-gray-100 px-1.5 py-0.5 dark:bg-gray-700">
+              ↑↓
+            </kbd>{" "}
             navigate
           </span>
           <span>
-            <kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">Enter</kbd>{" "}
+            <kbd className="rounded bg-gray-100 px-1.5 py-0.5 dark:bg-gray-700">
+              Enter
+            </kbd>{" "}
             open
           </span>
           <span>
-            <kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">Esc</kbd>{" "}
+            <kbd className="rounded bg-gray-100 px-1.5 py-0.5 dark:bg-gray-700">
+              Esc
+            </kbd>{" "}
             close
           </span>
           <span className="ml-auto">
-            {filteredFiles.length} {filteredFiles.length === 1 ? "file" : "files"}
+            {filteredFiles.length}{" "}
+            {filteredFiles.length === 1 ? "file" : "files"}
           </span>
         </div>
       </div>
@@ -290,7 +318,7 @@ export function highlightMatch(text: string, query: string): React.ReactNode {
   return (
     <>
       {text.slice(0, index)}
-      <mark className="bg-yellow-200 dark:bg-yellow-500/40 text-inherit rounded">
+      <mark className="rounded bg-yellow-200 text-inherit dark:bg-yellow-500/40">
         {text.slice(index, index + query.length)}
       </mark>
       {text.slice(index + query.length)}

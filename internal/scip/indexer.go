@@ -405,7 +405,11 @@ func scipLanguages() map[string]struct {
 // returned, including root, because each marker is an independent project.
 //
 // If no markers are found, returns a single entry with the repo root and empty prefix.
-func (i *Indexer) findAllProjectDirs(repoPath string, markerFiles []string, independentDirs bool) []projectLocation {
+func (i *Indexer) findAllProjectDirs(
+	repoPath string,
+	markerFiles []string,
+	independentDirs bool,
+) []projectLocation {
 	// Check if any marker exists at the root
 	rootHasMarker := false
 
@@ -551,7 +555,10 @@ func (i *Indexer) indexGoProject(ctx context.Context, projectDir string) ([]byte
 }
 
 // indexTypeScriptProject indexes a single TypeScript/JavaScript project at the given directory.
-func (i *Indexer) indexTypeScriptProject(ctx context.Context, projectDir string) ([]byte, string, error) {
+func (i *Indexer) indexTypeScriptProject(
+	ctx context.Context,
+	projectDir string,
+) ([]byte, string, error) {
 	// Check for scip-typescript via npx
 	scipTS := i.config.SCIPTypeScript
 	if scipTS == "" {
@@ -689,7 +696,10 @@ func (i *Indexer) indexRustProject(ctx context.Context, projectDir string) ([]by
 }
 
 // indexPythonProject indexes a single Python project at the given directory.
-func (i *Indexer) indexPythonProject(ctx context.Context, projectDir string) ([]byte, string, error) {
+func (i *Indexer) indexPythonProject(
+	ctx context.Context,
+	projectDir string,
+) ([]byte, string, error) {
 	// Check for scip-python
 	scipPython := i.config.SCIPPython
 	if scipPython == "" {
@@ -763,7 +773,11 @@ func (i *Indexer) indexPHPProject(
 		files = append(files, e.Name())
 	}
 
-	i.logger.Debug("Files in project path", zap.Strings("files", files), zap.String("projectDir", projectDir))
+	i.logger.Debug(
+		"Files in project path",
+		zap.Strings("files", files),
+		zap.String("projectDir", projectDir),
+	)
 
 	// scip-php requires composer.json - check if it exists
 	composerJSON := filepath.Join(projectDir, "composer.json")
@@ -815,7 +829,10 @@ func (i *Indexer) indexPHPProject(
 	}
 
 	// Run composer install to get project dependencies
-	i.logger.Info("Running composer install for PHP SCIP indexing", zap.String("projectDir", projectDir))
+	i.logger.Info(
+		"Running composer install for PHP SCIP indexing",
+		zap.String("projectDir", projectDir),
+	)
 
 	installCmd := exec.CommandContext(
 		ctx,
@@ -834,7 +851,11 @@ func (i *Indexer) indexPHPProject(
 
 	installCmd.Stderr = &installOut
 	if err := installCmd.Run(); err != nil {
-		i.logger.Warn("composer install failed", zap.Error(err), zap.String("output", installOut.String()))
+		i.logger.Warn(
+			"composer install failed",
+			zap.Error(err),
+			zap.String("output", installOut.String()),
+		)
 	}
 
 	// Check if scip-php is installed in the project
@@ -859,7 +880,11 @@ func (i *Indexer) indexPHPProject(
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
-	i.logger.Info("Running scip-php", zap.String("projectDir", projectDir), zap.String("scipPHP", scipPHP))
+	i.logger.Info(
+		"Running scip-php",
+		zap.String("projectDir", projectDir),
+		zap.String("scipPHP", scipPHP),
+	)
 
 	if err := cmd.Run(); err != nil {
 		output := stderr.String() + stdout.String()

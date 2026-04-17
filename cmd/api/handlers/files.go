@@ -389,7 +389,11 @@ func (h *Handler) GetBranchesAndTags(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !h.services.Authorizer.CanAccessRepo(r.Context(), middleware.UserFromContext(r.Context()), repo.Name) {
+	if !h.services.Authorizer.CanAccessRepo(
+		r.Context(),
+		middleware.UserFromContext(r.Context()),
+		repo.Name,
+	) {
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}
@@ -461,7 +465,11 @@ func (h *Handler) GetFileSymbols(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !h.services.Authorizer.CanAccessRepo(r.Context(), middleware.UserFromContext(r.Context()), repo.Name) {
+	if !h.services.Authorizer.CanAccessRepo(
+		r.Context(),
+		middleware.UserFromContext(r.Context()),
+		repo.Name,
+	) {
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}

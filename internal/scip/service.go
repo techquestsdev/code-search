@@ -42,7 +42,11 @@ func NewService(cacheDir string, logger *zap.Logger) (*Service, error) {
 
 // NewServiceWithConfig creates a new SCIP service with an explicit IndexerConfig.
 // This allows callers to configure indexer binary paths and timeouts.
-func NewServiceWithConfig(cacheDir string, indexerCfg IndexerConfig, logger *zap.Logger) (*Service, error) {
+func NewServiceWithConfig(
+	cacheDir string,
+	indexerCfg IndexerConfig,
+	logger *zap.Logger,
+) (*Service, error) {
 	if err := os.MkdirAll(cacheDir, 0o755); err != nil {
 		return nil, err
 	}

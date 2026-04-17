@@ -141,6 +141,9 @@ linters:
 
   exclusions:
     generated: lax
+    paths:
+      - web
+      - website
     rules:
       - path: _test\.go
         linters:

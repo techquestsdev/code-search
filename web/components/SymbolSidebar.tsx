@@ -91,7 +91,7 @@ function SymbolItem({
 
   return (
     <button
-      className={`w-full flex items-center gap-1 px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors text-left group cursor-pointer ${
+      className={`group flex w-full cursor-pointer items-center gap-1 px-3 py-1.5 text-left transition-colors hover:bg-gray-100 dark:hover:bg-gray-700/50 ${
         indent ? "pl-4" : ""
       }`}
       onClick={() => {
@@ -113,22 +113,24 @@ function SymbolItem({
       {/* Expand/collapse chevron */}
       {hasChildren ? (
         isExpanded ? (
-          <ChevronDown className="w-3 h-3 text-gray-400 flex-shrink-0" />
+          <ChevronDown className="h-3 w-3 flex-shrink-0 text-gray-400" />
         ) : (
-          <ChevronRight className="w-3 h-3 text-gray-400 flex-shrink-0" />
+          <ChevronRight className="h-3 w-3 flex-shrink-0 text-gray-400" />
         )
       ) : !indent ? (
         <span className="w-3 flex-shrink-0" />
       ) : null}
-      
+
       {/* Icon */}
-      <Icon className={`w-4 h-4 flex-shrink-0 ${color}`} />
-      
+      <Icon className={`h-4 w-4 flex-shrink-0 ${color}`} />
+
       {/* Symbol name - selectable */}
       <span
-        className="truncate flex-1 min-w-0 select-text cursor-text"
+        className="min-w-0 flex-1 cursor-text select-text truncate"
         onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => { if (e.key === ' ') e.stopPropagation(); }}
+        onKeyDown={(e) => {
+          if (e.key === " ") e.stopPropagation();
+        }}
         role="textbox"
         aria-readonly="true"
         tabIndex={-1}
@@ -143,28 +145,36 @@ function SymbolItem({
       >
         {symbol.name}
       </span>
-      
+
       {/* Line number - always visible, find references on hover */}
-      <div className="flex items-center gap-1 flex-shrink-0 ml-1">
+      <div className="ml-1 flex flex-shrink-0 items-center gap-1">
         {isHovered && onFindReferences ? (
           <button
             onClick={(e) => {
               e.stopPropagation();
               onFindReferences(symbol.name, symbol.line);
             }}
-            className="p-0.5 text-gray-400 hover:text-blue-500 transition-colors"
+            className="p-0.5 text-gray-400 transition-colors hover:text-blue-500"
             title="Find references"
           >
-            <Search className="w-3.5 h-3.5" />
+            <Search className="h-3.5 w-3.5" />
           </button>
         ) : null}
-        <span className="text-xs text-gray-400 tabular-nums">:{symbol.line}</span>
+        <span className="text-xs tabular-nums text-gray-400">
+          :{symbol.line}
+        </span>
       </div>
     </button>
   );
 }
 
-export function SymbolSidebar({ repoId, path, language: _language, onSymbolClick, onFindReferences }: SymbolSidebarProps) {
+export function SymbolSidebar({
+  repoId,
+  path,
+  language: _language,
+  onSymbolClick,
+  onFindReferences,
+}: SymbolSidebarProps) {
   type SymbolState = {
     symbols: FileSymbol[];
     loading: boolean;
@@ -198,7 +208,7 @@ export function SymbolSidebar({ repoId, path, language: _language, onSymbolClick
 
         // Auto-expand all parent groups
         const parents = new Set<string>([""]);
-        symbols.forEach(s => {
+        symbols.forEach((s) => {
           if (s.parent) parents.add(s.parent);
         });
 
@@ -232,7 +242,12 @@ export function SymbolSidebar({ repoId, path, language: _language, onSymbolClick
         groups[parent] = [];
       }
       // Don't add class/struct/interface to their own group
-      if (symbol.kind === "class" || symbol.kind === "struct" || symbol.kind === "interface" || symbol.kind === "trait") {
+      if (
+        symbol.kind === "class" ||
+        symbol.kind === "struct" ||
+        symbol.kind === "interface" ||
+        symbol.kind === "trait"
+      ) {
         groups[""].push(symbol);
       } else {
         groups[parent].push(symbol);
@@ -265,7 +280,7 @@ export function SymbolSidebar({ repoId, path, language: _language, onSymbolClick
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+        <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
       </div>
     );
   }
@@ -273,7 +288,7 @@ export function SymbolSidebar({ repoId, path, language: _language, onSymbolClick
   if (error) {
     return (
       <div className="flex items-center gap-2 p-3 text-sm text-red-500">
-        <AlertCircle className="w-4 h-4 flex-shrink-0" />
+        <AlertCircle className="h-4 w-4 flex-shrink-0" />
         <span className="truncate">{error}</span>
       </div>
     );
@@ -341,10 +356,12 @@ export function SymbolSidebar({ repoId, path, language: _language, onSymbolClick
 
       {/* Orphan symbols (have parent but parent wasn't found as a symbol) */}
       {Object.entries(groupedSymbols)
-        .filter(([parent]) => parent !== "" && !symbols.some(s => s.name === parent))
+        .filter(
+          ([parent]) => parent !== "" && !symbols.some((s) => s.name === parent)
+        )
         .map(([parent, children]) => (
           <div key={parent} className="mt-2">
-            <div className="px-3 py-1 text-xs text-gray-500 dark:text-gray-400 font-medium">
+            <div className="px-3 py-1 text-xs font-medium text-gray-500 dark:text-gray-400">
               {parent}
             </div>
             {children.map((child, childIndex) => {

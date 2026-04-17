@@ -4,14 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { api } from "@/lib/api";
 import { highlightCode } from "@/lib/syntax-highlight";
 import { useTheme } from "./ThemeProvider";
-import {
-  X,
-  Loader2,
-  AlertCircle,
-  FileCode,
-  Search,
-  Zap,
-} from "lucide-react";
+import { X, Loader2, AlertCircle, FileCode, Search, Zap } from "lucide-react";
 
 interface ReferencePanelProps {
   symbolName: string;
@@ -51,7 +44,9 @@ export function ReferencePanel({
   const [definitions, setDefinitions] = useState<UnifiedReference[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"definitions" | "references">("definitions");
+  const [activeTab, setActiveTab] = useState<"definitions" | "references">(
+    "definitions"
+  );
   const [usingSCIP, setUsingSCIP] = useState(false);
   const [_repoName, setRepoName] = useState<string | null>(null);
 
@@ -83,7 +78,13 @@ export function ReferencePanel({
         if (repoId !== undefined && filePath && line !== undefined) {
           try {
             console.log("Trying SCIP lookup:", { repoId, filePath, line, col });
-            const scipRefs = await api.getSCIPReferences(repoId, filePath, line, col ?? 0, 200);
+            const scipRefs = await api.getSCIPReferences(
+              repoId,
+              filePath,
+              line,
+              col ?? 0,
+              200
+            );
             console.log("SCIP response:", scipRefs);
 
             // Only use SCIP results if we found meaningful references (more than just the definition)
@@ -96,13 +97,13 @@ export function ReferencePanel({
               // Convert SCIP references to unified format and filter out false positives
               // Only include references where the context actually contains the symbol name
               const unifiedRefs: UnifiedReference[] = scipRefs.references
-                .filter(occ => {
+                .filter((occ) => {
                   // Always include if no context (we can't verify)
                   if (!occ.context) return true;
                   // Include if context contains the symbol name
                   return occ.context.includes(symbolName);
                 })
-                .map(occ => ({
+                .map((occ) => ({
                   repo: displayRepoName,
                   file: occ.filePath,
                   line: occ.startLine + 1, // Convert to 1-indexed
@@ -112,8 +113,8 @@ export function ReferencePanel({
                 }));
 
               // Separate definitions and references
-              const defs = unifiedRefs.filter(r => r.isDefinition);
-              const refs = unifiedRefs.filter(r => !r.isDefinition);
+              const defs = unifiedRefs.filter((r) => r.isDefinition);
+              const refs = unifiedRefs.filter((r) => !r.isDefinition);
 
               setDefinitions(defs);
               setReferences(refs);
@@ -139,7 +140,11 @@ export function ReferencePanel({
         // Fall back to Zoekt-based search
         // Don't use language filter for references - it's text-based and language detection can be wrong
         // (e.g., PHP detected as Hack)
-        console.log("Falling back to Zoekt search:", { symbolName, language, repos });
+        console.log("Falling back to Zoekt search:", {
+          symbolName,
+          language,
+          repos,
+        });
         const [defs, refs] = await Promise.all([
           api.findSymbols({
             name: symbolName,
@@ -157,7 +162,7 @@ export function ReferencePanel({
         console.log("Zoekt results:", { defs: defs.length, refs: refs.length });
 
         // Convert to unified format
-        const unifiedDefs: UnifiedReference[] = defs.map(def => ({
+        const unifiedDefs: UnifiedReference[] = defs.map((def) => ({
           repo: def.repo,
           file: def.file,
           line: def.line,
@@ -166,7 +171,7 @@ export function ReferencePanel({
           isDefinition: true,
         }));
 
-        const unifiedRefs: UnifiedReference[] = refs.map(ref => ({
+        const unifiedRefs: UnifiedReference[] = refs.map((ref) => ({
           repo: ref.repo,
           file: ref.file,
           line: ref.line,
@@ -194,24 +199,36 @@ export function ReferencePanel({
   }, [symbolName, language, repos, line, col, filePath, repoId]);
 
   // Group references by file
-  const groupedRefs = references.reduce((acc, ref) => {
-    const key = `${ref.repo}:${ref.file}`;
-    if (!acc[key]) {
-      acc[key] = { repo: ref.repo, file: ref.file, refs: [] };
-    }
-    acc[key].refs.push(ref);
-    return acc;
-  }, {} as Record<string, { repo: string; file: string; refs: UnifiedReference[] }>);
+  const groupedRefs = references.reduce(
+    (acc, ref) => {
+      const key = `${ref.repo}:${ref.file}`;
+      if (!acc[key]) {
+        acc[key] = { repo: ref.repo, file: ref.file, refs: [] };
+      }
+      acc[key].refs.push(ref);
+      return acc;
+    },
+    {} as Record<
+      string,
+      { repo: string; file: string; refs: UnifiedReference[] }
+    >
+  );
 
   // Group definitions by file
-  const groupedDefs = definitions.reduce((acc, def) => {
-    const key = `${def.repo}:${def.file}`;
-    if (!acc[key]) {
-      acc[key] = { repo: def.repo, file: def.file, defs: [] };
-    }
-    acc[key].defs.push(def);
-    return acc;
-  }, {} as Record<string, { repo: string; file: string; defs: UnifiedReference[] }>);
+  const groupedDefs = definitions.reduce(
+    (acc, def) => {
+      const key = `${def.repo}:${def.file}`;
+      if (!acc[key]) {
+        acc[key] = { repo: def.repo, file: def.file, defs: [] };
+      }
+      acc[key].defs.push(def);
+      return acc;
+    },
+    {} as Record<
+      string,
+      { repo: string; file: string; defs: UnifiedReference[] }
+    >
+  );
 
   const handleClick = useCallback(
     (repo: string, file: string, line: number) => {
@@ -223,31 +240,31 @@ export function ReferencePanel({
   );
 
   return (
-    <div className="flex flex-col h-full border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+    <div className="flex h-full flex-col border-t border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80">
+      <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-2 dark:border-gray-700 dark:bg-gray-800/80">
         <div className="flex items-center gap-3">
-          <Search className="w-4 h-4 text-gray-400" />
+          <Search className="h-4 w-4 text-gray-400" />
           <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
             {symbolName}
           </span>
           {language && (
-            <span className="text-xs text-gray-500 dark:text-gray-400 px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">
+            <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500 dark:bg-gray-700 dark:text-gray-400">
               {language}
             </span>
           )}
           {usingSCIP && (
-            <span className="text-xs text-green-600 dark:text-green-400 px-1.5 py-0.5 bg-green-50 dark:bg-green-900/30 rounded flex items-center gap-1">
-              <Zap className="w-3 h-3" />
+            <span className="flex items-center gap-1 rounded bg-green-50 px-1.5 py-0.5 text-xs text-green-600 dark:bg-green-900/30 dark:text-green-400">
+              <Zap className="h-3 w-3" />
               SCIP
             </span>
           )}
         </div>
         <button
           onClick={onClose}
-          className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+          className="p-1 text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-200"
         >
-          <X className="w-4 h-4" />
+          <X className="h-4 w-4" />
         </button>
       </div>
 
@@ -255,19 +272,21 @@ export function ReferencePanel({
       <div className="flex border-b border-gray-200 dark:border-gray-700">
         <button
           onClick={() => setActiveTab("definitions")}
-          className={`px-4 py-2 text-sm font-medium transition-colors ${activeTab === "definitions"
-            ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400"
-            : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-            }`}
+          className={`px-4 py-2 text-sm font-medium transition-colors ${
+            activeTab === "definitions"
+              ? "border-b-2 border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400"
+              : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          }`}
         >
           Definitions ({definitions.length})
         </button>
         <button
           onClick={() => setActiveTab("references")}
-          className={`px-4 py-2 text-sm font-medium transition-colors ${activeTab === "references"
-            ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400"
-            : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-            }`}
+          className={`px-4 py-2 text-sm font-medium transition-colors ${
+            activeTab === "references"
+              ? "border-b-2 border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400"
+              : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          }`}
         >
           References ({references.length})
         </button>
@@ -277,12 +296,12 @@ export function ReferencePanel({
       <div className="flex-1 overflow-y-auto">
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+            <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
             <span className="ml-2 text-sm text-gray-500">Searching...</span>
           </div>
         ) : error ? (
           <div className="flex items-center gap-2 p-4 text-sm text-red-500">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <AlertCircle className="h-4 w-4 flex-shrink-0" />
             <span>{error}</span>
           </div>
         ) : activeTab === "definitions" ? (
@@ -295,8 +314,8 @@ export function ReferencePanel({
             ) : (
               Object.values(groupedDefs).map(({ repo, file, defs }) => (
                 <div key={`${repo}:${file}`} className="py-2">
-                  <div className="px-4 py-1 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                    <FileCode className="w-3 h-3" />
+                  <div className="flex items-center gap-2 px-4 py-1 text-xs text-gray-500 dark:text-gray-400">
+                    <FileCode className="h-3 w-3" />
                     <span className="truncate" title={`${repo}/${file}`}>
                       {repo.split("/").pop()}/{file}
                     </span>
@@ -305,17 +324,23 @@ export function ReferencePanel({
                     <button
                       key={idx}
                       onClick={() => handleClick(repo, file, def.line)}
-                      className="w-full px-4 py-1.5 text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                      className="w-full px-4 py-1.5 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/50"
                     >
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-500 dark:text-gray-500 font-mono w-10 text-right flex-shrink-0">
+                        <span className="w-10 flex-shrink-0 text-right font-mono text-xs text-gray-500 dark:text-gray-500">
                           :{def.line}
                         </span>
-                        <code className="text-sm truncate font-mono">
-                          {highlightCode(def.context || symbolName, language, isDark)}
+                        <code className="truncate font-mono text-sm">
+                          {highlightCode(
+                            def.context || symbolName,
+                            language,
+                            isDark
+                          )}
                         </code>
                         {def.column !== undefined && (
-                          <span className="text-xs text-gray-400 ml-auto flex-shrink-0">col {def.column}</span>
+                          <span className="ml-auto flex-shrink-0 text-xs text-gray-400">
+                            col {def.column}
+                          </span>
                         )}
                       </div>
                     </button>
@@ -334,28 +359,36 @@ export function ReferencePanel({
             ) : (
               Object.values(groupedRefs).map(({ repo, file, refs }) => (
                 <div key={`${repo}:${file}`} className="py-2">
-                  <div className="px-4 py-1 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                    <FileCode className="w-3 h-3" />
+                  <div className="flex items-center gap-2 px-4 py-1 text-xs text-gray-500 dark:text-gray-400">
+                    <FileCode className="h-3 w-3" />
                     <span className="truncate" title={`${repo}/${file}`}>
                       {repo.split("/").pop()}/{file}
                     </span>
-                    <span className="ml-auto text-gray-400">({refs.length})</span>
+                    <span className="ml-auto text-gray-400">
+                      ({refs.length})
+                    </span>
                   </div>
                   {refs.map((ref, idx) => (
                     <button
                       key={idx}
                       onClick={() => handleClick(repo, file, ref.line)}
-                      className="w-full px-4 py-1.5 text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                      className="w-full px-4 py-1.5 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/50"
                     >
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-500 dark:text-gray-500 font-mono w-10 text-right flex-shrink-0">
+                        <span className="w-10 flex-shrink-0 text-right font-mono text-xs text-gray-500 dark:text-gray-500">
                           :{ref.line}
                         </span>
-                        <code className="text-sm truncate font-mono">
-                          {highlightCode(ref.context || symbolName, language, isDark)}
+                        <code className="truncate font-mono text-sm">
+                          {highlightCode(
+                            ref.context || symbolName,
+                            language,
+                            isDark
+                          )}
                         </code>
                         {ref.column !== undefined && (
-                          <span className="text-xs text-gray-400 ml-auto flex-shrink-0">col {ref.column}</span>
+                          <span className="ml-auto flex-shrink-0 text-xs text-gray-400">
+                            col {ref.column}
+                          </span>
                         )}
                       </div>
                     </button>

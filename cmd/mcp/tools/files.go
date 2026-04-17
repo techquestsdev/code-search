@@ -13,8 +13,11 @@ import (
 
 // GetFileTreeTool returns the tool definition for get_file_tree.
 func GetFileTreeTool() mcp.Tool {
-	return mcp.NewTool("get_file_tree",
-		mcp.WithDescription("Browse directory contents in a repository. Returns files and subdirectories at the specified path."),
+	return mcp.NewTool(
+		"get_file_tree",
+		mcp.WithDescription(
+			"Browse directory contents in a repository. Returns files and subdirectories at the specified path.",
+		),
 		mcp.WithNumber("repo_id",
 			mcp.Required(),
 			mcp.Description("Repository ID (use list_repos to find IDs)"),
@@ -22,8 +25,11 @@ func GetFileTreeTool() mcp.Tool {
 		mcp.WithString("path",
 			mcp.Description("Directory path to list (default: root '/')"),
 		),
-		mcp.WithString("ref",
-			mcp.Description("Git ref (branch, tag, or commit SHA) to browse (default: repository's default branch)"),
+		mcp.WithString(
+			"ref",
+			mcp.Description(
+				"Git ref (branch, tag, or commit SHA) to browse (default: repository's default branch)",
+			),
 		),
 	)
 }
@@ -50,8 +56,11 @@ func HandleGetFileTree(c *client.Client) server.ToolHandlerFunc {
 
 // GetFileContentTool returns the tool definition for get_file_content.
 func GetFileContentTool() mcp.Tool {
-	return mcp.NewTool("get_file_content",
-		mcp.WithDescription("Read the content of a file in a repository. Returns the file content with syntax highlighting language detection. Binary files return a message instead of content."),
+	return mcp.NewTool(
+		"get_file_content",
+		mcp.WithDescription(
+			"Read the content of a file in a repository. Returns the file content with syntax highlighting language detection. Binary files return a message instead of content.",
+		),
 		mcp.WithNumber("repo_id",
 			mcp.Required(),
 			mcp.Description("Repository ID (use list_repos to find IDs)"),
@@ -60,8 +69,11 @@ func GetFileContentTool() mcp.Tool {
 			mcp.Required(),
 			mcp.Description("File path within the repository"),
 		),
-		mcp.WithString("ref",
-			mcp.Description("Git ref (branch, tag, or commit SHA) to read from (default: repository's default branch)"),
+		mcp.WithString(
+			"ref",
+			mcp.Description(
+				"Git ref (branch, tag, or commit SHA) to read from (default: repository's default branch)",
+			),
 		),
 	)
 }
