@@ -6,12 +6,12 @@ require (
 	github.com/cockroachdb/errors v1.12.0
 	github.com/go-chi/chi/v5 v5.2.5
 	github.com/go-enry/go-enry/v2 v2.9.6
-	github.com/go-git/go-git/v5 v5.17.2
+	github.com/go-git/go-git/v5 v5.18.0
 	github.com/go-sql-driver/mysql v1.9.3
 	github.com/google/uuid v1.6.0
-	github.com/jackc/pgx/v5 v5.9.1
+	github.com/jackc/pgx/v5 v5.9.2
 	github.com/joho/godotenv v1.5.1
-	github.com/mark3labs/mcp-go v0.47.1
+	github.com/mark3labs/mcp-go v0.48.0
 	github.com/mattn/go-sqlite3 v1.14.42
 	github.com/prometheus/client_golang v1.23.2
 	github.com/redis/go-redis/v9 v9.18.0
