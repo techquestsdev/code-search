@@ -14,8 +14,6 @@ import {
   Loader2,
   CheckCircle2,
   AlertCircle,
-  Github,
-  Gitlab,
   GitBranch,
   FolderGit2,
   MoreVertical,
@@ -23,6 +21,8 @@ import {
   Clock,
   Pencil,
 } from "lucide-react";
+import { GithubIcon } from "@/components/GithubIcon";
+import { GitlabIcon } from "@/components/GitlabIcon";
 
 // Dropdown menu component for connection actions
 function ConnectionActionMenu({
@@ -702,9 +702,9 @@ export default function ConnectionsClient() {
     switch (type) {
       case "github":
       case "github_enterprise":
-        return <Github className="h-5 w-5" />;
+        return <GithubIcon className="h-5 w-5" />;
       case "gitlab":
-        return <Gitlab className="h-5 w-5" />;
+        return <GitlabIcon className="h-5 w-5" />;
       case "gitea":
         return <FolderGit2 className="h-5 w-5" />;
       case "bitbucket":
