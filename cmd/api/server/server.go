@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	_ "embed"
+	"net"
 	"net/http"
 	"time"
 
@@ -97,7 +98,7 @@ func newRouter(
 
 	// Middleware
 	r.Use(middleware.RequestID)
-	r.Use(middleware.RealIP)
+	r.Use(authmw.RealIP(mustParseTrustedProxies(cfg.Server.TrustedProxies)))
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(60 * time.Second))
@@ -284,6 +285,18 @@ func New(
 func isNoOpAuthenticator(a authmw.Authenticator) bool {
 	_, ok := a.(*authmw.NoOpAuthenticator)
 	return ok
+}
+
+// mustParseTrustedProxies parses the configured CIDRs and panics on invalid
+// input. Misconfiguration here is a deployment error that should fail fast at
+// startup rather than silently disabling client-IP resolution.
+func mustParseTrustedProxies(in []string) []*net.IPNet {
+	nets, err := authmw.ParseTrustedProxies(in)
+	if err != nil {
+		panic("invalid server.trusted_proxies: " + err.Error())
+	}
+
+	return nets
 }
 
 func corsMiddleware(next http.Handler) http.Handler {

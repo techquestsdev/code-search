@@ -32,6 +32,12 @@ server:
   addr: ":8080"
   read_timeout: 15s
   write_timeout: 60s
+  # CIDRs (or bare IPs) whose X-Forwarded-For headers will be honored to
+  # set r.RemoteAddr. Leave empty to keep the actual TCP peer address.
+  # Set this to your ingress / load balancer CIDR when running behind one.
+  # trusted_proxies:
+  #   - 10.0.0.0/8
+  #   - 172.16.0.0/12
 
 # Database configuration
 # Env: CS_DATABASE_DRIVER, CS_DATABASE_URL, CS_DATABASE_MAX_OPEN_CONNS, CS_DATABASE_MAX_IDLE_CONNS, CS_DATABASE_CONN_MAX_LIFETIME

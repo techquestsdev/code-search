@@ -62,6 +62,11 @@ type ServerConfig struct {
 	Addr         string        `mapstructure:"addr"`
 	ReadTimeout  time.Duration `mapstructure:"read_timeout"`
 	WriteTimeout time.Duration `mapstructure:"write_timeout"`
+	// TrustedProxies is the list of CIDRs (or bare IPs) whose X-Forwarded-For
+	// headers will be honored to populate r.RemoteAddr. Leave empty to keep
+	// the actual TCP peer address — the safe default for direct exposure.
+	// Set this to the ingress/load-balancer CIDR when running behind one.
+	TrustedProxies []string `mapstructure:"trusted_proxies"`
 }
 
 type DatabaseConfig struct {
