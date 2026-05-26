@@ -14,9 +14,12 @@ output:
 
 linters:
   default: all
+  enable:
+    - gomodguard_v2 # replaces deprecated gomodguard
   disable:
     # Deprecated
     - wsl
+    - gomodguard # superseded by gomodguard_v2
 
     # Too noisy / impractical
     - exhaustruct
