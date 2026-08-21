@@ -16,7 +16,7 @@ COPY internal/log/ ./internal/log/
 RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o /bin/zoekt-refresh ./cmd/zoekt-refresh
 
 # Runtime stage - minimal image
-FROM alpine:3.23
+FROM alpine:3.24
 
 # Install ca-certificates for any HTTPS needs
 RUN apk add --no-cache ca-certificates tzdata

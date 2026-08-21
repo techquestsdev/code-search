@@ -17,7 +17,7 @@ RUN CGO_ENABLED=0 go build -o /bin/zoekt-webserver ./cmd/zoekt-webserver
 RUN CGO_ENABLED=0 go build -o /bin/zoekt-git-index ./cmd/zoekt-git-index
 
 # Build ctags in a separate stage (cleaner)
-FROM alpine:3.23 AS ctags-builder
+FROM alpine:3.24 AS ctags-builder
 
 WORKDIR /tmp
 
@@ -29,7 +29,7 @@ RUN chmod +x /tmp/install-ctags-alpine.sh
 RUN /tmp/install-ctags-alpine.sh
 
 # Runtime stage
-FROM alpine:3.23
+FROM alpine:3.24
 
 # Install runtime dependencies
 RUN apk add --no-cache ca-certificates tzdata git jansson
