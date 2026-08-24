@@ -1,5 +1,5 @@
 # Build zoekt-git-index
-FROM golang:1.26-alpine AS zoekt-builder
+FROM golang:1.27-alpine AS zoekt-builder
 
 WORKDIR /zoekt
 
@@ -9,7 +9,7 @@ RUN git clone --depth 1 https://github.com/sourcegraph/zoekt.git .
 RUN go build -o /bin/zoekt-git-index ./cmd/zoekt-git-index
 
 # Build indexer
-FROM golang:1.26-alpine AS builder
+FROM golang:1.27-alpine AS builder
 
 WORKDIR /app
 
@@ -39,7 +39,7 @@ RUN chmod +x /tmp/install-ctags-alpine.sh
 RUN /tmp/install-ctags-alpine.sh
 
 # Build scip-go binary
-FROM golang:1.26-alpine AS scip-go-builder
+FROM golang:1.27-alpine AS scip-go-builder
 
 RUN apk add --no-cache git
 RUN go install github.com/scip-code/scip-go/cmd/scip-go@latest

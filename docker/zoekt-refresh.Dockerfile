@@ -1,6 +1,6 @@
 # Lightweight sidecar for triggering zoekt index reloads on network filesystems
 # (CephFS, NFS, EFS) that don't propagate inotify events reliably.
-FROM golang:1.26-alpine AS builder
+FROM golang:1.27-alpine AS builder
 
 WORKDIR /app
 
