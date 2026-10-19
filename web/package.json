@@ -40,7 +40,7 @@
     "lucide-react": "^1.11.0",
     "next": "^16.2.2",
     "react": "^19.2.4",
-    "react-arborist": "^3.4.3",
+    "react-arborist": "^4.0.1",
     "react-dom": "^19.2.4"
   },
   "devDependencies": {
@@ -67,7 +67,7 @@
     "prettier-plugin-tailwindcss": "^0.8.1",
     "tailwindcss": "^4.3.3",
     "typescript": "^7.0.2",
-    "vitest": "^4.1.2"
+    "vitest": "^5.0.5"
   },
   "resolutions": {
     "@codemirror/language": "6.12.2",
