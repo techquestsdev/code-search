@@ -1,5 +1,5 @@
 # Build zoekt-git-index
-FROM golang:1.26-alpine AS zoekt-builder
+FROM golang:1.27-alpine AS zoekt-builder
 
 WORKDIR /zoekt
 
@@ -9,7 +9,7 @@ RUN git clone --depth 1 https://github.com/sourcegraph/zoekt.git .
 RUN go build -o /bin/zoekt-git-index ./cmd/zoekt-git-index
 
 # Build indexer
-FROM golang:1.26-alpine AS builder
+FROM golang:1.27-alpine AS builder
 
 WORKDIR /app
 
